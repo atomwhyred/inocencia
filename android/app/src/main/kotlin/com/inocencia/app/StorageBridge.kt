@@ -11,8 +11,9 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 /**
- * Puente nativo para almacenamiento: version de Android y permiso "Acceso a
- * todos los archivos" (Android 11+). El acceso por SAF (descriptor
+ * Puente nativo: version de Android, carpeta de las librerias nativas (donde
+ * llama.cpp busca las variantes de CPU) y permiso "Acceso a todos los
+ * archivos" (Android 11+). El acceso por SAF (descriptor
  * /proc/self/fd/N) se anadira tras el spike descrito en el plan (Fase 2).
  */
 object StorageBridge {
@@ -23,6 +24,7 @@ object StorageBridge {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "sdkInt" -> result.success(Build.VERSION.SDK_INT)
+                    "nativeLibraryDir" -> result.success(activity.applicationInfo.nativeLibraryDir)
                     "hasAllFilesAccess" -> result.success(hasAllFilesAccess())
                     "requestAllFilesAccess" -> {
                         requestAllFilesAccess(activity)

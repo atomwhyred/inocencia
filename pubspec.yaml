@@ -50,6 +50,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   llama_cpp_dart: ^0.2.2
+  ffi: ^2.2.0
 
 dev_dependencies:
   flutter_test:

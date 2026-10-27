@@ -4,9 +4,14 @@
 #   native/llama/build_android.sh [abi] [arm_arch]
 #
 #   abi       arm64-v8a (por defecto) o armeabi-v7a
-#   arm_arch  opcional, p. ej. armv8.2-a+dotprod (mas rapido, pero NO arranca en
-#             CPU sin dotprod como Cortex-A53/A73). Sin el, se compila para el
-#             armv8-a base, que funciona en cualquier arm64.
+#   arm_arch  opcional. Sin el, arm64-v8a se compila con TODAS las variantes de
+#             CPU (libggml-cpu-android_armv8.0_1.so ... armv9.2_2.so) y la app
+#             elige en tiempo de ejecucion la mejor que la CPU soporte
+#             (ggml_backend_load_all_from_path), asi que un mismo APK es seguro en
+#             un Cortex-A53 antiguo y rapido en un Tensor/Snapdragon reciente.
+#             Con un valor, p. ej. armv8.2-a+dotprod, se compila UNA sola variante
+#             enlazada de forma estatica (solo para pruebas: da SIGILL en CPU que
+#             no la soporten). armeabi-v7a siempre es estatico (baseline).
 #
 # El codigo de llama.cpp va fijado al commit que espera llama_cpp_dart 0.2.2
 # (ver LLAMA_CPP_COMMIT) y se descarga en native/llama/src/llama.cpp.
@@ -53,23 +58,32 @@ ARGS=(
   -DLLAMA_BUILD_EXAMPLES=OFF
   -DLLAMA_BUILD_SERVER=OFF
   -DLLAMA_BUILD_TOOLS=ON
-  # llama_cpp_dart no llama a ggml_backend_load_all() en Android: el backend de
-  # CPU tiene que ir enlazado dentro de libggml, no como .so dinamico.
-  -DGGML_BACKEND_DL=OFF
   -DGGML_OPENMP=OFF
   -DGGML_NATIVE=OFF
 )
-[ -n "$ARM_ARCH" ] && ARGS+=(-DGGML_CPU_ARM_ARCH="$ARM_ARCH")
+if [ "$ABI" = "arm64-v8a" ] && [ -z "$ARM_ARCH" ]; then
+  # Variantes de CPU como .so dinamicos. llama_cpp_dart no las carga: lo hace
+  # la app (lib/features/tutor/data/native_backends.dart) antes de abrir el modelo.
+  ARGS+=(-DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON)
+else
+  # Un solo backend de CPU enlazado dentro de libggml.
+  ARGS+=(-DGGML_BACKEND_DL=OFF)
+  [ -n "$ARM_ARCH" ] && ARGS+=(-DGGML_CPU_ARM_ARCH="$ARM_ARCH")
+fi
 
 echo "NDK: $NDK"
 echo "ABI: $ABI ${ARM_ARCH:+($ARM_ARCH)}"
 cmake -S "$SRC" -B "$BUILD" "${ARGS[@]}"
 # libmtmd.so es la que abre el binding (exporta llama + mtmd).
-cmake --build "$BUILD" --target mtmd llama ggml -j"$(nproc)"
+cmake --build "$BUILD" -j"$(nproc)" --target mtmd llama ggml
 
 mkdir -p "$OUT"
 rm -f "$OUT"/*.so
 find "$BUILD" -name '*.so' -path '*bin*' -exec cp -v {} "$OUT"/ \;
+# En modo variantes, una libggml-cpu.so suelta seria un resto de otra compilacion.
+if grep -q 'GGML_CPU_ALL_VARIANTS:BOOL=ON' "$BUILD/CMakeCache.txt"; then
+  rm -f "$OUT/libggml-cpu.so"
+fi
 case "$ABI" in
   arm64-v8a)   TRIPLE=aarch64-linux-android ;;
   armeabi-v7a) TRIPLE=arm-linux-androideabi ;;

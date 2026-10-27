@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
+import '../../../core/storage/platform_info.dart';
 import '../../external_data/domain/linked_file_status.dart';
 import '../../knowledge/data/fts_query.dart';
 import '../../knowledge/data/knowledge_repository_impl.dart';
@@ -15,7 +16,9 @@ import '../domain/tutor_prompt.dart';
 
 /// Se sobrescriben en las pruebas.
 final tutorEngineProvider = Provider.autoDispose<TutorEngine>((ref) {
-  final engine = LlamaTutorEngine();
+  final engine = LlamaTutorEngine(
+    nativeLibraryDir: const PlatformInfo().nativeLibraryDir,
+  );
   ref.onDispose(engine.dispose);
   return engine;
 });

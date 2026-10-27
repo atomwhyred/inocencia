@@ -22,6 +22,18 @@ class PlatformInfo {
     }
   }
 
+  /// Carpeta donde Android extrae las `.so` de la app (null fuera de Android).
+  Future<String?> nativeLibraryDir() async {
+    if (!Platform.isAndroid) return null;
+    try {
+      return await _channel.invokeMethod<String>('nativeLibraryDir');
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
   /// "Acceso a todos los archivos" (Android 11+). True si no hace falta.
   Future<bool> hasAllFilesAccess() async {
     if (!Platform.isAndroid) return true;

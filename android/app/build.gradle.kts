@@ -28,6 +28,13 @@ android {
         //   flutter build apk --release --split-per-abi --target-platform android-arm,android-arm64
     }
 
+    packaging {
+        // llama.cpp elige en tiempo de ejecucion la variante de CPU buscando
+        // libggml-cpu-*.so en una carpeta del disco: las .so tienen que estar
+        // extraidas en nativeLibraryDir, no mapeadas desde el APK.
+        jniLibs.useLegacyPackaging = true
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

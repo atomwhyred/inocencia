@@ -172,6 +172,21 @@ void main() {
       expect(s, contains('español'));
     });
 
+    test('pide enseñar por fragmentos con pregunta guia, sin dar la respuesta de golpe', () {
+      final s = TutorPrompt.system(5);
+      expect(s, contains('UNA sola idea'));
+      expect(s, contains('UNA pregunta'));
+      expect(s, contains('no los repitas'));
+      expect(s, contains('Nunca des toda la respuesta'));
+      expect(s, contains('no lo resuelvas'));
+      expect(s, contains('libro de texto'));
+    });
+
+    test('la pregunta lleva pegado el recordatorio de brevedad', () {
+      final turns = TutorPrompt.build(grade: 5, chunks: const [_chunk], history: const [], question: 'q');
+      expect(turns.last.content, endsWith('termina con una pregunta.'));
+    });
+
     test('estructura: sistema, historial reciente y pregunta con contexto', () {
       final turns = TutorPrompt.build(
         grade: 4,

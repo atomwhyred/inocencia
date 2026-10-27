@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 
 import '../domain/tutor_engine.dart';
+import 'native_backends.dart';
 import '../domain/tutor_prompt.dart';
 
 /// Motor local con llama.cpp (via `llama_cpp_dart`). El modelo vive en un
@@ -12,10 +13,17 @@ import '../domain/tutor_prompt.dart';
 ///
 /// Solo CPU (`nGpuLayers = 0`): es lo mas estable en moviles de gama baja.
 class LlamaTutorEngine implements TutorEngine {
+  /// [nativeLibraryDir] resuelve la carpeta de las `.so` de la app, donde estan
+  /// las variantes de CPU de llama.cpp.
+  LlamaTutorEngine({this.nativeLibraryDir});
+
+  final Future<String?> Function()? nativeLibraryDir;
   LlamaParent? _parent;
 
   static const contextTokens = 2048;
-  static const maxAnswerTokens = 400;
+  /// Las respuestas son cortas por diseno (~60 palabras): el tope solo evita que
+  /// un modelo desbocado alargue la espera.
+  static const maxAnswerTokens = 220;
 
   @override
   bool get isLoaded => _parent != null;
@@ -30,6 +38,8 @@ class LlamaTutorEngine implements TutorEngine {
     if (!File(modelPath).existsSync()) {
       throw const TutorEngineException('No se encuentra el archivo del modelo.');
     }
+    // Elige la variante de CPU antes de que el modelo se cargue en su isolate.
+    NativeBackends.loadCpuVariant(await nativeLibraryDir?.call());
     // Sin GPU. El binding trae por defecto `splitMode = none` con `mainGpu = 0`
     // y llama.cpp rechaza esa combinacion cuando no hay ninguna GPU (devuelve
     // nulo al instante): se usan los valores propios de llama.cpp. Tambien
