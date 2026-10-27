@@ -8,6 +8,7 @@ import 'core/constants.dart';
 import 'core/di/providers.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode_controller.dart';
 import 'features/auth/application/session.dart';
 import 'features/notifications/application/reminder_controller.dart';
 
@@ -61,6 +62,8 @@ class _InocenciaAppState extends ConsumerState<InocenciaApp>
       title: appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ref.watch(themeModeProvider),
       routerConfig: ref.watch(routerProvider),
       locale: const Locale('es'),
       supportedLocales: const [Locale('es')],

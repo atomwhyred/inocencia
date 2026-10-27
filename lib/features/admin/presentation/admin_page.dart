@@ -7,6 +7,7 @@ import '../../../core/responsive/max_content_width.dart';
 import '../../../core/responsive/window_size_class.dart';
 import '../../../core/utils/school_grade_calculator.dart';
 import '../../auth/application/session.dart';
+import '../../appearance/presentation/appearance_section.dart';
 import '../../external_data/presentation/files_section.dart';
 import '../../notifications/presentation/reminders_section.dart';
 import '../../profiles/presentation/avatar_view.dart';
@@ -27,6 +28,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
     (icon: Icons.child_care_rounded, label: 'Perfiles'),
     (icon: Icons.folder_open_rounded, label: 'Archivos'),
     (icon: Icons.notifications_active_outlined, label: 'Avisos'),
+    (icon: Icons.palette_outlined, label: 'Apariencia'),
   ];
 
   void _exit() {
@@ -40,7 +42,8 @@ class _AdminPageState extends ConsumerState<AdminPage> {
     final content = switch (_section) {
       0 => const _ProfilesSection(),
       1 => const MaxContentWidth(maxWidth: 720, child: FilesSection()),
-      _ => const MaxContentWidth(maxWidth: 720, child: RemindersSection()),
+      2 => const MaxContentWidth(maxWidth: 720, child: RemindersSection()),
+      _ => const MaxContentWidth(maxWidth: 720, child: AppearanceSection()),
     };
 
     return Scaffold(
