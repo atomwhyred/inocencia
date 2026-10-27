@@ -8,7 +8,7 @@ vincula en **Zona de padres → Archivos**. La pestaña muestra el modelo recome
 | Modelo | Archivo | Tamaño | RAM del teléfono | Notas |
 |---|---|---|---|---|
 | Qwen2.5-1.5B-Instruct | `qwen2.5-1.5b-instruct-q4_k_m.gguf` | 1,12 GB | cualquiera ≥ 3 GB | ~26 s por respuesta en un Pixel 6. Se equivoca más: llegó a confundir respiración y fotosíntesis. |
-| Qwen2.5-3B-Instruct | `qwen2.5-3b-instruct-q4_k_m.gguf` | 2,10 GB | ≥ 7 GB (8 GB anunciados) | ~35–50 s por respuesta. Fiel al libro en las pruebas. |
+| Qwen2.5-3B-Instruct | `qwen2.5-3b-instruct-q4_k_m.gguf` | 2,10 GB | ≥ 7 GB (8 GB anunciados) | ~27 s al primer token y ~32 s en total (hasta ~40 s en turnos de seguimiento). Fiel al libro en las pruebas. |
 
 Descarga: Hugging Face, repositorios `Qwen/Qwen2.5-1.5B-Instruct-GGUF` y `Qwen/Qwen2.5-3B-Instruct-GGUF`
 (licencia Apache-2.0 el de 1,5B; el de 3B usa la licencia Qwen Research: revísala antes de distribuirlo).

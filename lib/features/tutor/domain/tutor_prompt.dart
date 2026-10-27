@@ -21,29 +21,26 @@ class TutorPrompt {
   /// Turnos previos que se conservan para entender "¿y el plural?".
   static const maxHistoryTurns = 4;
   static const maxHistoryChars = 300;
-  /// ~2000 caracteres ≈ 600 tokens de libro: lo que cabe sin que el primer
-  /// token tarde demasiado en un movil de gama baja.
-  static const maxContextChars = 2000;
+  /// ~1500 caracteres ≈ 450 tokens de libro. El primer token de un modelo de 3B
+  /// tarda ~1 s por cada ~20 tokens de prompt: es el presupuesto de latencia.
+  static const maxContextChars = 1500;
 
   /// Tutor hibrido: rigor con la teoria del libro cubano del grado, pero sin
-  /// soltar la respuesta de golpe. Una idea corta + una pregunta que guie.
-  /// Un modelo de 1-2B obedece mejor reglas cortas y concretas.
+  /// soltar la respuesta de golpe. Un paso + una pregunta. Corto a proposito:
+  /// cada token de instrucciones se paga en el primer token de la respuesta.
   static String system(int grade) => '''
-Eres inocencIA, un tutor virtual paciente, cariñoso y ordenado para niños cubanos de ${SchoolGradeCalculator.label(grade)} (unos ${grade + 5} años).
-Enseñas con el mismo contenido y el mismo orden que el libro de texto de su grado.
+Eres inocencIA, un tutor virtual paciente y cariñoso para niños cubanos de ${SchoolGradeCalculator.label(grade)} (unos ${grade + 5} años). Enseñas con el contenido y el orden del libro de texto.
 Reglas:
-- Habla en español, con palabras sencillas de niño de esa edad y frases cortas.
-- Usa SOLO los TEXTOS DEL LIBRO y apóyate en sus frases, casi con sus mismas palabras. No inventes datos, ejemplos ni comparaciones que no estén en ellos.
-- Los ejercicios y preguntas que aparecen en los textos no son tuyos: no los repitas. Explica el contenido que los acompaña.
-- Nunca des toda la respuesta de golpe. Explica UNA sola idea pequeña (2 o 3 frases) y termina con UNA pregunta propia, sencilla, sobre lo que acabas de explicar.
-- Si te pide resolver un ejercicio, no lo resuelvas: indica el primer paso y pregúntale cómo seguir.
-- Si el niño contesta tu pregunta, dile con cariño si va bien; si se equivoca, corrígelo con suavidad y ayúdalo a pensar. Luego avanza un paso.
-- Si los textos no tienen la respuesta, dilo con sinceridad y sugiere preguntar a su maestro.
+- Español sencillo y frases cortas.
+- Usa SOLO los TEXTOS DEL LIBRO, casi con sus palabras. No inventes y no repitas sus ejercicios.
+- Da UN solo paso o idea (2 o 3 frases completas) y termina con UNA pregunta tuya que lo haga pensar el siguiente paso (nunca "¿entiendes?"). Nunca des toda la respuesta de golpe; ante un ejercicio, no lo resuelvas: pide el primer paso.
+- Si el niño contesta, dile si va bien o corrígelo con suavidad, y avanza un paso.
+- Si el libro no lo explica, dilo y sugiere preguntar al maestro.
 - Máximo 60 palabras.''';
 
   /// Recordatorio pegado a la pregunta: los modelos pequeños olvidan las reglas
   /// del sistema cuando el contexto del libro es largo.
-  static const _reminder = 'Responde en 2 o 3 frases cortas, sin dar todo de golpe, y termina con una pregunta.';
+  static const _reminder = 'Responde con UN solo paso en 2 o 3 frases claras y termina con una pregunta que lo haga pensar.';
 
   /// Mensajes para el modelo: sistema, historial reciente y la pregunta con el
   /// contexto recuperado.

@@ -189,22 +189,24 @@ void main() {
       final s = TutorPrompt.system(5);
       expect(s, contains('5.º grado'));
       expect(s, contains('SOLO'));
-      expect(s, contains('español'));
+      expect(s, contains('Español'));
     });
 
     test('pide enseñar por fragmentos con pregunta guia, sin dar la respuesta de golpe', () {
       final s = TutorPrompt.system(5);
-      expect(s, contains('UNA sola idea'));
+      expect(s, contains('UN solo paso'));
       expect(s, contains('UNA pregunta'));
-      expect(s, contains('no los repitas'));
-      expect(s, contains('Nunca des toda la respuesta'));
+      expect(s, contains('nunca "¿entiendes?"'));
+      expect(s, contains('no repitas sus ejercicios'));
+      expect(s, contains('Nunca des toda la respuesta de golpe'));
       expect(s, contains('no lo resuelvas'));
       expect(s, contains('libro de texto'));
     });
 
     test('la pregunta lleva pegado el recordatorio de brevedad', () {
       final turns = TutorPrompt.build(grade: 5, chunks: const [_chunk], history: const [], question: 'q');
-      expect(turns.last.content, endsWith('termina con una pregunta.'));
+      expect(turns.last.content, endsWith('termina con una pregunta que lo haga pensar.'));
+      expect(turns.last.content, contains('UN solo paso'));
     });
 
     test('estructura: sistema, historial reciente y pregunta con contexto', () {

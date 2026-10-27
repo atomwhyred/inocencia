@@ -200,6 +200,10 @@ class TutorController extends Notifier<TutorState> {
     final buf = StringBuffer();
     final clock = Stopwatch()..start();
     var pieces = 0;
+    if (kDebugMode) {
+      final chars = turns.fold<int>(0, (n, t) => n + t.content.length);
+      debugPrint('[tutor] prompt: ${turns.length} turnos, $chars caracteres');
+    }
     void report(String how) {
       if (kDebugMode) {
         debugPrint('[tutor] $how: $pieces piezas, ${clock.elapsedMilliseconds} ms, '
