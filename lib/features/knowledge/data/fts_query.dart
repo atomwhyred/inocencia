@@ -65,17 +65,22 @@ List<String> keyTerms(String text) {
   return out;
 }
 
-/// Acorta el termino para que coincida con sus variantes (plural, genero...).
-/// Devuelve el fragmento de FTS5 ya entrecomillado.
-String _term(String w) {
+/// Parte del termino que se busca como prefijo (null si es tan corto que solo
+/// vale la palabra exacta).
+String? _stem(String w) {
   final cut = w.length >= 6
       ? w.length - 2
       : w.length >= 4
       ? w.length - 1
       : 0;
-  if (cut == 0) return '"$w"';
-  final stem = w.substring(0, cut < 4 ? 4 : cut);
-  return '"$stem"*';
+  if (cut == 0) return null;
+  return w.substring(0, cut < 4 ? 4 : cut);
+}
+
+/// Fragmento de FTS5 ya entrecomillado.
+String _term(String w) {
+  final stem = _stem(w);
+  return stem == null ? '"$w"' : '"$stem"*';
 }
 
 /// Consulta FTS5 que exige **todos** los terminos (los [maxTerms] mas largos,
@@ -98,3 +103,29 @@ List<String> _longest(List<String> terms, int max) {
   final keep = byLength.take(max).toSet();
   return terms.where(keep.contains).toList(); // conserva el orden original
 }
+
+/// Terminos que usa la consulta amplia (los mismos que [ftsAnyQuery]).
+List<String> looseTerms(String question, {int maxTerms = 6}) =>
+    _longest(keyTerms(question), maxTerms);
+
+/// Cuantos de [terms] aparecen en [text] (sin tildes ni mayusculas, y con el
+/// mismo acortamiento que la consulta: "fracciones" encuentra "fraccion").
+int termCoverage(String text, List<String> terms) {
+  final words = _word.allMatches(_fold(text.toLowerCase())).map((m) => m.group(0)!).toList();
+  var hits = 0;
+  for (final t in terms) {
+    final plain = _fold(t);
+    final stem = _stem(plain);
+    final found = stem == null
+        ? words.contains(plain)
+        : words.any((w) => w.startsWith(stem));
+    if (found) hits++;
+  }
+  return hits;
+}
+
+/// Terminos que debe cubrir un fragmento del rescate amplio: dos tercios de la
+/// pregunta. Con "una palabra cualquiera" bastaba para colar paginas de otra
+/// asignatura (p. ej. "distinto" en Español para una pregunta de fracciones) y el
+/// modelo acababa inventando la respuesta.
+int minLooseCoverage(int termCount) => termCount <= 2 ? termCount : (termCount * 2 / 3).ceil();

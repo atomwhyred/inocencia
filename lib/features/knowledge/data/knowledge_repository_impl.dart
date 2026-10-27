@@ -52,7 +52,12 @@ LIMIT ?4
   }) async {
     final strict = _run(ftsAllQuery(question), grade, subject, limit);
     if (strict.length >= _enough) return strict;
-    final loose = _run(ftsAnyQuery(question), grade, subject, limit);
+    // El rescate amplio solo vale si el fragmento cubre casi toda la pregunta;
+    // se piden mas candidatos porque el filtro descarta los flojos.
+    final terms = looseTerms(question);
+    final needed = minLooseCoverage(terms.length);
+    final loose = _run(ftsAnyQuery(question), grade, subject, limit * 5)
+        .where((c) => termCoverage(c.text, terms) >= needed);
     // Lo estricto va primero: es lo mas especifico; se completa con lo amplio.
     final seen = strict.map((c) => c.id).toSet();
     return [

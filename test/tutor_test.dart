@@ -164,6 +164,22 @@ void main() {
     });
   });
 
+  group('cobertura de terminos', () {
+    test('cuenta terminos con plural, tildes y mayusculas', () {
+      final terms = looseTerms('fracciones denominador');
+      expect(termCoverage('La FRACCIÓN tiene un denominador.', terms), 2);
+      expect(termCoverage('Un adjetivo describe.', terms), 0);
+    });
+
+    test('exige dos tercios de los terminos (minimo)', () {
+      expect(minLooseCoverage(1), 1);
+      expect(minLooseCoverage(2), 2);
+      expect(minLooseCoverage(3), 2);
+      expect(minLooseCoverage(4), 3);
+      expect(minLooseCoverage(6), 4);
+    });
+  });
+
   group('TutorPrompt', () {
     test('el sistema nombra el grado y pide usar solo el libro', () {
       final s = TutorPrompt.system(5);
@@ -291,6 +307,23 @@ void main() {
       await repo.close();
     });
 
+    test('una palabra suelta de la pregunta no basta para colar otra asignatura', () async {
+      final repo = KnowledgeRepositoryImpl.open(path);
+      // Hay libro de Español y Ciencias en 6.º, pero ninguno de Matematica:
+      // "sumo" o "distinto" no deben traer paginas ajenas.
+      expect(await repo.search('como sumo fracciones con distinto denominador', grade: 6), isEmpty);
+      await repo.close();
+    });
+
+    test('el rescate amplio sigue valiendo si falla solo una palabra', () async {
+      final repo = KnowledgeRepositoryImpl.open(path);
+      // "verdes" no esta junto a "plantas" y "hojas" en la pregunta: AND falla
+      // por la palabra extra "gigantes", pero 3 de 4 terminos cubren el fragmento.
+      final r = await repo.search('fotosintesis plantas hojas gigantes', grade: 6);
+      expect(r.map((c) => c.id), [3]);
+      await repo.close();
+    });
+
     test('pregunta sin terminos utiles o con sintaxis rara no falla', () async {
       final repo = KnowledgeRepositoryImpl.open(path);
       expect(await repo.search('hola', grade: 4), isEmpty);
@@ -324,6 +357,14 @@ void main() {
         expect(r.every((c) => c.grade == grade), isTrue, reason: 'otro grado en: $q');
         expect(r.map((c) => c.subject), contains(e.value), reason: q);
       }
+      await repo.close();
+    }, skip: realDb.existsSync() ? false : 'ejecuta tools/knowledge_builder primero');
+
+    test('una asignatura que aun no esta en los libros no devuelve paginas ajenas', () async {
+      final repo = KnowledgeRepositoryImpl.open(realDb.path);
+      // No hay libro de Matematica de 6.º: antes colaba paginas de Español.
+      final r = await repo.search('Como sumo fracciones con distinto denominador', grade: 6);
+      expect(r, isEmpty);
       await repo.close();
     }, skip: realDb.existsSync() ? false : 'ejecuta tools/knowledge_builder primero');
   });
