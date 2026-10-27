@@ -1,7 +1,9 @@
 package com.inocencia.app
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -11,7 +13,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 /**
- * Puente nativo: version de Android, carpeta de las librerias nativas (donde
+ * Puente nativo: version de Android, RAM total, carpeta de las librerias nativas (donde
  * llama.cpp busca las variantes de CPU) y permiso "Acceso a todos los
  * archivos" (Android 11+). El acceso por SAF (descriptor
  * /proc/self/fd/N) se anadira tras el spike descrito en el plan (Fase 2).
@@ -24,6 +26,7 @@ object StorageBridge {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "sdkInt" -> result.success(Build.VERSION.SDK_INT)
+                    "totalRamBytes" -> result.success(totalRamBytes(activity))
                     "nativeLibraryDir" -> result.success(activity.applicationInfo.nativeLibraryDir)
                     "hasAllFilesAccess" -> result.success(hasAllFilesAccess())
                     "requestAllFilesAccess" -> {
@@ -33,6 +36,12 @@ object StorageBridge {
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    private fun totalRamBytes(activity: Activity): Long {
+        val info = ActivityManager.MemoryInfo()
+        (activity.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(info)
+        return info.totalMem
     }
 
     // Antes de Android 11 no existe este permiso: no hay nada que conceder.

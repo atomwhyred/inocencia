@@ -22,6 +22,18 @@ class PlatformInfo {
     }
   }
 
+  /// Memoria RAM total del equipo en bytes (null si no se puede saber).
+  Future<int?> totalRamBytes() async {
+    if (!Platform.isAndroid) return null;
+    try {
+      return await _channel.invokeMethod<int>('totalRamBytes');
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
   /// Carpeta donde Android extrae las `.so` de la app (null fuera de Android).
   Future<String?> nativeLibraryDir() async {
     if (!Platform.isAndroid) return null;

@@ -32,6 +32,7 @@ const _stopwords = <String>{
   'cuanta', 'cuantas', 'porque',
   // verbos muy comunes
   'es', 'son', 'soy', 'eres', 'ser', 'estan', 'estar', 'hay', 'tiene',
+  'fue', 'fueron', 'era', 'eran', 'sido', 'siendo', 'estaba', 'estaban',
   'tienen', 'tener', 'hace', 'hacen', 'hacer', 'puede', 'pueden', 'poder',
   'puedes', 'quiero', 'quieres', 'saber', 'sabes', 'sabe', 'significa',
   // peticiones tipicas de un nino al tutor

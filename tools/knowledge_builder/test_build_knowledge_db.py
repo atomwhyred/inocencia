@@ -36,6 +36,14 @@ class ParseFilename(unittest.TestCase):
             "6to_ca_geografia": "Geografía",
             "6to_ct_edu_civica": "Educación Cívica",
             "5to_edu_laboral": "Educación Laboral",
+            "5to_ciencias": "Ciencias Naturales",
+            "6to_ct_ciencias": "Ciencias Naturales",
+            "6to_ciencias_naturales_2": "Ciencias Naturales",
+            "4to_mundo-digital": "Mundo Digital",
+            "6to_ct_historia-cuba": "Historia de Cuba",
+            "6to_historia-cuba": "Historia de Cuba",
+            "2do_ct_lengua": "Español",
+            "4to_el_mundo_en_que_vivimos": "El mundo en que vivimos",
             "1ro_ct_matematica": "Matemática",
         }
         for stem, subject in casos.items():

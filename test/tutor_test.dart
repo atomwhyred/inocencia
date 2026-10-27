@@ -133,6 +133,10 @@ void main() {
       expect(keyTerms('plantas y plantas con agua'), ['plantas', 'agua']);
     });
 
+    test('las formas del verbo ser no son terminos de busqueda', () {
+      expect(keyTerms('¿Qué fue la guerra de independencia de Cuba?'), ['guerra', 'independencia', 'cuba']);
+    });
+
     test('las tildes no cuentan para las palabras vacias', () {
       expect(keyTerms('Cuál es la fotosíntesis'), ['fotosíntesis']);
     });
@@ -349,6 +353,9 @@ void main() {
         (6, '¿Cómo respiran las plantas?'): 'Ciencias Naturales',
         (5, '¿Qué fue la guerra de independencia de Cuba?'): 'Historia de Cuba',
         (6, '¿Qué es la democracia?'): 'Educación Cívica',
+        (6, '¿Cómo sumo fracciones con distinto denominador?'): 'Matemática',
+        (4, '¿Cómo se multiplican números de dos cifras?'): 'Matemática',
+        (6, '¿Qué es internet?'): 'Mundo Digital',
       };
       for (final e in casos.entries) {
         final (grade, q) = e.key;
@@ -360,11 +367,12 @@ void main() {
       await repo.close();
     }, skip: realDb.existsSync() ? false : 'ejecuta tools/knowledge_builder primero');
 
-    test('una asignatura que aun no esta en los libros no devuelve paginas ajenas', () async {
+    test('un tema que no esta en los libros del grado no devuelve paginas ajenas', () async {
       final repo = KnowledgeRepositoryImpl.open(realDb.path);
-      // No hay libro de Matematica de 6.º: antes colaba paginas de Español.
-      final r = await repo.search('Como sumo fracciones con distinto denominador', grade: 6);
-      expect(r, isEmpty);
+      // Ni el temario de 6.º ni sus palabras sueltas ("distinto", "sumo"...) deben
+      // colar paginas de otra asignatura: el modelo acabaria inventando.
+      expect(await repo.search('ecuacion cuadratica discriminante', grade: 6), isEmpty);
+      expect(await repo.search('teorema de pitagoras hipotenusa', grade: 6), isEmpty);
       await repo.close();
     }, skip: realDb.existsSync() ? false : 'ejecuta tools/knowledge_builder primero');
   });

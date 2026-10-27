@@ -7,6 +7,7 @@ import '../../../core/di/providers.dart';
 import '../../../core/utils/format_bytes.dart';
 import '../../../core/utils/school_grade_calculator.dart';
 import '../domain/linked_file_status.dart';
+import '../domain/model_recommendation.dart';
 import 'path_browser_page.dart';
 
 final _storageFoldersProvider = FutureProvider.autoDispose<List<String>>(
@@ -82,6 +83,7 @@ class FilesSection extends ConsumerWidget {
     final status = ref.watch(linkedFilesStatusProvider);
     final folders = ref.watch(_storageFoldersProvider).value ?? const <String>[];
     final access = ref.watch(allFilesAccessProvider).value;
+    final ram = ref.watch(deviceRamProvider).value;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -111,6 +113,8 @@ class FilesSection extends ConsumerWidget {
           error: (e, _) => Text('No se pudo comprobar el estado: $e'),
           data: (s) => Column(
             children: [
+              if (ram != null) ModelAdviceCard(ramBytes: ram, linkedPath: s.model.path),
+              if (ram != null) const SizedBox(height: 12),
               _FileCard(
                 icon: Icons.psychology_alt_rounded,
                 title: 'Modelo de IA (GGUF)',
@@ -152,6 +156,87 @@ class FilesSection extends ConsumerWidget {
     if (!k.isReady) return null;
     final grades = k.grades.map(SchoolGradeCalculator.label).join(', ');
     return '${k.chunkCount} fragmentos · $grades\n${k.subjects.join(', ')}';
+  }
+}
+
+/// Consejo sobre que modelo usar segun la RAM del telefono.
+class ModelAdviceCard extends StatelessWidget {
+  const ModelAdviceCard({super.key, required this.ramBytes, this.linkedPath});
+
+  final int ramBytes;
+  final String? linkedPath;
+
+  /// En GB decimales, como los anuncia el sitio de descarga (Hugging Face).
+  static String _downloadSize(ModelOption m) =>
+      '${(m.sizeBytes / 1e9).toStringAsFixed(1).replaceAll('.', ',')} GB';
+
+  @override
+  Widget build(BuildContext context) {
+    final recommended = ModelRecommendation.forRam(ramBytes);
+    final linked = ModelRecommendation.identify(linkedPath);
+    final other = ModelRecommendation.all.firstWhere((m) => m != recommended);
+    final theme = Theme.of(context);
+    final ramGb = (ramBytes / (1024 * 1024 * 1024)).toStringAsFixed(1).replaceAll('.', ',');
+    return Card(
+      color: theme.colorScheme.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.memory_rounded, color: theme.colorScheme.onPrimaryContainer),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Modelo recomendado para este teléfono',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            DefaultTextStyle.merge(
+              style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Este teléfono tiene $ramGb GB de memoria RAM.'),
+                  if (ModelRecommendation.isLowRam(ramBytes))
+                    const Text(
+                      'Es poca memoria: la IA puede ir muy lenta o cerrarse.',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${recommended.name} (${_downloadSize(recommended)})',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  Text(recommended.summary),
+                  SelectableText(
+                    recommended.fileName,
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Alternativa: ${other.name} (${_downloadSize(other)}). ${other.summary}',
+                  ),
+                  if (linked != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      linked == recommended
+                          ? 'Ya tienes vinculado el modelo recomendado.'
+                          : 'Tienes vinculado ${linked.name}.',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

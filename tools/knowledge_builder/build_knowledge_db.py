@@ -54,7 +54,9 @@ _SUBJECT_RULES: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"matematica"), "Matemática"),
     (re.compile(r"ortografia|(^|_)esp(_|$)|espanol|lengua"), "Español"),
     (re.compile(r"english|ingles|new_roads"), "Inglés"),
-    (re.compile(r"ciencias_naturales"), "Ciencias Naturales"),
+    # "5to_ciencias", "6to_ct_ciencias", "6to_ciencias_naturales_2"...
+    (re.compile(r"ciencias"), "Ciencias Naturales"),
+    (re.compile(r"mundo[-_]digital"), "Mundo Digital"),
     (re.compile(r"el_mundo"), "El mundo en que vivimos"),
     (re.compile(r"historia"), "Historia de Cuba"),
     (re.compile(r"geografia"), "Geografía"),

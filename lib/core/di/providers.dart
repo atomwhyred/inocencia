@@ -12,6 +12,7 @@ import '../../features/setup/domain/guardian.dart';
 import '../security/pin_hasher.dart';
 import '../security/pin_lockout.dart';
 import '../storage/app_database.dart';
+import '../storage/platform_info.dart';
 
 /// Se sobrescribe en `main()` con la instancia ya cargada.
 final sharedPreferencesProvider = Provider<SharedPreferences>(
@@ -71,6 +72,11 @@ final allFilesAccessProvider =
   final repo = ref.watch(externalFilesRepositoryProvider);
   return (needed: await repo.needsAllFilesAccess, granted: await repo.hasAllFilesAccess);
 });
+
+/// RAM total del telefono (null si no se conoce): decide el modelo recomendado.
+final deviceRamProvider = FutureProvider<int?>(
+  (ref) => const PlatformInfo().totalRamBytes(),
+);
 
 /// Estado validado de los archivos vinculados. Se invalida tras cada cambio.
 final linkedFilesStatusProvider = FutureProvider<LinkedFilesStatus>(
