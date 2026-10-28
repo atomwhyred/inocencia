@@ -22,6 +22,7 @@ class ExternalFilesRepositoryImpl implements ExternalFilesRepository {
 
   static const _modelKey = 'external_model_path';
   static const _knowledgeKey = 'external_knowledge_path';
+  static const _booksKey = 'external_books_folder';
 
   @override
   String? get modelPath => _prefs.getString(_modelKey);
@@ -30,10 +31,16 @@ class ExternalFilesRepositoryImpl implements ExternalFilesRepository {
   String? get knowledgePath => _prefs.getString(_knowledgeKey);
 
   @override
+  String? get booksFolder => _prefs.getString(_booksKey);
+
+  @override
   Future<void> setModelPath(String? path) => _set(_modelKey, path);
 
   @override
   Future<void> setKnowledgePath(String? path) => _set(_knowledgeKey, path);
+
+  @override
+  Future<void> setBooksFolder(String? path) => _set(_booksKey, path);
 
   Future<void> _set(String key, String? path) async {
     if (path == null) {

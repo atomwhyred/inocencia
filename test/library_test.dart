@@ -7,20 +7,27 @@ import 'package:inocencia/core/security/pin_hasher.dart';
 import 'package:inocencia/core/storage/app_database.dart';
 import 'package:inocencia/features/external_data/domain/external_files_repository.dart';
 import 'package:inocencia/features/library/data/library_repository_impl.dart';
+import 'package:inocencia/features/library/domain/library_book.dart';
 import 'package:inocencia/features/library/data/reading_progress_repository_impl.dart';
 import 'package:inocencia/features/profiles/data/child_profile_repository_impl.dart';
 import 'package:inocencia/features/profiles/domain/child_profile.dart';
 import 'package:sqlite3/sqlite3.dart' as sql;
 
 class _FakeFiles implements ExternalFilesRepository {
-  _FakeFiles({this.knowledgePath, this.dirs = const []});
+  _FakeFiles({this.knowledgePath, this.dirs = const [], this.booksFolder, this.roots = const []});
 
   @override
   final String? knowledgePath;
+  @override
+  final String? booksFolder;
   final List<String> dirs;
+  final List<String> roots;
 
   @override
   Future<List<String>> appStorageDirs() async => dirs;
+
+  @override
+  Future<List<String>> browseRoots() async => [...dirs, ...roots];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -56,8 +63,20 @@ void main() {
     db.close();
   }
 
-  LibraryRepositoryImpl repo({String? knowledge, List<String>? dirs}) =>
-      LibraryRepositoryImpl(_FakeFiles(knowledgePath: knowledge ?? dbPath, dirs: dirs ?? [appDir]));
+  LibraryRepositoryImpl repo({String? knowledge, List<String>? dirs, String? booksFolder, List<String>? roots}) =>
+      LibraryRepositoryImpl(_FakeFiles(
+        knowledgePath: knowledge ?? dbPath,
+        dirs: dirs ?? [appDir],
+        booksFolder: booksFolder,
+        roots: roots ?? const [],
+      ));
+
+  /// PDF fuera de la carpeta de la app (Descargas, SD...).
+  void phonePdf(String relative) {
+    File('${tmp.path}/phone/$relative')
+      ..createSync(recursive: true)
+      ..writeAsBytesSync([0x25, 0x50, 0x44, 0x46]);
+  }
 
   void pdf(String relative) {
     final f = File('$appDir/$relative')..createSync(recursive: true);
@@ -154,6 +173,97 @@ void main() {
       expect(s.total, 6);
       expect(s.available, 2);
       expect(s.folders, ['$appDir/libros']);
+    });
+  });
+
+  group('carpeta de libros vinculada por el padre', () {
+    test('los PDF de la carpeta vinculada (y sus subcarpetas) cuentan como copiados', () async {
+      makeKnowledge();
+      phonePdf('Download/libros/6to_matematica.pdf');
+      phonePdf('Download/libros/6to/6to_esp.pdf');
+      final r = repo(booksFolder: '${tmp.path}/phone/Download/libros');
+      final byId = {for (final b in await r.booksForGrade(6)) b.id: b};
+      expect(byId['6to_matematica']!.path, '${tmp.path}/phone/Download/libros/6to_matematica.pdf');
+      expect(byId['6to_esp']!.available, isTrue);
+      expect(byId['6to_lengua']!.available, isFalse);
+    });
+
+    test('sin vincular, esos mismos PDF no se ven', () async {
+      makeKnowledge();
+      phonePdf('Download/libros/6to_matematica.pdf');
+      expect((await repo().find('6to_matematica'))!.available, isFalse);
+    });
+
+    test('el nombre se empareja sin distinguir mayúsculas', () async {
+      makeKnowledge();
+      phonePdf('libros/6TO_Esp.PDF');
+      final b = await repo(booksFolder: '${tmp.path}/phone/libros').find('6to_esp');
+      expect(b!.available, isTrue);
+    });
+
+    test('un niño nuevo de otro grado ve sus libros en la misma carpeta', () async {
+      makeKnowledge();
+      phonePdf('libros/6to_matematica.pdf');
+      phonePdf('libros/5to_lengua.pdf');
+      final r = repo(booksFolder: '${tmp.path}/phone/libros');
+      expect((await r.booksForGrade(5)).single.available, isTrue);
+      expect((await r.booksForGrade(6)).where((b) => b.available).map((b) => b.id), ['6to_matematica']);
+    });
+
+    test('la carpeta vinculada gana a la de la app si el mismo libro está en las dos', () async {
+      makeKnowledge();
+      pdf('libros/6to_esp.pdf');
+      phonePdf('libros/6to_esp.pdf');
+      final b = await repo(booksFolder: '${tmp.path}/phone/libros').find('6to_esp');
+      expect(b!.path, '${tmp.path}/phone/libros/6to_esp.pdf');
+    });
+
+    test('una carpeta vinculada que ya no existe no rompe nada', () async {
+      makeKnowledge();
+      final r = repo(booksFolder: '${tmp.path}/sd_extraida');
+      expect((await r.booksForGrade(6)).where((b) => b.available), isEmpty);
+    });
+
+    test('status dice cuántos libros hay por grado y cuál es la carpeta vinculada', () async {
+      makeKnowledge();
+      phonePdf('libros/6to_matematica.pdf');
+      phonePdf('libros/6to_esp.pdf');
+      phonePdf('libros/5to_lengua.pdf');
+      final s = await repo(booksFolder: '${tmp.path}/phone/libros').status();
+      expect(s.linkedFolder, '${tmp.path}/phone/libros');
+      expect(s.byGrade[6], const GradeBooks(total: 4, available: 2));
+      expect(s.byGrade[5], const GradeBooks(total: 1, available: 1));
+      expect(s.byGrade[1], const GradeBooks(total: 1, available: 0));
+      expect(s.byGrade.containsKey(3), isFalse);
+    });
+
+    test('Detectar ofrece primero la carpeta con más libros del catálogo', () async {
+      makeKnowledge();
+      phonePdf('Download/libros/6to_matematica.pdf');
+      phonePdf('Download/libros/6to_esp.pdf');
+      phonePdf('Download/libros/5to_lengua.pdf');
+      phonePdf('Download/otro.pdf'); // no es del catálogo
+      phonePdf('Documents/6to_lengua.pdf');
+      final found = await repo(roots: ['${tmp.path}/phone']).findBookFolders();
+      expect(found.first, BookFolder(path: '${tmp.path}/phone/Download/libros', count: 3));
+      expect(found.map((f) => f.path), contains('${tmp.path}/phone/Documents'));
+      expect(found.any((f) => f.path.endsWith('otro.pdf')), isFalse);
+    });
+
+    test('Detectar ofrece la carpeta madre si los PDF están repartidos por grado', () async {
+      makeKnowledge();
+      phonePdf('Libros/6to/6to_matematica.pdf');
+      phonePdf('Libros/6to/6to_esp.pdf');
+      phonePdf('Libros/5to/5to_lengua.pdf');
+      final found = await repo(roots: ['${tmp.path}/phone']).findBookFolders();
+      expect(found.first, BookFolder(path: '${tmp.path}/phone/Libros', count: 3));
+    });
+
+    test('Detectar no ofrece la carpeta de la app, que ya se lee sola, ni carpetas ocultas', () async {
+      makeKnowledge();
+      pdf('libros/6to_esp.pdf');
+      phonePdf('.oculta/6to_lengua.pdf');
+      expect(await repo(roots: ['${tmp.path}/phone']).findBookFolders(), isEmpty);
     });
   });
 

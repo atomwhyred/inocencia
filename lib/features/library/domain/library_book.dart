@@ -34,16 +34,52 @@ class LibraryBook extends Equatable {
   List<Object?> get props => [id, title, subject, kind, grades, pages, path];
 }
 
-/// Que libros hay en el catalogo y cuantos estan ya en el telefono.
-class LibraryStatus extends Equatable {
-  const LibraryStatus({required this.total, required this.available, required this.folders});
+/// Cuantos libros de un grado hay en el catalogo y cuantos estan en el telefono.
+class GradeBooks extends Equatable {
+  const GradeBooks({required this.total, required this.available});
 
   final int total;
   final int available;
 
-  /// Carpetas donde el padre debe copiar los PDF.
-  final List<String> folders;
+  @override
+  List<Object?> get props => [total, available];
+}
+
+/// Una carpeta del telefono que contiene PDF del catalogo.
+class BookFolder extends Equatable {
+  const BookFolder({required this.path, required this.count});
+
+  final String path;
+
+  /// PDF del catalogo que hay dentro (con subcarpetas).
+  final int count;
 
   @override
-  List<Object?> get props => [total, available, folders];
+  List<Object?> get props => [path, count];
+}
+
+/// Que libros hay en el catalogo y cuantos estan ya en el telefono.
+class LibraryStatus extends Equatable {
+  const LibraryStatus({
+    required this.total,
+    required this.available,
+    required this.folders,
+    this.linkedFolder,
+    this.byGrade = const {},
+  });
+
+  final int total;
+  final int available;
+
+  /// Carpetas de la app donde el padre puede copiar los PDF.
+  final List<String> folders;
+
+  /// Carpeta que el padre vinculo para buscar mas PDF, si la hay.
+  final String? linkedFolder;
+
+  /// Por grado, para decir a cada padre si los libros de su hijo estan.
+  final Map<int, GradeBooks> byGrade;
+
+  @override
+  List<Object?> get props => [total, available, folders, linkedFolder, byGrade];
 }

@@ -11,10 +11,18 @@ import '../../../core/utils/format_bytes.dart';
 
 /// Que archivo se busca.
 class BrowseRequest {
-  const BrowseRequest({required this.title, required this.extensions});
+  const BrowseRequest({
+    required this.title,
+    required this.extensions,
+    this.pickFolder = false,
+  });
 
   final String title;
   final List<String> extensions;
+
+  /// Se elige la carpeta abierta (boton "Usar esta carpeta"), no un archivo; los
+  /// archivos con la extension se muestran solo para reconocer la carpeta.
+  final bool pickFolder;
 }
 
 /// Explorador de rutas sencillo: se navega por carpetas y se elige un archivo
@@ -143,6 +151,20 @@ class _PathBrowserPageState extends ConsumerState<PathBrowserPage> {
                 ),
               const Divider(height: 1),
               Expanded(child: _body()),
+              if (widget.request.pickFolder && current != null)
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () => context.pop(current),
+                      icon: const Icon(Icons.check_rounded),
+                      label: Text(
+                        'Usar esta carpeta (${_entries.whereType<File>().length} PDF)',
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -192,6 +214,7 @@ class _PathBrowserPageState extends ConsumerState<PathBrowserPage> {
           leading: const Icon(Icons.insert_drive_file_outlined),
           title: Text(name),
           subtitle: Text(formatBytes(size)),
+          enabled: !widget.request.pickFolder,
           onTap: () => context.pop(e.path),
         );
       },

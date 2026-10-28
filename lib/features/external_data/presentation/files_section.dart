@@ -246,11 +246,62 @@ class ModelAdviceCard extends StatelessWidget {
 }
 
 /// Libros para leer: los PDF originales (con imagenes y ejercicios) que el nino
-/// abre desde "Mis libros". Se copian a la carpeta `libros/` de la app.
+/// abre desde "Mis libros". Salen de `libros/` en la carpeta de la app o de una
+/// carpeta que el padre busca en el telefono; se emparejan por el nombre del
+/// archivo con la lista de la base y cada nino ve los de su grado.
 class _BooksCard extends ConsumerWidget {
   const _BooksCard({required this.knowledgeReady});
 
   final bool knowledgeReady;
+
+  void _refresh(WidgetRef ref) {
+    ref.invalidate(libraryStatusProvider);
+    ref.invalidate(childBooksProvider);
+  }
+
+  Future<void> _link(WidgetRef ref, String? path) async {
+    await ref.read(externalFilesRepositoryProvider).setBooksFolder(path);
+    _refresh(ref);
+  }
+
+  Future<void> _browse(BuildContext context, WidgetRef ref) async {
+    final path = await context.push<String>(
+      '/admin/browse',
+      extra: const BrowseRequest(
+        title: 'Elegir la carpeta de los libros (PDF)',
+        extensions: ['.pdf'],
+        pickFolder: true,
+      ),
+    );
+    if (path != null) await _link(ref, path);
+  }
+
+  Future<void> _detect(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final folders = await ref.read(libraryRepositoryProvider).findBookFolders();
+    if (!context.mounted) return;
+    if (folders.isEmpty) {
+      messenger.showSnackBar(const SnackBar(
+        content: Text('No se encontraron libros PDF en el teléfono. Si están en Descargas o '
+            'en la tarjeta SD, concede “Acceso a todos los archivos” o usa Buscar.'),
+      ));
+      return;
+    }
+    final picked = await showDialog<BookFolder>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Carpetas con libros'),
+        children: [
+          for (final f in folders)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, f),
+              child: Text('${f.path}\n${f.count} libros'),
+            ),
+        ],
+      ),
+    );
+    if (picked != null) await _link(ref, picked.path);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -278,7 +329,7 @@ class _BooksCard extends ConsumerWidget {
               status.when(
                 loading: () => const LinearProgressIndicator(),
                 error: (e, _) => Text('No se pudo comprobar: $e'),
-                data: (s) => _details(context, s),
+                data: (s) => _details(context, ref, s),
               ),
           ],
         ),
@@ -286,8 +337,11 @@ class _BooksCard extends ConsumerWidget {
     );
   }
 
-  Widget _details(BuildContext context, LibraryStatus s) {
+  Widget _details(BuildContext context, WidgetRef ref, LibraryStatus s) {
     final complete = s.total > 0 && s.available == s.total;
+    final now = ref.read(clockProvider)();
+    final children = ref.watch(childProfilesProvider).value ?? const [];
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -297,14 +351,81 @@ class _BooksCard extends ConsumerWidget {
               : '${s.available} de ${s.total} libros están en este teléfono.',
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
-        const SizedBox(height: 4),
+        // Cada niño ve los libros de su grado: el padre comprueba que no falten.
+        for (final c in children)
+          if (s.byGrade[c.gradeAt(now)] case final g?)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    g.available == g.total
+                        ? Icons.check_circle_rounded
+                        : Icons.warning_amber_rounded,
+                    size: 18,
+                    color: g.available == g.total
+                        ? Colors.green
+                        : g.available == 0
+                            ? scheme.error
+                            : scheme.tertiary,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '${c.name} (${SchoolGradeCalculator.label(c.gradeAt(now))}): '
+                      '${g.available} de ${g.total} libros',
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '${c.name} (${SchoolGradeCalculator.label(c.gradeAt(now))}): '
+                'la base no tiene libros de este grado.',
+              ),
+            ),
+        const SizedBox(height: 8),
         Text(complete
             ? 'Los niños ya pueden leer todos sus libros desde "Mis libros".'
-            : 'Copia los PDF (con su nombre original, por ejemplo 6to_matematica.pdf) a esta carpeta. '
-                'No hay que vincularlos: se detectan solos.'),
+            : 'Busca la carpeta del teléfono donde están los PDF (con su nombre original, '
+                'por ejemplo 6to_matematica.pdf) o cópialos a la carpeta de la app. '
+                'Un niño nuevo ve solo los libros de su grado.'),
         const SizedBox(height: 8),
+        if (s.linkedFolder != null) ...[
+          const Text('Carpeta vinculada:', style: TextStyle(fontWeight: FontWeight.w600)),
+          SelectableText(s.linkedFolder!,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+          const SizedBox(height: 8),
+        ],
+        const Text('Carpeta de la app (se detecta sola):',
+            style: TextStyle(fontWeight: FontWeight.w600)),
         for (final f in s.folders)
           SelectableText(f, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            FilledButton.icon(
+              onPressed: () => _browse(context, ref),
+              icon: const Icon(Icons.folder_open_rounded),
+              label: const Text('Buscar carpeta'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => _detect(context, ref),
+              icon: const Icon(Icons.search_rounded),
+              label: const Text('Detectar'),
+            ),
+            if (s.linkedFolder != null)
+              TextButton(
+                onPressed: () => _link(ref, null),
+                child: const Text('Quitar vínculo'),
+              ),
+          ],
+        ),
       ],
     );
   }
@@ -327,8 +448,10 @@ class _FolderCard extends StatelessWidget {
               children: [
                 const Icon(Icons.usb_rounded),
                 const SizedBox(width: 8),
-                Text('Carpeta para copiar los archivos',
-                    style: Theme.of(context).textTheme.titleMedium),
+                Expanded(
+                  child: Text('Carpeta para copiar los archivos',
+                      style: Theme.of(context).textTheme.titleMedium),
+                ),
               ],
             ),
             const SizedBox(height: 8),

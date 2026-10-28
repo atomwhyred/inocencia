@@ -4,8 +4,13 @@ abstract class ExternalFilesRepository {
   String? get modelPath;
   String? get knowledgePath;
 
+  /// Carpeta extra donde buscar los PDF de los libros (ademas de `libros/` en
+  /// la carpeta de la app). Null si el padre no vinculo ninguna.
+  String? get booksFolder;
+
   Future<void> setModelPath(String? path);
   Future<void> setKnowledgePath(String? path);
+  Future<void> setBooksFolder(String? path);
 
   /// Valida los dos archivos vinculados.
   Future<LinkedFilesStatus> check();

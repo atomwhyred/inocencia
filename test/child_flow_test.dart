@@ -106,6 +106,8 @@ class _Files implements ExternalFilesRepository {
 
   @override
   final String? knowledgePath;
+  @override
+  String? get booksFolder => null;
   final String dir;
 
   @override
