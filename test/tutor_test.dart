@@ -238,6 +238,8 @@ void main() {
         expect(TutorPrompt.isAnswer(asked, 'por qué'), isFalse);
         expect(TutorPrompt.isAnswer(asked, 'Explícame otra vez'), isFalse);
         expect(TutorPrompt.isAnswer(asked, 'no entiendo'), isFalse);
+        expect(TutorPrompt.isAnswer(asked, 'y el plural'), isFalse);
+        expect(TutorPrompt.isAnswer(asked, 'Entonces los verbos'), isFalse);
       });
 
       test('un mensaje largo no lo es', () {
@@ -261,7 +263,27 @@ void main() {
       );
       expect(turns.last.content, contains('Respuesta del niño a tu pregunta: grande'));
       expect(turns.last.content, isNot(contains('Pregunta del niño')));
-      expect(turns.last.content, contains('Primero di si la respuesta va bien'));
+      expect(turns.last.content, contains('Valora su respuesta con cariño'));
+      expect(turns.last.content, contains('UNA sola pregunta'));
+    });
+
+    test('"no sé" pide una pista en vez de valorar', () {
+      for (final text in ['no sé', 'No se', 'no lo sé', 'ni idea']) {
+        final turns = TutorPrompt.build(
+          grade: 4,
+          chunks: const [_chunk],
+          history: const [ChatTurn('assistant', '¿Cuál es el adjetivo?')],
+          question: text,
+          answering: true,
+        );
+        expect(turns.last.content, contains('El niño no sabe'), reason: text);
+        expect(turns.last.content, isNot(contains('Valora su respuesta')), reason: text);
+      }
+    });
+
+    test('endOfFirstQuestion corta justo tras la primera pregunta', () {
+      expect(TutorPrompt.endOfFirstQuestion('Muy bien. ¿Qué más? ¿Y esto?'), 'Muy bien. ¿Qué más?'.length);
+      expect(TutorPrompt.endOfFirstQuestion('Aun sin pregunta'), -1);
     });
 
     test('solo conserva los ultimos turnos y recorta los largos', () {
@@ -537,6 +559,39 @@ void main() {
       // una pregunta nueva en mitad de la conversación sigue siendo una pregunta
       await ctl.ask('¿Y el plural?', grade: 4);
       expect(engine.lastTurns!.last.content, contains('Pregunta del niño: ¿Y el plural?'));
+    });
+
+    test('una pregunta completa con un solo termino clave se busca sola', () async {
+      final c = await make();
+      final ctl = c.read(tutorControllerProvider.notifier);
+      await ctl.prepare();
+      await ctl.ask('¿Qué es un adjetivo?', grade: 4);
+      await ctl.ask('Que es un sustantivo', grade: 4);
+      expect(knowledge.lastQuery, 'Que es un sustantivo');
+    });
+
+    test('la respuesta se corta tras la primera pregunta', () async {
+      final c = await make();
+      final ctl = c.read(tutorControllerProvider.notifier);
+      await ctl.prepare();
+      engine.pieces = ['Muy bien. ', '¿Qué más? ', '¿Y esto? ', 'Pregunta: ¿otra?'];
+      await ctl.ask('adjetivos', grade: 4);
+      final s = c.read(tutorControllerProvider);
+      expect(s.messages.last.text, 'Muy bien. ¿Qué más?');
+      expect(s.generating, isFalse);
+    });
+
+    test('varias respuestas seguidas se anclan a la pregunta original', () async {
+      final c = await make();
+      final ctl = c.read(tutorControllerProvider.notifier);
+      await ctl.prepare();
+      engine.pieces = ['Pista. ', '¿Cuál es el adjetivo?'];
+      await ctl.ask('¿Qué es un adjetivo?', grade: 4);
+      await ctl.ask('no se', grade: 4);
+      await ctl.ask('grande', grade: 4);
+      expect(knowledge.lastQuery, contains('adjetivo'));
+      expect(knowledge.lastQuery, contains('grande'));
+      expect(engine.lastTurns!.last.content, contains('Respuesta del niño a tu pregunta: grande'));
     });
 
     test('un error del motor deja un mensaje amable y no deja la UI "escribiendo"', () async {

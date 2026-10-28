@@ -98,6 +98,9 @@ class TutorController extends Notifier<TutorState> {
   KnowledgeRepository? _knowledge;
   late TutorEngine _engine;
   StreamSubscription<String>? _sub;
+
+  /// Ultima consulta que no era una respuesta: el tema sobre el que se conversa.
+  String? _topic;
   Completer<void>? _running;
 
   @override
@@ -162,10 +165,13 @@ class TutorController extends Notifier<TutorState> {
     try {
       // Una respuesta o "¿y el plural?" no tienen terminos propios suficientes
       // para buscar: se apoyan en la pregunta anterior.
+      // Una respuesta se ancla al tema de la pregunta, no a la respuesta anterior.
       final answering = TutorPrompt.isAnswer(history, question);
-      final query = (answering || keyTerms(question).length < 2) && previousQuestion != null
-          ? '$previousQuestion $question'
+      final anchor = _topic ?? previousQuestion;
+      final query = (answering || _isFollowUp(question)) && anchor != null
+          ? '$anchor $question'
           : question;
+      if (!answering) _topic = query;
       final chunks = await _knowledge!.search(query, grade: grade);
 
       if (chunks.isEmpty) {
@@ -186,6 +192,17 @@ class TutorController extends Notifier<TutorState> {
     } catch (e) {
       _finish('Ups, algo salió mal y no pude responder. Inténtalo de nuevo.');
     }
+  }
+
+  /// "¿y el plural?" o "plural": poco texto y sin tema propio. Una pregunta
+  /// completa ("¿Qué es un sustantivo?") se busca sola aunque tenga un solo
+  /// termino clave: unirla a la anterior traia libros de otra asignatura.
+  static final _continuation = RegExp(r'^[¿\s]*(y|entonces|pero)\b', caseSensitive: false);
+
+  bool _isFollowUp(String question) {
+    if (keyTerms(question).length >= 2) return false;
+    final words = question.trim().split(RegExp(r'\s+')).length;
+    return words <= 3 || _continuation.hasMatch(question);
   }
 
   List<String> _sources(List<KnowledgeChunk> chunks) =>
@@ -218,6 +235,15 @@ class TutorController extends Notifier<TutorState> {
       (piece) {
         if (pieces++ == 0) report('primer token');
         buf.write(piece);
+        final cut = TutorPrompt.endOfFirstQuestion(buf.toString());
+        if (cut >= 0) {
+          report('pregunta cerrada');
+          _sub?.cancel();
+          _sub = null;
+          _finish(buf.toString().substring(0, cut).trim());
+          if (!done.isCompleted) done.complete();
+          return;
+        }
         _setLast(text: buf.toString());
       },
       onError: (Object e) {

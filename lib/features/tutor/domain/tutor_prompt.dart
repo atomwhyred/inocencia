@@ -45,15 +45,33 @@ Reglas:
   /// Cuando el nino contesta a la pregunta del tutor, primero hay que valorar su
   /// respuesta: el modelo pequeno no lo hace si el mensaje parece una pregunta nueva.
   static const _reminderAnswer =
-      'Primero di si la respuesta va bien o corrígela con suavidad. Luego da UN paso y termina con una pregunta.';
+      'Valora su respuesta con cariño (si falla, empieza con "Casi" y corrígela con suavidad). Luego da UN paso y termina con UNA sola pregunta.';
+
+  /// "No sé" no es una respuesta que valorar: hay que darle una pista.
+  static const _reminderUnsure =
+      'El niño no sabe. Anímalo, dale una pista del libro sin dar la respuesta y termina con UNA sola pregunta fácil.';
+
+  static final _unsure = RegExp(r'^(no (lo )?se|ni idea|no recuerdo)\b');
+
+  static bool _isUnsure(String text) => _unsure.hasMatch(_plain(text.trim()));
+
+  /// Indice donde acaba la primera pregunta de [text] (justo tras su `?`), o -1
+  /// si aun no hay ninguna. El modelo pequeno encadena varias preguntas y un
+  /// "Pregunta:" repetido: se corta ahi, y de paso se ahorra generar el resto.
+  static int endOfFirstQuestion(String text) {
+    final i = text.indexOf('?');
+    return i < 0 ? -1 : i + 1;
+  }
 
   static const _maxAnswerWords = 12;
 
-  /// Palabras con las que un nino pide algo en vez de contestar.
+  /// Palabras con las que un nino pregunta, pide algo o encadena otra duda
+  /// ("y el plural") en vez de contestar.
   static const _nonAnswerStarts = {
     'que', 'como', 'por', 'cual', 'cuales', 'cuando', 'donde', 'quien', 'quienes',
     'cuanto', 'cuantos', 'cuanta', 'cuantas', 'para', 'explica', 'explicame',
     'dime', 'ayudame', 'repite', 'cuentame', 'otra', 'otro', 'quiero',
+    'y', 'entonces', 'pero',
   };
 
   /// `true` si [text] parece la respuesta del nino a la ultima pregunta del
@@ -94,7 +112,11 @@ Reglas:
     bool answering = false,
   }) {
     final label = answering ? 'Respuesta del niño a tu pregunta' : 'Pregunta del niño';
-    final reminder = answering ? _reminderAnswer : _reminder;
+    final reminder = !answering
+        ? _reminder
+        : _isUnsure(question)
+            ? _reminderUnsure
+            : _reminderAnswer;
     final recent = history
         .where((t) => t.role != 'system')
         .toList()

@@ -16,6 +16,14 @@ Descarga: Hugging Face, repositorios `Qwen/Qwen2.5-1.5B-Instruct-GGUF` y `Qwen/Q
 Medidas en un Pixel 6 (8 GB, Tensor, solo CPU). No hay mediciones en otros teléfonos.
 La recomendación de RAM del 3B es una estimación: 2,1 GB de modelo + contexto + Android.
 
+### Seguimiento con el 3B (Pixel 6, conversación de 4 turnos)
+
+El primer token tarda ~33 s en el primer turno y sube ~6 s por turno (hasta ~53 s en el cuarto)
+porque el historial alarga el prompt. La respuesta se corta tras la primera pregunta (el modelo
+encadena 2-3 preguntas), lo que baja el total a ~38-60 s por turno. Cuando el niño contesta, el 3B
+valora la respuesta y corrige; con "no sé" da una pista. Su límite: las pistas y preguntas de
+seguimiento a veces son flojas o demasiado avanzadas para el grado.
+
 ## Dónde copiarlos
 
 `Android/data/com.inocencia.app/files/` (almacenamiento interno o tarjeta SD). No necesita permisos.
