@@ -222,6 +222,48 @@ void main() {
       expect(turns.last.content, contains('Pregunta del niño: ¿Qué es un adjetivo?'));
     });
 
+    group('isAnswer', () {
+      const asked = [ChatTurn('user', '¿Qué es un adjetivo?'), ChatTurn('assistant', 'Dice cómo es algo. ¿Cuál es el adjetivo de "casa grande"?')];
+
+      test('una respuesta corta a la pregunta del tutor lo es', () {
+        expect(TutorPrompt.isAnswer(asked, 'grande'), isTrue);
+        expect(TutorPrompt.isAnswer(asked, 'es la palabra grande'), isTrue);
+        expect(TutorPrompt.isAnswer(asked, 'no sé'), isTrue);
+      });
+
+      test('una pregunta o una peticion no lo es', () {
+        expect(TutorPrompt.isAnswer(asked, '¿Y el plural?'), isFalse);
+        expect(TutorPrompt.isAnswer(asked, 'y el plural?'), isFalse);
+        expect(TutorPrompt.isAnswer(asked, 'Cómo se escribe'), isFalse);
+        expect(TutorPrompt.isAnswer(asked, 'por qué'), isFalse);
+        expect(TutorPrompt.isAnswer(asked, 'Explícame otra vez'), isFalse);
+        expect(TutorPrompt.isAnswer(asked, 'no entiendo'), isFalse);
+      });
+
+      test('un mensaje largo no lo es', () {
+        expect(TutorPrompt.isAnswer(asked, 'quiero saber ahora mismo todo sobre las plantas y los animales del bosque'), isFalse);
+      });
+
+      test('sin historial, o si el tutor no preguntó, no lo es', () {
+        expect(TutorPrompt.isAnswer(const [], 'grande'), isFalse);
+        expect(TutorPrompt.isAnswer(const [ChatTurn('user', 'hola'), ChatTurn('assistant', 'Hola, soy tu tutor.')], 'grande'), isFalse);
+        expect(TutorPrompt.isAnswer(const [ChatTurn('user', 'hola')], 'grande'), isFalse);
+      });
+    });
+
+    test('si el niño contesta, el mensaje lo marca y pide valorar primero', () {
+      final turns = TutorPrompt.build(
+        grade: 4,
+        chunks: const [_chunk],
+        history: const [ChatTurn('assistant', '¿Cuál es el adjetivo?')],
+        question: 'grande',
+        answering: true,
+      );
+      expect(turns.last.content, contains('Respuesta del niño a tu pregunta: grande'));
+      expect(turns.last.content, isNot(contains('Pregunta del niño')));
+      expect(turns.last.content, contains('Primero di si la respuesta va bien'));
+    });
+
     test('solo conserva los ultimos turnos y recorta los largos', () {
       final history = [
         for (var i = 0; i < 10; i++) ChatTurn(i.isEven ? 'user' : 'assistant', 'turno $i ${'x' * 500}'),
@@ -478,6 +520,23 @@ void main() {
       expect(knowledge.lastQuery, contains('plural'));
       // el historial viaja al modelo
       expect(engine.lastTurns!.map((t) => t.role), ['system', 'user', 'assistant', 'user']);
+    });
+
+    test('si el niño contesta al tutor, se valora la respuesta y se busca con la pregunta anterior', () async {
+      final c = await make();
+      final ctl = c.read(tutorControllerProvider.notifier);
+      await ctl.prepare();
+      engine.pieces = ['Dice cómo es algo. ', '¿Cuál es el adjetivo de "casa grande"?'];
+      await ctl.ask('¿Qué es un adjetivo?', grade: 4);
+      expect(engine.lastTurns!.last.content, contains('Pregunta del niño'));
+
+      await ctl.ask('la casa y el grande', grade: 4);
+      expect(engine.lastTurns!.last.content, contains('Respuesta del niño a tu pregunta: la casa y el grande'));
+      expect(knowledge.lastQuery, contains('adjetivo'));
+
+      // una pregunta nueva en mitad de la conversación sigue siendo una pregunta
+      await ctl.ask('¿Y el plural?', grade: 4);
+      expect(engine.lastTurns!.last.content, contains('Pregunta del niño: ¿Y el plural?'));
     });
 
     test('un error del motor deja un mensaje amable y no deja la UI "escribiendo"', () async {

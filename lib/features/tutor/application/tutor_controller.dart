@@ -160,8 +160,10 @@ class TutorController extends Notifier<TutorState> {
     ]);
 
     try {
-      // "¿y el plural?" no tiene terminos propios: se apoya en la pregunta anterior.
-      final query = keyTerms(question).length < 2 && previousQuestion != null
+      // Una respuesta o "¿y el plural?" no tienen terminos propios suficientes
+      // para buscar: se apoyan en la pregunta anterior.
+      final answering = TutorPrompt.isAnswer(history, question);
+      final query = (answering || keyTerms(question).length < 2) && previousQuestion != null
           ? '$previousQuestion $question'
           : question;
       final chunks = await _knowledge!.search(query, grade: grade);
@@ -178,6 +180,7 @@ class TutorController extends Notifier<TutorState> {
         chunks: chunks,
         history: history,
         question: question,
+        answering: answering,
       );
       await _generate(turns);
     } catch (e) {

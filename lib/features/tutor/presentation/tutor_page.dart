@@ -212,11 +212,7 @@ class _Bubble extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (message.text.isEmpty && message.streaming)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
+              const _Thinking()
             else
               SelectableText(
                 message.text,
@@ -246,6 +242,78 @@ class _Bubble extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Espera del primer token (~30 s en un telefono modesto): tres puntos que
+/// saltan y un texto que cambia, para que el nino sepa que el tutor trabaja.
+class _Thinking extends StatefulWidget {
+  const _Thinking();
+
+  @override
+  State<_Thinking> createState() => _ThinkingState();
+}
+
+class _ThinkingState extends State<_Thinking> with SingleTickerProviderStateMixin {
+  static const _phrases = [
+    'Estoy buscando en tu libro…',
+    'Estoy pensando cómo explicártelo…',
+    'Un momentito más…',
+    'Ya casi lo tengo…',
+  ];
+  static const _secondsPerPhrase = 7;
+
+  late final AnimationController _anim =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat();
+  final _clock = Stopwatch()..start();
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, _) {
+        final phrase = _phrases[(_clock.elapsed.inSeconds ~/ _secondsPerPhrase).clamp(0, _phrases.length - 1)];
+        return Semantics(
+          label: phrase,
+          child: ExcludeSemantics(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < 3; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 5),
+                    child: Transform.translate(
+                      offset: Offset(0, -6 * _bounce((_anim.value - i * 0.15) % 1)),
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
+                      ),
+                    ),
+                  ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    phrase,
+                    style: TextStyle(fontSize: 15, color: scheme.onSurfaceVariant),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Salto de 0 a 1 y vuelta a 0 durante el primer tercio del ciclo; luego reposo.
+  static double _bounce(double t) => t < 0.4 ? (1 - (t / 0.2 - 1).abs()).clamp(0.0, 1.0) : 0;
 }
 
 class _InputBar extends StatelessWidget {

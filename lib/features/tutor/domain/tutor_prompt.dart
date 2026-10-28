@@ -42,14 +42,59 @@ Reglas:
   /// del sistema cuando el contexto del libro es largo.
   static const _reminder = 'Responde con UN solo paso en 2 o 3 frases claras y termina con una pregunta que lo haga pensar.';
 
+  /// Cuando el nino contesta a la pregunta del tutor, primero hay que valorar su
+  /// respuesta: el modelo pequeno no lo hace si el mensaje parece una pregunta nueva.
+  static const _reminderAnswer =
+      'Primero di si la respuesta va bien o corrígela con suavidad. Luego da UN paso y termina con una pregunta.';
+
+  static const _maxAnswerWords = 12;
+
+  /// Palabras con las que un nino pide algo en vez de contestar.
+  static const _nonAnswerStarts = {
+    'que', 'como', 'por', 'cual', 'cuales', 'cuando', 'donde', 'quien', 'quienes',
+    'cuanto', 'cuantos', 'cuanta', 'cuantas', 'para', 'explica', 'explicame',
+    'dime', 'ayudame', 'repite', 'cuentame', 'otra', 'otro', 'quiero',
+  };
+
+  /// `true` si [text] parece la respuesta del nino a la ultima pregunta del
+  /// tutor: el tutor acabo preguntando y el nino contesta corto, sin `?` y sin
+  /// empezar por una palabra interrogativa o una peticion.
+  static bool isAnswer(List<ChatTurn> history, String text) {
+    final last = history.where((t) => t.role != 'system').lastOrNull;
+    if (last == null || last.role != 'assistant') return false;
+    if (!last.content.trimRight().endsWith('?')) return false;
+    final t = text.trim();
+    if (t.isEmpty || t.contains('?') || t.contains('¿')) return false;
+    if (t.split(RegExp(r'\s+')).length > _maxAnswerWords) return false;
+    final plain = _plain(t);
+    final first = plain.split(RegExp(r'\s+')).first;
+    return !_nonAnswerStarts.contains(first) && !plain.startsWith('no entiendo');
+  }
+
+  static String _plain(String s) {
+    const from = 'áéíóúüÁÉÍÓÚÜ';
+    const to = 'aeiouuaeiouu';
+    final buf = StringBuffer();
+    for (final r in s.toLowerCase().runes) {
+      final c = String.fromCharCode(r);
+      final i = from.indexOf(c);
+      buf.write(i >= 0 ? to[i] : c);
+    }
+    return buf.toString();
+  }
+
   /// Mensajes para el modelo: sistema, historial reciente y la pregunta con el
-  /// contexto recuperado.
+  /// contexto recuperado. Si [answering], el mensaje del nino es la respuesta a
+  /// la pregunta del tutor y no una pregunta nueva.
   static List<ChatTurn> build({
     required int grade,
     required List<KnowledgeChunk> chunks,
     required List<ChatTurn> history,
     required String question,
+    bool answering = false,
   }) {
+    final label = answering ? 'Respuesta del niño a tu pregunta' : 'Pregunta del niño';
+    final reminder = answering ? _reminderAnswer : _reminder;
     final recent = history
         .where((t) => t.role != 'system')
         .toList()
@@ -61,7 +106,7 @@ Reglas:
     return [
       ChatTurn('system', system(grade)),
       ...recent,
-      ChatTurn('user', '${_context(chunks)}\n\nPregunta del niño: ${question.trim()}\n$_reminder'),
+      ChatTurn('user', '${_context(chunks)}\n\n$label: ${question.trim()}\n$reminder'),
     ];
   }
 

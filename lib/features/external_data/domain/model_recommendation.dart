@@ -22,9 +22,10 @@ class ModelOption {
 /// Catalogo y recomendacion segun la RAM del telefono.
 ///
 /// Solo figuran modelos probados con el tutor:
-///  - Qwen2.5-1.5B: va rapido (~20 s por respuesta en un Pixel 6) pero con
+///  - Qwen2.5-1.5B: algo mas rapido (~26 s por respuesta en un Pixel 6) pero con
 ///    fallos de fidelidad (llego a confundir respiracion con fotosintesis).
-///  - Qwen2.5-3B: respuestas fieles al libro, pero el doble de lento (~50 s).
+///  - Qwen2.5-3B: respuestas fieles al libro, algo mas lento (~32 s, hasta ~40 s
+///    en turnos de seguimiento). Ver docs/models.md.
 class ModelRecommendation {
   const ModelRecommendation._();
 
@@ -32,14 +33,14 @@ class ModelRecommendation {
     name: 'Qwen2.5-1.5B',
     fileName: 'qwen2.5-1.5b-instruct-q4_k_m.gguf',
     sizeBytes: 1117320736,
-    summary: 'Rápido y ligero, pero se equivoca más: revisa sus respuestas con el libro.',
+    summary: 'Más ligero, pero se equivoca más: revisa sus respuestas con el libro.',
   );
 
   static const large = ModelOption(
     name: 'Qwen2.5-3B',
     fileName: 'qwen2.5-3b-instruct-q4_k_m.gguf',
     sizeBytes: 2104932768,
-    summary: 'Más fiel a los libros, pero tarda el doble en responder.',
+    summary: 'Más fiel a los libros, pero tarda algo más en responder.',
   );
 
   static const all = [small, large];
