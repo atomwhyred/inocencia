@@ -174,7 +174,7 @@ class ModelAdviceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final recommended = ModelRecommendation.forRam(ramBytes);
     final linked = ModelRecommendation.identify(linkedPath);
-    final other = ModelRecommendation.all.firstWhere((m) => m != recommended);
+    final other = ModelRecommendation.alternativeTo(recommended);
     final theme = Theme.of(context);
     final ramGb = (ramBytes / (1024 * 1024 * 1024)).toStringAsFixed(1).replaceAll('.', ',');
     return Card(

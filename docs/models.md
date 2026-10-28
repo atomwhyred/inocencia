@@ -9,9 +9,13 @@ vincula en **Zona de padres → Archivos**. La pestaña muestra el modelo recome
 |---|---|---|---|---|
 | Qwen2.5-1.5B-Instruct | `qwen2.5-1.5b-instruct-q4_k_m.gguf` | 1,12 GB | cualquiera ≥ 3 GB | ~26 s por respuesta en un Pixel 6. Se equivoca más: llegó a confundir respiración y fotosíntesis. |
 | Qwen2.5-3B-Instruct | `qwen2.5-3b-instruct-q4_k_m.gguf` | 2,10 GB | ≥ 7 GB (8 GB anunciados) | ~27 s al primer token y ~32 s en total (hasta ~40 s en turnos de seguimiento). Fiel al libro en las pruebas. |
+| Qwen2.5-7B-Instruct | `qwen2.5-7b-instruct-q4_k_m.gguf` | 4,68 GB | ≥ 10 GB informados por Android (12 GB anunciados) | **Sin medir.** No cabe con margen en un teléfono de 8 GB, así que no se ha probado en el Pixel 6. Es de esperar ~2,3× la latencia del 3B en una CPU parecida; una CPU más reciente (i8mm) lo compensa en parte. |
 
-Descarga: Hugging Face, repositorios `Qwen/Qwen2.5-1.5B-Instruct-GGUF` y `Qwen/Qwen2.5-3B-Instruct-GGUF`
-(licencia Apache-2.0 el de 1,5B; el de 3B usa la licencia Qwen Research: revísala antes de distribuirlo).
+Descarga: Hugging Face, repositorios `Qwen/Qwen2.5-1.5B-Instruct-GGUF`, `Qwen/Qwen2.5-3B-Instruct-GGUF` y, para el
+de 7B, `bartowski/Qwen2.5-7B-Instruct-GGUF` (archivo único `Qwen2.5-7B-Instruct-Q4_K_M.gguf`, 4.683.074.240 bytes;
+el repositorio oficial de Qwen lo parte en dos archivos y la app necesita uno solo; se renombra a minúsculas como los
+otros). Licencia: Apache-2.0 el de 1,5B y el de 7B; el de 3B usa la licencia Qwen Research: revísala antes de
+distribuirlo.
 
 Medidas en un Pixel 6 (8 GB, Tensor, solo CPU). No hay mediciones en otros teléfonos.
 La recomendación de RAM del 3B es una estimación: 2,1 GB de modelo + contexto + Android.
