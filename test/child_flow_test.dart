@@ -22,6 +22,8 @@ import 'package:inocencia/features/tutor/domain/tutor_engine.dart';
 import 'package:inocencia/features/tutor/domain/tutor_prompt.dart';
 import 'package:inocencia/features/tutor/domain/tutor_history_repository.dart';
 import 'package:inocencia/features/tutor/domain/tutor_source.dart';
+import 'package:inocencia/features/mascot/application/mascot_atlas.dart';
+import 'package:inocencia/features/mascot/application/mascot_settings.dart';
 import 'package:inocencia/features/profiles/data/child_profile_repository_impl.dart';
 import 'package:inocencia/features/profiles/domain/child_profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -168,6 +170,8 @@ void main() {
     viewer = _FakeViewer();
     container = ProviderContainer(overrides: [
       bookViewerFactoryProvider.overrideWithValue(viewer),
+      mascotAnimateProvider.overrideWithValue(false),
+      mascotAtlasProvider.overrideWith((ref) async => null),
       tutorEngineProvider.overrideWithValue(_IdleEngine()),
       knowledgeRepositoryFactoryProvider.overrideWithValue((_) => _EmptyKnowledge()),
       sharedPreferencesProvider.overrideWithValue(await SharedPreferences.getInstance()),

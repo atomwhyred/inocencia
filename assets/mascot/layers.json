@@ -1,0 +1,116 @@
+{
+  "source": "mascota/Gemini_Generated_Image_e76cbme76cbme76c.jpg",
+  "canvas": [
+    437,
+    720
+  ],
+  "scale": 0.69431,
+  "rotation": "grados; positivo = sentido horario en pantalla (como Canvas.rotate)",
+  "order": [
+    "tail",
+    "body",
+    "wing",
+    "branch",
+    "head",
+    "eye"
+  ],
+  "layers": [
+    {
+      "name": "tail",
+      "file": "tail.png",
+      "x": 2,
+      "y": 399,
+      "width": 276,
+      "height": 319
+    },
+    {
+      "name": "body",
+      "file": "body.png",
+      "x": 87,
+      "y": 150,
+      "width": 308,
+      "height": 361
+    },
+    {
+      "name": "wing",
+      "file": "wing.png",
+      "x": 85,
+      "y": 193,
+      "width": 159,
+      "height": 282
+    },
+    {
+      "name": "branch",
+      "file": "branch.png",
+      "x": 117,
+      "y": 387,
+      "width": 104,
+      "height": 73
+    },
+    {
+      "name": "head",
+      "file": "head.png",
+      "x": 125,
+      "y": 2,
+      "width": 310,
+      "height": 226
+    },
+    {
+      "name": "eye",
+      "file": "eye.png",
+      "x": 250,
+      "y": 107,
+      "width": 43,
+      "height": 42
+    }
+  ],
+  "pivots": {
+    "head": [
+      274.3,
+      203.4
+    ],
+    "wing": [
+      201.4,
+      218.7
+    ],
+    "tail": [
+      180.5,
+      449.9
+    ]
+  },
+  "max_rotation_deg": {
+    "head": 8.0,
+    "wing": 8.0,
+    "tail": 10.0
+  },
+  "moves_with": {
+    "eye": "head",
+    "branch": "body"
+  },
+  "eye": {
+    "cx": 271.5,
+    "cy": 125.0,
+    "r": 27.8,
+    "r_inner": 21.2,
+    "pupil_cx": 270.8,
+    "pupil_cy": 127.8,
+    "pupil_r": 17.4,
+    "max_gaze": 4.9,
+    "lid_color": "#12397B",
+    "sclera_color": "#E2E6EF"
+  },
+  "anchors": {
+    "beak_tip": [
+      429.1,
+      190.2
+    ],
+    "head_top": [
+      267.7,
+      3.5
+    ],
+    "tail_tip": [
+      78.5,
+      712.4
+    ]
+  }
+}

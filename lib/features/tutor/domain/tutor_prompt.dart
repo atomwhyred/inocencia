@@ -185,7 +185,17 @@ Reglas:
     final topics = subjects.isEmpty
         ? ''
         : ' Puedo ayudarte con: ${subjects.join(', ')}.';
-    return 'No encontré eso en tus libros de $label.$topics '
+    return '$_noResultsStart de $label.$topics '
         'Prueba a preguntarlo de otra forma o consúltalo con tu maestro.';
   }
+
+  static const _noResultsStart = 'No encontré eso en tus libros';
+
+  /// Textos con los que el tutor avisa de que no pudo responder.
+  static const errorText = 'Ups, algo salió mal y no pude responder. Inténtalo de nuevo.';
+  static const emptyAnswerText = 'No pude generar una respuesta. Inténtalo de nuevo.';
+
+  /// `true` si [text] es uno de esos avisos (no una explicacion del tutor).
+  static bool isFailure(String text) =>
+      text.startsWith(_noResultsStart) || text == errorText || text == emptyAnswerText;
 }

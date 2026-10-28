@@ -9,6 +9,10 @@ import 'package:inocencia/core/di/providers.dart';
 import 'package:inocencia/core/security/pin_hasher.dart';
 import 'package:inocencia/core/storage/app_database.dart';
 import 'package:inocencia/features/auth/application/session.dart';
+import 'package:inocencia/features/mascot/application/mascot_atlas.dart';
+import 'package:inocencia/features/mascot/application/mascot_settings.dart';
+import 'package:inocencia/features/mascot/domain/mascot_mood.dart';
+import 'package:inocencia/features/mascot/presentation/mascot_view.dart';
 import 'package:inocencia/features/profiles/data/child_profile_repository_impl.dart';
 import 'package:inocencia/features/profiles/domain/child_profile.dart';
 import 'package:inocencia/features/external_data/domain/external_files_repository.dart';
@@ -872,6 +876,9 @@ void main() {
         externalFilesRepositoryProvider.overrideWithValue(_FakeFiles()),
         tutorEngineProvider.overrideWithValue(engine),
         knowledgeRepositoryFactoryProvider.overrideWithValue((_) => _FakeKnowledge(const [_chunk])),
+        // Toco sin animacion (pumpAndSettle no terminaria) y sin leer sus capas del disco.
+        mascotAnimateProvider.overrideWithValue(false),
+        mascotAtlasProvider.overrideWith((ref) async => null),
       ]);
       c.read(sessionProvider.notifier).selectChild(leo);
       addTearDown(() async {
@@ -939,6 +946,55 @@ void main() {
       engine.pieces = ['Los adjetivos dicen cómo es algo.'];
       await send(tester, '¿Qué es un adjetivo?');
       expect(find.byIcon(Icons.touch_app_rounded), findsNothing);
+    });
+
+    group('Toco, la mascota', () {
+      MascotView toco(WidgetTester tester) => tester.widget<MascotView>(find.byType(MascotView));
+
+      testWidgets('saluda grande con el chat vacío y pasa a pequeño junto al nombre', (tester) async {
+        await openPage(tester);
+        expect(toco(tester).size, MascotSize.large);
+        expect(find.textContaining('Soy Toco'), findsOneWidget);
+
+        await send(tester, '¿Qué es un adjetivo?');
+        expect(find.byType(MascotView), findsOneWidget);
+        expect(toco(tester).size, MascotSize.small);
+      });
+
+      testWidgets('su ánimo sigue al chat: espera, habla y se alegra si el niño acierta', (tester) async {
+        await openPage(tester);
+        expect(toco(tester).mood.activity, MascotActivity.idle);
+        await send(tester, '¿Qué es un adjetivo?');
+        expect(toco(tester).mood, const MascotMood(MascotActivity.idle));
+
+        // Al tocar la pregunta del tutor, Toco escucha.
+        await tester.tap(questionButton);
+        await tester.pumpAndSettle();
+        expect(toco(tester).mood.activity, MascotActivity.listening);
+
+        engine.pieces = ['¡Muy bien! ', 'Ahora dime: ¿y el plural?'];
+        await send(tester, 'grande');
+        expect(toco(tester).mood, const MascotMood(MascotActivity.idle, MascotEmotion.happy));
+      });
+
+      testWidgets('con el teclado abierto es pequeño aunque el chat esté vacío', (tester) async {
+        await openPage(tester);
+        expect(toco(tester).size, MascotSize.large);
+        tester.view.viewInsets = const FakeViewPadding(bottom: 400);
+        addTearDown(tester.view.resetViewInsets);
+        await tester.pumpAndSettle();
+        expect(toco(tester).size, MascotSize.small);
+      });
+
+      testWidgets('el padre puede apagarla: no queda rastro de Toco', (tester) async {
+        final c = await openPage(tester);
+        await c.read(mascotEnabledProvider.notifier).set(false);
+        await tester.pumpAndSettle();
+        expect(find.byType(MascotView), findsNothing);
+        // El chat sigue funcionando.
+        await send(tester, '¿Qué es un adjetivo?');
+        expect(questionButton, findsOneWidget);
+      });
     });
   });
 

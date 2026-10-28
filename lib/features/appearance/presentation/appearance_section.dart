@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_mode_controller.dart';
+import '../../mascot/application/mascot_settings.dart';
 
 /// Seccion "Apariencia" del panel: claro, oscuro o seguir el dispositivo.
 class AppearanceSection extends ConsumerWidget {
@@ -76,6 +77,19 @@ class AppearanceSection extends ConsumerWidget {
                   ),
               ],
             ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: SwitchListTile(
+            secondary: const Icon(Icons.flutter_dash_rounded),
+            title: const Text('Mostrar la mascota'),
+            subtitle: const Text(
+              'Toco, el tocororo, acompaña al niño en el chat y reacciona mientras el tutor '
+              'piensa. Apágalo si el teléfono va lento o se calienta.',
+            ),
+            value: ref.watch(mascotEnabledProvider),
+            onChanged: (v) => ref.read(mascotEnabledProvider.notifier).set(v),
           ),
         ),
       ],

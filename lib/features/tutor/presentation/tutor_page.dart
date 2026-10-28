@@ -7,13 +7,16 @@ import '../../../core/responsive/max_content_width.dart';
 import '../../../core/utils/school_grade_calculator.dart';
 import '../../../core/widgets/offline_badge.dart';
 import '../../auth/application/session.dart';
+import '../../mascot/application/mascot_settings.dart';
+import '../../mascot/domain/mascot_mood.dart';
+import '../../mascot/presentation/mascot_view.dart';
 import '../../profiles/presentation/avatar_view.dart';
 import '../application/tutor_controller.dart';
 import '../domain/tutor_prompt.dart';
 import '../domain/tutor_source.dart';
 
-/// Chat con el tutor. La version actual es funcional pero sencilla: el diseno
-/// infantil definitivo (burbujas, animaciones) llega mas adelante.
+/// Chat con el tutor, acompanado de Toco, la mascota: grande al saludar y
+/// mientras el modelo piensa, pequena junto al nombre mientras se lee.
 class TutorPage extends ConsumerStatefulWidget {
   const TutorPage({super.key});
 
@@ -90,6 +93,18 @@ class _TutorPageState extends ConsumerState<TutorPage> {
 
     final grade = child?.gradeAt(ref.read(clockProvider)());
     final ready = tutor.status == TutorStatus.ready;
+    final mascotOn = ref.watch(mascotEnabledProvider);
+    final mood = moodFor(tutor, replying: _replyingTo != null && !tutor.generating);
+    // Grande al saludar, mientras carga y mientras espera la primera palabra;
+    // pequena el resto. Con el teclado abierto o en pantallas bajas, siempre
+    // pequena para no quitar sitio al chat.
+    final screen = MediaQuery.sizeOf(context);
+    final roomy = MediaQuery.viewInsetsOf(context).bottom == 0 && screen.height >= 500;
+    final waiting = mood.activity == MascotActivity.thinking;
+    final bigMascot = mascotOn &&
+        roomy &&
+        (!ready || tutor.messages.isEmpty || waiting);
+    final bigHeight = (screen.height * 0.24).clamp(150.0, 230.0);
 
     return Scaffold(
       appBar: AppBar(
@@ -120,9 +135,26 @@ class _TutorPageState extends ConsumerState<TutorPage> {
                               ],
                             ),
                           ),
+                          if (mascotOn && !bigMascot)
+                            MascotView(mood: mood, height: 60, size: MascotSize.small),
                         ],
                       ),
                     ),
+                    if (mascotOn)
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeOut,
+                        alignment: Alignment.topCenter,
+                        // Al encoger o crecer la mascota la lista cambia de alto:
+                        // se vuelve al final para que la ultima pregunta se vea.
+                        onEnd: _scrollToEnd,
+                        child: bigMascot
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: MascotView(mood: mood, height: bigHeight),
+                              )
+                            : const SizedBox(width: double.infinity),
+                      ),
                     Expanded(child: _body(context, tutor)),
                     if (ready && _replyingTo != null && !tutor.generating)
                       _ReplyBanner(
@@ -194,7 +226,7 @@ class _TutorPageState extends ConsumerState<TutorPage> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
-                'Pregúntame lo que quieras aprender de tus libros.',
+                'Soy Toco, tu tutor. Pregúntame lo que quieras aprender de tus libros.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleMedium,
               ),

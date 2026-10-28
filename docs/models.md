@@ -44,6 +44,9 @@ turno de cada sesión paga además ~8 s para construir el prefijo (8,5 MB de cac
 Cuando el niño contesta, el 3B valora la respuesta y corrige; con "no sé" da una pista. Su límite: las
 pistas y preguntas de seguimiento a veces son flojas o demasiado avanzadas para el grado.
 
+La mascota ([mascota.md](mascota.md)) no cambia estos tiempos: con y sin ella el primer token tarda lo mismo
+(diferencia < 3 %).
+
 ## Dónde copiarlos
 
 `Android/data/com.inocencia.app/files/` (almacenamiento interno o tarjeta SD). No necesita permisos.

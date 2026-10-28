@@ -234,7 +234,7 @@ class TutorController extends Notifier<TutorState> {
       );
       await _generate(turns);
     } catch (e) {
-      _finish('Ups, algo salió mal y no pude responder. Inténtalo de nuevo.', save: false);
+      _finish(TutorPrompt.errorText, save: false);
     }
   }
 
@@ -297,7 +297,7 @@ class TutorController extends Notifier<TutorState> {
       onError: (Object e) {
         report('error ($e)');
         _finish(
-          buf.isEmpty ? 'No pude generar una respuesta. Inténtalo de nuevo.' : buf.toString().trim(),
+          buf.isEmpty ? TutorPrompt.emptyAnswerText : buf.toString().trim(),
           save: buf.isNotEmpty,
         );
         if (!done.isCompleted) done.complete();
@@ -306,7 +306,7 @@ class TutorController extends Notifier<TutorState> {
         report('fin');
         final text = buf.toString().trim();
         _finish(
-          text.isEmpty ? 'No pude generar una respuesta. Inténtalo de nuevo.' : text,
+          text.isEmpty ? TutorPrompt.emptyAnswerText : text,
           save: text.isNotEmpty,
         );
         if (!done.isCompleted) done.complete();

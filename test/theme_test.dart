@@ -11,6 +11,7 @@ import 'package:inocencia/core/security/pin_hasher.dart';
 import 'package:inocencia/core/storage/app_database.dart';
 import 'package:inocencia/core/theme/app_theme.dart';
 import 'package:inocencia/core/theme/theme_mode_controller.dart';
+import 'package:inocencia/features/mascot/application/mascot_settings.dart';
 import 'package:inocencia/features/auth/application/session.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -174,6 +175,33 @@ void main() {
       await tester.pumpAndSettle();
       expect(c.read(themeModeProvider), ThemeMode.system);
       expect(current(tester), Brightness.light);
+    });
+
+    testWidgets('el padre apaga y enciende la mascota desde Apariencia, y se recuerda', (tester) async {
+      final c = await boot(tester);
+      expect(c.read(mascotEnabledProvider), isTrue);
+      c.read(sessionProvider.notifier).unlockParent();
+      c.read(routerProvider).go('/admin');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Apariencia'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mostrar la mascota'), findsOneWidget);
+      await tester.ensureVisible(find.text('Mostrar la mascota'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mostrar la mascota'));
+      await tester.pumpAndSettle();
+      expect(c.read(mascotEnabledProvider), isFalse);
+      expect(c.read(sharedPreferencesProvider).getBool('mascot_enabled'), isFalse);
+
+      await tester.tap(find.text('Mostrar la mascota'));
+      await tester.pumpAndSettle();
+      expect(c.read(mascotEnabledProvider), isTrue);
+    });
+
+    testWidgets('si el padre la apagó, arranca apagada', (tester) async {
+      final c = await boot(tester, prefs: {'mascot_enabled': false});
+      expect(c.read(mascotEnabledProvider), isFalse);
     });
   });
 }
