@@ -56,11 +56,13 @@ class LibraryRepositoryImpl implements LibraryRepository {
 
   LibraryBook _toBook(_Meta m, List<_Meta> siblings, String? path) {
     // Dos libros de la misma asignatura y tipo en un grado (p. ej. `6to_esp` y
-    // `6to_lengua`) se distinguen por el nombre del archivo.
-    final clash = siblings.where((s) => s.baseTitle == m.baseTitle).length > 1;
+    // `6to_lengua`) se numeran por el orden de su nombre de archivo: el nombre
+    // del archivo no dice nada a un nino ("Geografia (ca geografia)").
+    final same = [for (final s in siblings) if (s.baseTitle == m.baseTitle) s.id]..sort();
+    final title = same.length > 1 ? '${m.baseTitle} ${same.indexOf(m.id) + 1}' : m.baseTitle;
     return LibraryBook(
       id: m.id,
-      title: clash ? '${m.baseTitle} (${m.variant})' : m.baseTitle,
+      title: title,
       subject: m.subject,
       kind: m.kind,
       grades: m.grades,
@@ -102,7 +104,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
       byBook[id] = _Meta(
         id: id,
         subject: r['subject'] as String,
-        kind: _guessKind(id),
+        kind: _kindFor(id, _guessKind(id)),
         grades: [...?prev?.grades, r['grade'] as int],
         pages: (r['pages'] as int?) ?? prev?.pages ?? 0,
       );
@@ -142,13 +144,16 @@ class _Meta {
     required this.pages,
   });
 
-  factory _Meta.fromJson(Map<String, Object?> j) => _Meta(
-        id: p.basenameWithoutExtension(j['file'] as String),
+  factory _Meta.fromJson(Map<String, Object?> j) {
+    final id = p.basenameWithoutExtension(j['file'] as String);
+    return _Meta(
+        id: id,
         subject: j['subject'] as String? ?? '',
-        kind: j['kind'] as String? ?? 'Libro',
+        kind: _kindFor(id, j['kind'] as String? ?? 'Libro'),
         grades: [for (final g in (j['grades'] as List<Object?>? ?? const [])) g as int],
         pages: j['pages'] as int? ?? 0,
       );
+  }
 
   final String id;
   final String subject;
@@ -157,9 +162,9 @@ class _Meta {
   final int pages;
 
   String get baseTitle => kind == 'Cuaderno' ? 'Cuaderno · $subject' : subject;
-
-  /// El nombre del archivo sin el grado: `6to_esp` -> `esp`.
-  String get variant => id
-      .replaceFirst(RegExp(r'^\d(ro|do|to)_(\d(ro|do|to)_)?'), '')
-      .replaceAll(RegExp(r'[_-]+'), ' ');
 }
+
+/// Los cuadernos de actividades (`ca_`) tambien se leen como cuadernos, aunque la
+/// base los marque como libros.
+String _kindFor(String id, String kind) =>
+    RegExp(r'(^|_)ca_').hasMatch(id) ? 'Cuaderno' : kind;

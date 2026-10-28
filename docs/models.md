@@ -49,6 +49,10 @@ pistas y preguntas de seguimiento a veces son flojas o demasiado avanzadas para 
 `Android/data/com.inocencia.app/files/` (almacenamiento interno o tarjeta SD). No necesita permisos.
 Si hay varios `.gguf`, el botón **Detectar** pregunta cuál usar. Esa carpeta se borra al desinstalar la app.
 
+## Libros para leer
+
+Los PDF originales se copian a `libros/` junto al modelo y se detectan solos: ver [libros.md](libros.md).
+
 ## Base de libros
 
 `build/knowledge.db` se genera con `tools/knowledge_builder/build_knowledge_db.py` desde `libros/`

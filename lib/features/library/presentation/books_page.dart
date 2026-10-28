@@ -158,6 +158,7 @@ class _BookTile extends StatelessWidget {
                           const SizedBox(height: 8),
                           LinearProgressIndicator(
                             value: (page! / (book.pages == 0 ? page! : book.pages)).clamp(0.0, 1.0),
+                            backgroundColor: scheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ],

@@ -104,31 +104,10 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
 
   Future<void> _askPage() async {
     final total = _book?.pages ?? (_controller.isReady ? _controller.pageCount : null);
-    final text = TextEditingController();
     final go = await showDialog<int>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Ir a la página'),
-        content: TextField(
-          controller: text,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: 'Número de página',
-            helperText: total == null ? null : 'Del 1 al $total',
-          ),
-          onSubmitted: (v) => Navigator.pop(ctx, int.tryParse(v)),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, int.tryParse(text.text)),
-            child: const Text('Ir'),
-          ),
-        ],
-      ),
+      builder: (_) => _GoToPageDialog(total: total),
     );
-    text.dispose();
     if (go != null) await _jumpTo(go);
   }
 
@@ -260,4 +239,50 @@ class _Missing extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// "Ir a la pagina". Es un widget propio para que el controlador del campo se
+/// destruya con el dialogo: si se destruyera al cerrarlo, la animacion de salida
+/// seguiria usandolo.
+class _GoToPageDialog extends StatefulWidget {
+  const _GoToPageDialog({required this.total});
+
+  final int? total;
+
+  @override
+  State<_GoToPageDialog> createState() => _GoToPageDialogState();
+}
+
+class _GoToPageDialogState extends State<_GoToPageDialog> {
+  final _text = TextEditingController();
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Ir a la página'),
+      content: TextField(
+        controller: _text,
+        autofocus: true,
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          labelText: 'Número de página',
+          helperText: widget.total == null ? null : 'Del 1 al ${widget.total}',
+        ),
+        onSubmitted: (v) => Navigator.pop(context, int.tryParse(v)),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, int.tryParse(_text.text)),
+          child: const Text('Ir'),
+        ),
+      ],
+    );
+  }
 }

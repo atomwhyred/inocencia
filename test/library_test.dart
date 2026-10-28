@@ -86,15 +86,23 @@ void main() {
       expect(await repo().booksForGrade(3), isEmpty);
     });
 
-    test('distingue por el nombre del archivo dos libros iguales del mismo grado', () async {
+    test('dos libros iguales del mismo grado se numeran; uno solo no lleva número', () async {
       makeKnowledge();
       final titles = {for (final b in await repo().booksForGrade(6)) b.id: b.title};
-      expect(titles['6to_esp'], 'Español (esp)');
-      expect(titles['6to_lengua'], 'Español (lengua)');
+      expect(titles['6to_esp'], 'Español 1');
+      expect(titles['6to_lengua'], 'Español 2');
       expect(titles['6to_matematica'], 'Matemática');
       expect(titles['6to_ct_matematica'], 'Cuaderno · Matemática');
-      // En 5.º solo hay uno: sin sufijo.
+      // En 5.º solo hay uno: sin número.
       expect((await repo().booksForGrade(5)).single.title, 'Español');
+    });
+
+    test('un cuaderno de actividades (ca_) se trata como cuaderno', () async {
+      makeKnowledge();
+      final b = (await repo().booksForGrade(1)).single;
+      expect(b.id, '1ro_2do_ca_el_mundo');
+      expect(b.isNotebook, isTrue);
+      expect(b.title, 'Cuaderno · El mundo en que vivimos');
     });
 
     test('un libro está disponible si su PDF está en libros/ o en la carpeta de la app', () async {

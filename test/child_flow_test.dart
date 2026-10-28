@@ -340,4 +340,44 @@ void main() {
     expect(find.text('Página 2 de 3'), findsOneWidget);
   });
 
+
+  testWidgets('"Ir a la página" lleva a la página escrita, se ajusta al rango y se puede cancelar', (tester) async {
+    await boot(tester);
+    container.read(sessionProvider.notifier).selectChild(leo);
+    container.read(routerProvider).go('/books/6to_matematica');
+    await tester.pump();
+    await settle(tester, 900);
+    expect(find.text('Página 1 de 3'), findsOneWidget);
+
+    Future<void> goTo(String text) async {
+      await tester.tap(find.text('Página ${viewer.last!.page} de 3'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('Ir a la página'), findsOneWidget);
+      expect(find.text('Del 1 al 3'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), text);
+      await tester.tap(find.text('Ir'));
+      // Deja terminar la animacion de salida del dialogo (aqui fallaba).
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+
+    await goTo('3');
+    expect(tester.takeException(), isNull);
+    expect(find.text('Página 3 de 3'), findsOneWidget);
+
+    await goTo('999'); // fuera del libro: se queda en la ultima
+    expect(find.text('Página 3 de 3'), findsOneWidget);
+
+    await goTo('2');
+    expect(find.text('Página 2 de 3'), findsOneWidget);
+
+    // Cancelar no cambia nada.
+    await tester.tap(find.text('Página 2 de 3'));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Cancelar'));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(tester.takeException(), isNull);
+    expect(find.text('Página 2 de 3'), findsOneWidget);
+  });
+
 }
