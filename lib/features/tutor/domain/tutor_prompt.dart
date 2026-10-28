@@ -64,6 +64,27 @@ Reglas:
     return i < 0 ? -1 : i + 1;
   }
 
+  /// La pregunta con la que el tutor cierra su mensaje, para ofrecerla como
+  /// boton y que el nino la conteste. `null` si el mensaje no acaba en pregunta.
+  /// Va desde el `¿` anterior al ultimo `?`; si el modelo olvido el `¿`, desde el
+  /// ultimo limite de frase.
+  static String? lastQuestion(String text) {
+    final t = text.trim();
+    final end = t.lastIndexOf('?');
+    if (end < 0) return null;
+    // Solo cuenta si la pregunta es lo ultimo (se admiten comillas de cierre).
+    if (t.substring(end + 1).replaceAll(RegExp('["\'”»)\\s]'), '').isNotEmpty) return null;
+    var start = t.lastIndexOf('¿', end);
+    // Un `¿` de una pregunta anterior no vale: entre medias hay otro `?`.
+    if (start >= 0 && t.substring(start, end).contains('?')) start = -1;
+    if (start < 0) {
+      final boundary = t.substring(0, end).lastIndexOf(RegExp(r'[.!?\n]'));
+      start = boundary + 1; // 0 si no hay limite
+    }
+    final q = t.substring(start, end + 1).trim();
+    return q.length < 3 ? null : q;
+  }
+
   static const _maxAnswerWords = 12;
 
   /// Palabras con las que un nino pregunta, pide algo o encadena otra duda

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inocencia/core/di/providers.dart';
@@ -19,6 +20,7 @@ import 'package:inocencia/features/tutor/application/tutor_controller.dart';
 import 'package:inocencia/features/tutor/data/tutor_history_repository_impl.dart';
 import 'package:inocencia/features/tutor/domain/tutor_engine.dart';
 import 'package:inocencia/features/tutor/domain/tutor_prompt.dart';
+import 'package:inocencia/features/tutor/presentation/tutor_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqlite3/sqlite3.dart';
 
@@ -291,6 +293,44 @@ void main() {
     test('endOfFirstQuestion corta justo tras la primera pregunta', () {
       expect(TutorPrompt.endOfFirstQuestion('Muy bien. ¿Qué más? ¿Y esto?'), 'Muy bien. ¿Qué más?'.length);
       expect(TutorPrompt.endOfFirstQuestion('Aun sin pregunta'), -1);
+    });
+
+    group('lastQuestion', () {
+      test('devuelve la pregunta con la que acaba el mensaje', () {
+        expect(
+          TutorPrompt.lastQuestion('Dice cómo es algo. ¿Cuál es el adjetivo de "casa grande"?'),
+          '¿Cuál es el adjetivo de "casa grande"?',
+        );
+        expect(TutorPrompt.lastQuestion('¿Qué es un adjetivo?'), '¿Qué es un adjetivo?');
+      });
+
+      test('con varias preguntas, la última', () {
+        expect(TutorPrompt.lastQuestion('¿Lo viste? Piénsalo. ¿Cuántas hojas tiene?'), '¿Cuántas hojas tiene?');
+        expect(TutorPrompt.lastQuestion('¿Lo viste? ¿Y el tallo?'), '¿Y el tallo?');
+      });
+
+      test('si el modelo olvidó el ¿, corta en el último límite de frase', () {
+        expect(
+          TutorPrompt.lastQuestion('Las hojas son verdes. Qué partes tienen clorofila?'),
+          'Qué partes tienen clorofila?',
+        );
+        expect(TutorPrompt.lastQuestion('Qué es un verbo?'), 'Qué es un verbo?');
+      });
+
+      test('un ¿ de una pregunta anterior no se arrastra', () {
+        expect(TutorPrompt.lastQuestion('¿Lo viste? Dime cuál es?'), 'Dime cuál es?');
+      });
+
+      test('sin pregunta final no hay botón', () {
+        expect(TutorPrompt.lastQuestion('Los adjetivos dicen cómo es algo.'), isNull);
+        expect(TutorPrompt.lastQuestion('¿Lo viste? Pues ya lo sabes.'), isNull);
+        expect(TutorPrompt.lastQuestion(''), isNull);
+        expect(TutorPrompt.lastQuestion('?'), isNull);
+      });
+
+      test('admite comillas o espacios tras el signo de cierre', () {
+        expect(TutorPrompt.lastQuestion('Piensa: "¿Qué es un verbo?" '), '¿Qué es un verbo?');
+      });
     });
 
     test('solo conserva los ultimos turnos y recorta los largos', () {
@@ -602,6 +642,22 @@ void main() {
       expect(engine.lastTurns!.last.content, contains('Respuesta del niño a tu pregunta: grande'));
     });
 
+    test('con answering se trata como respuesta aunque no lo parezca', () async {
+      final c = await make();
+      final ctl = c.read(tutorControllerProvider.notifier);
+      await ctl.prepare();
+      engine.pieces = ['Dice cómo es algo. ', '¿Cuál es el adjetivo?'];
+      await ctl.ask('¿Qué es un adjetivo?', grade: 4);
+      const long = 'creo que es la palabra grande porque dice cómo es la casa, ¿o me equivoco con la otra?';
+      // Sin la marca, una frase con "?" se toma por una pregunta nueva.
+      await ctl.ask(long, grade: 4);
+      expect(engine.lastTurns!.last.content, contains('Pregunta del niño: $long'));
+
+      await ctl.ask(long, grade: 4, answering: true);
+      expect(engine.lastTurns!.last.content, contains('Respuesta del niño a tu pregunta: $long'));
+      expect(engine.lastTurns!.last.content, contains('Valora su respuesta'));
+    });
+
     test('un error del motor deja un mensaje amable y no deja la UI "escribiendo"', () async {
       final c = await make();
       final ctl = c.read(tutorControllerProvider.notifier);
@@ -792,6 +848,97 @@ void main() {
       final last = c.read(tutorControllerProvider).messages.last;
       expect(last.text, 'Los adjetivos dicen cómo es algo.');
       expect(last.streaming, isFalse);
+    });
+  });
+
+
+  group('TutorPage: la pregunta del tutor como botón', () {
+    late AppDatabase db;
+    late _FakeEngine engine;
+
+    Future<ProviderContainer> openPage(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(500, 1100);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      SharedPreferences.setMockInitialValues({});
+      db = AppDatabase(NativeDatabase.memory());
+      final leo = await ChildProfileRepositoryImpl(db, const PinHasher(iterations: 10)).create(
+        ChildProfileInput(name: 'Leo', avatar: 'emoji:🦊', birthDate: DateTime(2015, 3, 1)),
+      );
+      engine = _FakeEngine()..pieces = ['Dice cómo es algo. ', '¿Cuál es el adjetivo de "casa grande"?'];
+      final c = ProviderContainer(overrides: [
+        sharedPreferencesProvider.overrideWithValue(await SharedPreferences.getInstance()),
+        appDatabaseProvider.overrideWithValue(db),
+        externalFilesRepositoryProvider.overrideWithValue(_FakeFiles()),
+        tutorEngineProvider.overrideWithValue(engine),
+        knowledgeRepositoryFactoryProvider.overrideWithValue((_) => _FakeKnowledge(const [_chunk])),
+      ]);
+      c.read(sessionProvider.notifier).selectChild(leo);
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox());
+        c.dispose();
+        await tester.runAsync(db.close);
+      });
+      await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: const MaterialApp(home: TutorPage()),
+      ));
+      await tester.pumpAndSettle();
+      return c;
+    }
+
+    Future<void> send(WidgetTester tester, String text) async {
+      await tester.enterText(find.byType(TextField), text);
+      await tester.tap(find.byIcon(Icons.send_rounded));
+      await tester.pumpAndSettle();
+    }
+
+    final questionButton = find.widgetWithText(FilledButton, '¿Cuál es el adjetivo de "casa grande"?');
+
+    testWidgets('la pregunta aparece como botón bajo la última respuesta; tocarla prepara la respuesta',
+        (tester) async {
+      await openPage(tester);
+      expect(questionButton, findsNothing);
+      await send(tester, '¿Qué es un adjetivo?');
+
+      expect(questionButton, findsOneWidget);
+      expect(find.textContaining('Respondiendo a:'), findsNothing);
+
+      await tester.tap(questionButton);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Respondiendo a:'), findsOneWidget);
+      expect(find.text('Escribe tu respuesta…'), findsOneWidget);
+      expect(tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus, isTrue);
+      // Tocarla no envia nada: solo se ha preguntado una vez.
+      expect(engine.generateCalls, 1);
+
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Respondiendo a:'), findsNothing);
+      expect(find.text('Escribe tu pregunta…'), findsOneWidget);
+    });
+
+    testWidgets('lo que se escribe tras tocarla viaja como respuesta y el banner se quita', (tester) async {
+      await openPage(tester);
+      await send(tester, '¿Qué es un adjetivo?');
+      await tester.tap(questionButton);
+      await tester.pumpAndSettle();
+
+      const answer = 'creo que es grande, ¿o es casa?';
+      await send(tester, answer);
+
+      expect(engine.generateCalls, 2);
+      expect(engine.lastTurns!.last.content, contains('Respuesta del niño a tu pregunta: $answer'));
+      expect(find.textContaining('Respondiendo a:'), findsNothing);
+      // Solo la última respuesta del tutor ofrece su botón.
+      expect(find.byIcon(Icons.touch_app_rounded), findsOneWidget);
+    });
+
+    testWidgets('sin pregunta al final no hay botón', (tester) async {
+      await openPage(tester);
+      engine.pieces = ['Los adjetivos dicen cómo es algo.'];
+      await send(tester, '¿Qué es un adjetivo?');
+      expect(find.byIcon(Icons.touch_app_rounded), findsNothing);
     });
   });
 

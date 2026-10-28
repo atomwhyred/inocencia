@@ -9,6 +9,7 @@ import '../../../core/widgets/offline_badge.dart';
 import '../../auth/application/session.dart';
 import '../../profiles/presentation/avatar_view.dart';
 import '../application/tutor_controller.dart';
+import '../domain/tutor_prompt.dart';
 
 /// Chat con el tutor. La version actual es funcional pero sencilla: el diseno
 /// infantil definitivo (burbujas, animaciones) llega mas adelante.
@@ -22,6 +23,11 @@ class TutorPage extends ConsumerStatefulWidget {
 class _TutorPageState extends ConsumerState<TutorPage> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
+  final _focus = FocusNode();
+
+  /// Pregunta del tutor que el nino toco para contestarla: se muestra sobre la
+  /// caja de texto y su siguiente mensaje se trata como respuesta.
+  String? _replyingTo;
 
   @override
   void initState() {
@@ -34,14 +40,23 @@ class _TutorPageState extends ConsumerState<TutorPage> {
   void dispose() {
     _input.dispose();
     _scroll.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
   void _send(int grade) {
     final text = _input.text;
     if (text.trim().isEmpty) return;
+    final answering = _replyingTo != null;
     _input.clear();
-    ref.read(tutorControllerProvider.notifier).ask(text, grade: grade);
+    setState(() => _replyingTo = null);
+    ref.read(tutorControllerProvider.notifier).ask(text, grade: grade, answering: answering);
+  }
+
+  /// Toca la pregunta del tutor: queda a la vista y se abre el teclado.
+  void _answer(String question) {
+    setState(() => _replyingTo = question);
+    _focus.requestFocus();
   }
 
   void _scrollToEnd({bool animate = true}) {
@@ -114,8 +129,15 @@ class _TutorPageState extends ConsumerState<TutorPage> {
                       ),
                     ),
                     Expanded(child: _body(context, tutor)),
+                    if (ready && _replyingTo != null && !tutor.generating)
+                      _ReplyBanner(
+                        question: _replyingTo!,
+                        onCancel: () => setState(() => _replyingTo = null),
+                      ),
                     if (ready) _InputBar(
                       controller: _input,
+                      focusNode: _focus,
+                      hint: _replyingTo == null ? 'Escribe tu pregunta…' : 'Escribe tu respuesta…',
                       generating: tutor.generating,
                       onSend: () => _send(grade),
                       onStop: () => ref.read(tutorControllerProvider.notifier).stop(),
@@ -188,7 +210,26 @@ class _TutorPageState extends ConsumerState<TutorPage> {
           controller: _scroll,
           padding: const EdgeInsets.all(16),
           itemCount: tutor.messages.length,
-          itemBuilder: (_, i) => _Bubble(message: tutor.messages[i]),
+          itemBuilder: (_, i) {
+            final message = tutor.messages[i];
+            // Solo la ultima respuesta del tutor ofrece su pregunta como boton.
+            final isLast = i == tutor.messages.length - 1;
+            final question = isLast && !message.fromUser && !message.streaming
+                ? TutorPrompt.lastQuestion(message.text)
+                : null;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Bubble(message: message),
+                if (question != null)
+                  _QuestionButton(
+                    question: question,
+                    selected: _replyingTo == question,
+                    onTap: () => _answer(question),
+                  ),
+              ],
+            );
+          },
         );
     }
   }
@@ -321,15 +362,107 @@ class _ThinkingState extends State<_Thinking> with SingleTickerProviderStateMixi
   static double _bounce(double t) => t < 0.4 ? (1 - (t / 0.2 - 1).abs()).clamp(0.0, 1.0) : 0;
 }
 
+/// La pregunta con la que el tutor cierra su mensaje, como boton grande: al
+/// tocarla se prepara la respuesta del nino (no se envia nada).
+class _QuestionButton extends StatelessWidget {
+  const _QuestionButton({required this.question, required this.selected, required this.onTap});
+
+  final String question;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.85),
+        child: Semantics(
+          button: true,
+          label: 'Responder a: $question',
+          child: ExcludeSemantics(
+            child: FilledButton.tonal(
+              onPressed: onTap,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 52),
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                backgroundColor: selected ? scheme.primary : null,
+                foregroundColor: selected ? scheme.onPrimary : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(selected ? Icons.edit_rounded : Icons.touch_app_rounded, size: 20),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(question, style: const TextStyle(fontSize: 16, height: 1.25)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Recuerda a que pregunta se esta contestando, con una ✕ para dejarlo.
+class _ReplyBanner extends StatelessWidget {
+  const _ReplyBanner({required this.question, required this.onCancel});
+
+  final String question;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+      padding: const EdgeInsets.fromLTRB(14, 6, 4, 6),
+      decoration: BoxDecoration(
+        color: scheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text.rich(
+              TextSpan(children: [
+                const TextSpan(text: 'Respondiendo a: ', style: TextStyle(fontWeight: FontWeight.w700)),
+                TextSpan(text: question),
+              ]),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: scheme.onSecondaryContainer),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Quitar',
+            onPressed: onCancel,
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _InputBar extends StatelessWidget {
   const _InputBar({
     required this.controller,
+    required this.focusNode,
+    required this.hint,
     required this.generating,
     required this.onSend,
     required this.onStop,
   });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
+  final String hint;
   final bool generating;
   final VoidCallback onSend;
   final VoidCallback onStop;
@@ -343,13 +476,14 @@ class _InputBar extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: controller,
+              focusNode: focusNode,
               enabled: !generating,
               textInputAction: TextInputAction.send,
               textCapitalization: TextCapitalization.sentences,
               minLines: 1,
               maxLines: 3,
               onSubmitted: (_) => onSend(),
-              decoration: const InputDecoration(hintText: 'Escribe tu pregunta…'),
+              decoration: InputDecoration(hintText: hint),
             ),
           ),
           const SizedBox(width: 8),

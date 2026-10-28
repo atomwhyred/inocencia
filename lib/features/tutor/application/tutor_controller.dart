@@ -189,8 +189,10 @@ class TutorController extends Notifier<TutorState> {
   }
 
   /// Pregunta del nino. [grade] es el grado del perfil activo: solo se
-  /// consultan los libros de ese grado.
-  Future<void> ask(String text, {required int grade}) async {
+  /// consultan los libros de ese grado. Con [answering] el nino contesta a la
+  /// pregunta del tutor (la toco como boton): se trata como respuesta sin
+  /// depender de la heuristica, que falla con respuestas largas.
+  Future<void> ask(String text, {required int grade, bool answering = false}) async {
     final question = text.trim();
     if (question.isEmpty || state.status != TutorStatus.ready || state.generating) return;
 
@@ -208,12 +210,12 @@ class TutorController extends Notifier<TutorState> {
       // Una respuesta o "¿y el plural?" no tienen terminos propios suficientes
       // para buscar: se apoyan en la pregunta anterior.
       // Una respuesta se ancla al tema de la pregunta, no a la respuesta anterior.
-      final answering = TutorPrompt.isAnswer(history, question);
+      final isAnswer = answering || TutorPrompt.isAnswer(history, question);
       final anchor = _topic ?? previousQuestion;
-      final query = (answering || _isFollowUp(question)) && anchor != null
+      final query = (isAnswer || _isFollowUp(question)) && anchor != null
           ? '$anchor $question'
           : question;
-      if (!answering) _topic = query;
+      if (!isAnswer) _topic = query;
       final chunks = await _knowledge!.search(query, grade: grade);
 
       if (chunks.isEmpty) {
@@ -228,7 +230,7 @@ class TutorController extends Notifier<TutorState> {
         chunks: chunks,
         history: history,
         question: question,
-        answering: answering,
+        answering: isAnswer,
       );
       await _generate(turns);
     } catch (e) {
