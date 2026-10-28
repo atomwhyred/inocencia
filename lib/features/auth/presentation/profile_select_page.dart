@@ -19,7 +19,7 @@ class ProfileSelectPage extends ConsumerWidget {
       context.push('/child-pin/${child.id}');
     } else {
       ref.read(sessionProvider.notifier).selectChild(child.id);
-      context.go('/tutor');
+      context.go('/home');
     }
   }
 

@@ -10,6 +10,7 @@ import '../../auth/application/session.dart';
 import '../../profiles/presentation/avatar_view.dart';
 import '../application/tutor_controller.dart';
 import '../domain/tutor_prompt.dart';
+import '../domain/tutor_source.dart';
 
 /// Chat con el tutor. La version actual es funcional pero sencilla: el diseno
 /// infantil definitivo (burbujas, animaciones) llega mas adelante.
@@ -93,14 +94,8 @@ class _TutorPageState extends ConsumerState<TutorPage> {
     return Scaffold(
       appBar: AppBar(
         title: const OfflineBadge(compact: true),
-        leading: IconButton(
-          tooltip: 'Cambiar de perfil',
-          icon: const Icon(Icons.swap_horiz_rounded),
-          onPressed: () {
-            ref.read(sessionProvider.notifier).clearChild();
-            context.go('/');
-          },
-        ),
+        // El inicio del nino es la pantalla anterior; la flecha vuelve a el.
+        leading: BackButton(onPressed: () => context.canPop() ? context.pop() : context.go('/home')),
       ),
       body: SafeArea(
         child: child == null || grade == null
@@ -269,21 +264,54 @@ class _Bubble extends StatelessWidget {
               ),
             if (message.sources.isNotEmpty && !message.streaming) ...[
               const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.menu_book_rounded, size: 14, color: scheme.onSurfaceVariant),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      message.sources.map((s) => s.label).join('\n'),
-                      style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
-                    ),
-                  ),
-                ],
-              ),
+              for (final source in message.sources) _SourceChip(source: source),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Un libro y pagina en los que se apoya el tutor. Al tocarlo se abre el libro en
+/// esa pagina (si el PDF esta en el telefono).
+class _SourceChip extends StatelessWidget {
+  const _SourceChip({required this.source});
+
+  final TutorSource source;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final book = source.book;
+    final page = source.page;
+    final style = TextStyle(fontSize: 13, color: scheme.onSurfaceVariant);
+    final label = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.menu_book_rounded, size: 16, color: scheme.primary),
+        const SizedBox(width: 6),
+        Flexible(child: Text(source.label, style: style)),
+        if (book != null) ...[
+          const SizedBox(width: 4),
+          Icon(Icons.open_in_new_rounded, size: 14, color: scheme.primary),
+        ],
+      ],
+    );
+    if (book == null) {
+      return Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: label);
+    }
+    return Semantics(
+      button: true,
+      label: 'Abrir ${source.label}',
+      child: ExcludeSemantics(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => context.push('/books/$book${page == null ? '' : '?page=$page'}'),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 40),
+            child: Align(alignment: Alignment.centerLeft, child: label),
+          ),
         ),
       ),
     );

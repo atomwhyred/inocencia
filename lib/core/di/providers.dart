@@ -4,6 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/external_data/data/external_files_repository_impl.dart';
 import '../../features/external_data/domain/external_files_repository.dart';
 import '../../features/external_data/domain/linked_file_status.dart';
+import '../../features/library/data/library_repository_impl.dart';
+import '../../features/library/data/reading_progress_repository_impl.dart';
+import '../../features/library/domain/library_repository.dart';
+import '../../features/library/domain/reading_progress_repository.dart';
 import '../../features/profiles/data/child_profile_repository_impl.dart';
 import '../../features/profiles/domain/child_profile.dart';
 import '../../features/profiles/domain/child_profile_repository.dart';
@@ -66,6 +70,16 @@ final childProfilesProvider = StreamProvider<List<ChildProfile>>(
 
 final tutorHistoryRepositoryProvider = Provider<TutorHistoryRepository>(
   (ref) => TutorHistoryRepositoryImpl(ref.watch(appDatabaseProvider)),
+);
+
+// --- Libros para leer ---
+
+final libraryRepositoryProvider = Provider<LibraryRepository>(
+  (ref) => LibraryRepositoryImpl(ref.watch(externalFilesRepositoryProvider)),
+);
+
+final readingProgressRepositoryProvider = Provider<ReadingProgressRepository>(
+  (ref) => ReadingProgressRepositoryImpl(ref.watch(appDatabaseProvider)),
 );
 
 // --- Archivos externos (modelo GGUF y base de conocimiento) ---

@@ -6,6 +6,8 @@ import 'package:path/path.dart' as p;
 import '../../../core/di/providers.dart';
 import '../../../core/utils/format_bytes.dart';
 import '../../../core/utils/school_grade_calculator.dart';
+import '../../library/application/library_providers.dart';
+import '../../library/domain/library_book.dart';
 import '../domain/linked_file_status.dart';
 import '../domain/model_recommendation.dart';
 import 'path_browser_page.dart';
@@ -133,6 +135,8 @@ class FilesSection extends ConsumerWidget {
                 onDetect: () => _detect(context, ref, _Kind.knowledge),
                 onUnlink: () => _store(ref, _Kind.knowledge, null),
               ),
+              const SizedBox(height: 12),
+              _BooksCard(knowledgeReady: s.knowledge.isReady),
             ],
           ),
         ),
@@ -143,6 +147,7 @@ class FilesSection extends ConsumerWidget {
             onPressed: () {
               ref.invalidate(linkedFilesStatusProvider);
               ref.invalidate(allFilesAccessProvider);
+              ref.invalidate(libraryStatusProvider);
             },
             icon: const Icon(Icons.refresh_rounded),
             label: const Text('Comprobar de nuevo'),
@@ -236,6 +241,71 @@ class ModelAdviceCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Libros para leer: los PDF originales (con imagenes y ejercicios) que el nino
+/// abre desde "Mis libros". Se copian a la carpeta `libros/` de la app.
+class _BooksCard extends ConsumerWidget {
+  const _BooksCard({required this.knowledgeReady});
+
+  final bool knowledgeReady;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final status = ref.watch(libraryStatusProvider);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.auto_stories_rounded),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Libros para leer (PDF)', style: theme.textTheme.titleMedium),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (!knowledgeReady)
+              const Text('Primero vincula la base de libros: de ella sale la lista de libros.')
+            else
+              status.when(
+                loading: () => const LinearProgressIndicator(),
+                error: (e, _) => Text('No se pudo comprobar: $e'),
+                data: (s) => _details(context, s),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _details(BuildContext context, LibraryStatus s) {
+    final complete = s.total > 0 && s.available == s.total;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          s.total == 0
+              ? 'La base de libros no tiene una lista de libros.'
+              : '${s.available} de ${s.total} libros están en este teléfono.',
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 4),
+        Text(complete
+            ? 'Los niños ya pueden leer todos sus libros desde "Mis libros".'
+            : 'Copia los PDF (con su nombre original, por ejemplo 6to_matematica.pdf) a esta carpeta. '
+                'No hay que vincularlos: se detectan solos.'),
+        const SizedBox(height: 8),
+        for (final f in s.folders)
+          SelectableText(f, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+      ],
     );
   }
 }

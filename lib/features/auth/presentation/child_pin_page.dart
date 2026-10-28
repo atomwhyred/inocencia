@@ -42,7 +42,7 @@ class ChildPinPage extends ConsumerWidget {
                           .verifyPin(child.id, pin),
                       onSuccess: () {
                         ref.read(sessionProvider.notifier).selectChild(child.id);
-                        context.go('/tutor');
+                        context.go('/home');
                       },
                     ),
             ),

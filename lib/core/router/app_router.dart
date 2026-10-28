@@ -8,6 +8,9 @@ import '../../features/auth/presentation/child_pin_page.dart';
 import '../../features/auth/presentation/parent_pin_page.dart';
 import '../../features/auth/presentation/profile_select_page.dart';
 import '../../features/external_data/presentation/path_browser_page.dart';
+import '../../features/home/presentation/home_page.dart';
+import '../../features/library/presentation/books_page.dart';
+import '../../features/library/presentation/reader_page.dart';
 import '../../features/profiles/presentation/profile_edit_page.dart';
 import '../../features/setup/presentation/setup_page.dart';
 import '../../features/tutor/presentation/tutor_page.dart';
@@ -34,7 +37,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (loc == '/setup' || loc == '/splash') return '/';
 
       if (loc.startsWith('/admin') && !session.parentUnlocked) return '/parent-pin';
-      if (loc == '/tutor' && session.activeChildId == null) return '/';
+      // Lo del nino (inicio, tutor y libros) exige haber elegido perfil.
+      final childOnly = loc == '/home' || loc == '/tutor' || loc.startsWith('/books');
+      if (childOnly && session.activeChildId == null) return '/';
       return null;
     },
     routes: [
@@ -50,7 +55,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) =>
             ChildPinPage(childId: int.parse(state.pathParameters['id']!)),
       ),
+      GoRoute(path: '/home', builder: (_, _) => const HomePage()),
       GoRoute(path: '/tutor', builder: (_, _) => const TutorPage()),
+      GoRoute(
+        path: '/books',
+        builder: (_, _) => const BooksPage(),
+        routes: [
+          GoRoute(
+            path: ':book',
+            builder: (_, state) => ReaderPage(
+              bookId: state.pathParameters['book']!,
+              page: int.tryParse(state.uri.queryParameters['page'] ?? ''),
+            ),
+          ),
+        ],
+      ),
       GoRoute(
         path: '/admin',
         builder: (_, _) => const AdminPage(),
