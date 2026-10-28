@@ -16,13 +16,29 @@ Descarga: Hugging Face, repositorios `Qwen/Qwen2.5-1.5B-Instruct-GGUF` y `Qwen/Q
 Medidas en un Pixel 6 (8 GB, Tensor, solo CPU). No hay mediciones en otros teléfonos.
 La recomendación de RAM del 3B es una estimación: 2,1 GB de modelo + contexto + Android.
 
-### Seguimiento con el 3B (Pixel 6, conversación de 4 turnos)
+### Seguimiento con el 3B (Pixel 6, conversación de 4 turnos desde frío)
 
-El primer token tarda ~33 s en el primer turno y sube ~6 s por turno (hasta ~53 s en el cuarto)
-porque el historial alarga el prompt. La respuesta se corta tras la primera pregunta (el modelo
-encadena 2-3 preguntas), lo que baja el total a ~38-60 s por turno. Cuando el niño contesta, el 3B
-valora la respuesta y corrige; con "no sé" da una pista. Su límite: las pistas y preguntas de
-seguimiento a veces son flojas o demasiado avanzadas para el grado.
+La latencia crece con los turnos por **calor**, no por el historial: el prompt casi no cambia
+(2471 → 2847 caracteres) pero los núcleos grandes bajan de ~1,45 a ~1,0 GHz y el estado térmico pasa a 1
+desde el turno 2. Reducir el historial no lo arregla; solo ayuda calcular menos por turno.
+
+Por eso el mensaje de sistema (~220 de ~750 tokens) se procesa **una sola vez** por sesión y grado
+(`LlamaWorker`, isolate propio con `Llama` directo) y cada turno carga ese estado de la caché en vez de
+reprocesarlo. Con `LlamaParent` no era posible: su `stop` llegaba decenas de tokens tarde y la caché
+guardaba texto inventado tras el prefijo.
+
+| Turno | Primer token antes → ahora | Total antes → ahora |
+|---|---|---|
+| 1 | 34,1 → 30,1 s | 39,2 → 35,7 s |
+| 2 | 41,4 → 30,2 s | 43,3 → 37,9 s |
+| 3 | 48,5 → 33,2 s | 54,8 → 41,5 s |
+| 4 | 54,5 → 39,5 s | 60,7 → 46,5 s |
+
+El total ya incluye cortar la respuesta tras la primera pregunta (el modelo encadena 2-3). El primer
+turno de cada sesión paga además ~8 s para construir el prefijo (8,5 MB de caché).
+
+Cuando el niño contesta, el 3B valora la respuesta y corrige; con "no sé" da una pista. Su límite: las
+pistas y preguntas de seguimiento a veces son flojas o demasiado avanzadas para el grado.
 
 ## Dónde copiarlos
 

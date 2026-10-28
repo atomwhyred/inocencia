@@ -208,9 +208,13 @@ class TutorController extends Notifier<TutorState> {
   List<String> _sources(List<KnowledgeChunk> chunks) =>
       {for (final c in chunks) TutorPrompt.sourceLabel(c)}.toList();
 
+  /// Marcador de una respuesta detenida antes de escribir nada. Se muestra al
+  /// nino pero no viaja al modelo: lo copiaria en su siguiente respuesta.
+  static const _stoppedMark = '…';
+
   List<ChatTurn> _historyTurns() => [
         for (final m in state.messages)
-          if (m.text.isNotEmpty && !m.streaming)
+          if (m.text.isNotEmpty && !m.streaming && (m.fromUser || m.text != _stoppedMark))
             ChatTurn(m.fromUser ? 'user' : 'assistant', m.text),
       ];
 
@@ -268,7 +272,7 @@ class TutorController extends Notifier<TutorState> {
     _sub = null;
     if (state.generating) {
       final partial = state.messages.last.text.trim();
-      _finish(partial.isEmpty ? '…' : partial);
+      _finish(partial.isEmpty ? _stoppedMark : partial);
     }
     final running = _running;
     if (running != null && !running.isCompleted) running.complete();

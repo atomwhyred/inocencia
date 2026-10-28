@@ -5,11 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 
 import '../domain/tutor_engine.dart';
+import 'llama_worker.dart';
 import 'native_backends.dart';
 import '../domain/tutor_prompt.dart';
 
 /// Motor local con llama.cpp (via `llama_cpp_dart`). El modelo vive en un
-/// isolate propio: la interfaz nunca se bloquea mientras genera.
+/// isolate propio ([LlamaWorker]): la interfaz nunca se bloquea mientras genera.
 ///
 /// Solo CPU (`nGpuLayers = 0`): es lo mas estable en moviles de gama baja.
 class LlamaTutorEngine implements TutorEngine {
@@ -18,15 +19,21 @@ class LlamaTutorEngine implements TutorEngine {
   LlamaTutorEngine({this.nativeLibraryDir});
 
   final Future<String?> Function()? nativeLibraryDir;
-  LlamaParent? _parent;
+  LlamaWorker? _worker;
 
   static const contextTokens = 2048;
   /// Las respuestas son cortas por diseno (~60 palabras): el tope solo evita que
   /// un modelo desbocado alargue la espera.
   static const maxAnswerTokens = 220;
 
+  /// llama_cpp_dart cuenta los tokens generados como `posicion - tokens del
+  /// prompt`: con el prefijo ya en la cache salen contados de mas. Este margen
+  /// cubre las instrucciones (~220 tokens); el tope real lo aplica el worker
+  /// ([maxAnswerTokens]).
+  static const _prefixReserve = 300;
+
   @override
-  bool get isLoaded => _parent != null;
+  bool get isLoaded => _worker != null;
 
   /// Hilos de calculo: la mitad de los nucleos (los grandes) rinden mejor que
   /// usar todos, porque los pequenos frenan al conjunto.
@@ -61,7 +68,7 @@ class LlamaTutorEngine implements TutorEngine {
       ..nUbatch = 512
       ..nThreads = threads
       ..nThreadsBatch = threads
-      ..nPredict = maxAnswerTokens;
+      ..nPredict = maxAnswerTokens + _prefixReserve;
     // Respuestas fieles al libro: poca aleatoriedad.
     final sampler = SamplerParams()
       ..temp = 0.3
@@ -69,104 +76,74 @@ class LlamaTutorEngine implements TutorEngine {
       ..topP = 0.9
       ..penaltyRepeat = 1.1;
 
-    final parent = LlamaParent(
-      LlamaLoad(
-        path: modelPath,
-        modelParams: model,
-        contextParams: context,
-        samplingParams: sampler,
-        // En depuracion llama.cpp cuenta por que falla una carga.
-        verbose: kDebugMode,
-      ),
-      ChatMLFormat(), // formato de Qwen2.5
-    );
-    try {
-      await parent.init();
-    } catch (e) {
-      // dispose() completa con error "Disposed" un completer que ya nadie
-      // espera: se captura para que no salga como excepcion sin manejar.
-      final disposed = Completer<void>();
-      runZonedGuarded(() async {
-        await parent.dispose();
-        if (!disposed.isCompleted) disposed.complete();
-      }, (_, _) {
-        if (!disposed.isCompleted) disposed.complete();
-      });
-      await disposed.future;
-      throw TutorEngineException('No se pudo cargar el modelo: $e');
-    }
-    _parent = parent;
+    _worker = await LlamaWorker.start(WorkerLoad(
+      path: modelPath,
+      model: model,
+      context: context,
+      sampler: sampler,
+      // En depuracion llama.cpp cuenta por que falla una carga.
+      verbose: kDebugMode,
+    ));
   }
 
   @override
   Stream<String> generate(List<ChatTurn> turns) {
-    final parent = _parent;
-    if (parent == null) {
+    final worker = _worker;
+    if (worker == null) {
       return Stream.error(const TutorEngineException('El modelo no esta cargado.'));
     }
+    // El sistema es el prefijo que el worker procesa una vez y reutiliza; lo
+    // demas (historial, libro y pregunta) cambia en cada turno.
+    final hasSystem = turns.isNotEmpty && turns.first.role == 'system';
+    final (id, stream) = worker.generate(
+      system: hasSystem ? _chatml(turns.take(1)) : '',
+      suffix: '${_chatml(hasSystem ? turns.skip(1) : turns)}<|im_start|>assistant\n',
+      maxTokens: maxAnswerTokens,
+    );
     late final StreamController<String> out;
-    LlamaScope? scope;
-    StreamSubscription<String>? textSub;
-    StreamSubscription<CompletionEvent>? doneSub;
-
-    Future<void> cleanup() async {
-      await textSub?.cancel();
-      await doneSub?.cancel();
-      final s = scope;
-      scope = null;
-      if (s != null) {
-        // Detiene la generacion si seguia en marcha y libera el contexto.
-        try {
-          await s.stop();
-          await s.dispose();
-        } catch (_) {}
-      }
-    }
-
+    StreamSubscription<String>? sub;
     out = StreamController<String>(
-      onListen: () async {
-        try {
-          // Cada pregunta usa un contexto nuevo: no arrastra los textos de
-          // libro de la pregunta anterior (el historial va en `turns`).
-          parent.messages = [for (final t in turns) t.toMap()];
-          // getScope() (no `LlamaScope(parent)`): el padre solo reenvia las
-          // respuestas a los scopes registrados en su lista; uno suelto nunca
-          // recibe nada y la pregunta se queda esperando para siempre.
-          final s = parent.getScope() as LlamaScope;
-          scope = s;
-          textSub = s.stream.listen((piece) {
+      onListen: () {
+        sub = stream.listen(
+          (piece) {
             final clean = piece.replaceAll('<|im_end|>', '');
             if (clean.isNotEmpty && !out.isClosed) out.add(clean);
-          });
-          doneSub = s.completions.listen((e) async {
-            if (out.isClosed) return;
-            if (!e.success) {
-              out.addError(TutorEngineException(e.errorDetails ?? 'La generacion fallo.'));
-            }
-            await out.close();
-          });
-          await s.sendPrompt(''); // el texto real sale de parent.messages
-        } catch (e) {
-          if (!out.isClosed) {
-            out.addError(TutorEngineException('$e'));
-            await out.close();
-          }
-        }
+          },
+          onError: (Object e) {
+            if (!out.isClosed) out.addError(e);
+          },
+          onDone: () {
+            if (!out.isClosed) out.close();
+          },
+        );
       },
-      onCancel: cleanup,
+      onCancel: () async {
+        // Para la generacion si seguia en marcha y deja de escuchar.
+        worker.stop(id);
+        await sub?.cancel();
+      },
     );
-    // Al cerrarse el stream por su cuenta tambien se libera.
-    out.done.whenComplete(cleanup);
     return out.stream;
+  }
+
+  /// ChatML de Qwen2.5: `<|im_start|>rol\ncontenido<|im_end|>\n`. Los turnos del
+  /// asistente vacios se omiten.
+  static String _chatml(Iterable<ChatTurn> turns) {
+    final buf = StringBuffer();
+    for (final t in turns) {
+      if (t.role == 'assistant' && t.content.isEmpty) continue;
+      buf.write('<|im_start|>${t.role}\n${t.content}<|im_end|>\n');
+    }
+    return buf.toString();
   }
 
   @override
   Future<void> dispose() async {
-    final p = _parent;
-    _parent = null;
-    if (p != null) {
+    final w = _worker;
+    _worker = null;
+    if (w != null) {
       try {
-        await p.dispose();
+        await w.dispose();
       } catch (_) {}
     }
   }

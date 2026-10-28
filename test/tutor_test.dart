@@ -623,6 +623,24 @@ void main() {
       expect(s.messages.last.text, 'Un adjetivo');
     });
 
+    test('una respuesta detenida sin texto no viaja al modelo en el historial', () async {
+      final c = await make();
+      final ctl = c.read(tutorControllerProvider.notifier);
+      await ctl.prepare();
+      engine.manual = StreamController<String>();
+      final pending = ctl.ask('adjetivos', grade: 4);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      await ctl.stop();
+      await pending;
+      expect(c.read(tutorControllerProvider).messages.last.text, '…');
+
+      engine.manual = null;
+      await ctl.ask('sustantivos', grade: 4);
+      expect(engine.lastTurns!.any((t) => t.content == '…'), isFalse);
+      expect(engine.lastTurns!.map((t) => t.role), ['system', 'user', 'user']);
+    });
+
     test('ignora preguntas vacias y mientras responde', () async {
       final c = await make();
       final ctl = c.read(tutorControllerProvider.notifier);
