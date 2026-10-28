@@ -33,12 +33,64 @@ class ChildProfiles extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-@DriftDatabase(tables: [Guardians, ChildProfiles])
+/// Conversacion de un nino con el tutor. Se borra con el perfil o a mano desde
+/// la zona de padres.
+@DataClassName('TutorMessageRow')
+class TutorMessages extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get childId =>
+      integer().references(ChildProfiles, #id, onDelete: KeyAction.cascade)();
+  BoolColumn get fromUser => boolean()();
+
+  /// No se llama `text`: ese getter taparia al constructor `text()` de Drift.
+  TextColumn get content => text()();
+
+  /// JSON `[{"subject":..,"book":..,"page":..}]` con los libros citados.
+  TextColumn get sources => text().withDefault(const Constant('[]'))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Ultima pagina leida de cada libro por cada nino.
+@DataClassName('ReadingProgressRow')
+class ReadingProgress extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get childId =>
+      integer().references(ChildProfiles, #id, onDelete: KeyAction.cascade)();
+
+  /// Nombre del PDF sin extension, igual que `chunks.book` (`6to_matematica`).
+  TextColumn get book => text()();
+
+  /// Pagina del PDF contando desde 1, igual que `chunks.page`.
+  IntColumn get page => integer()();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+        {childId, book},
+      ];
+}
+
+@DriftDatabase(tables: [Guardians, ChildProfiles, TutorMessages, ReadingProgress])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openOnDevice());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(tutorMessages);
+            await m.createTable(readingProgress);
+          }
+        },
+        // SQLite no aplica las claves foraneas (ni su borrado en cascada) si no
+        // se activan en cada conexion.
+        beforeOpen: (details) async {
+          await customStatement('PRAGMA foreign_keys = ON');
+        },
+      );
 
   static QueryExecutor _openOnDevice() {
     return LazyDatabase(() async {

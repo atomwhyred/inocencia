@@ -1,15 +1,22 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inocencia/core/di/providers.dart';
+import 'package:inocencia/core/security/pin_hasher.dart';
+import 'package:inocencia/core/storage/app_database.dart';
+import 'package:inocencia/features/auth/application/session.dart';
+import 'package:inocencia/features/profiles/data/child_profile_repository_impl.dart';
+import 'package:inocencia/features/profiles/domain/child_profile.dart';
 import 'package:inocencia/features/external_data/domain/external_files_repository.dart';
 import 'package:inocencia/features/external_data/domain/linked_file_status.dart';
 import 'package:inocencia/features/knowledge/data/fts_query.dart';
 import 'package:inocencia/features/knowledge/data/knowledge_repository_impl.dart';
 import 'package:inocencia/features/knowledge/domain/knowledge_chunk.dart';
 import 'package:inocencia/features/tutor/application/tutor_controller.dart';
+import 'package:inocencia/features/tutor/data/tutor_history_repository_impl.dart';
 import 'package:inocencia/features/tutor/domain/tutor_engine.dart';
 import 'package:inocencia/features/tutor/domain/tutor_prompt.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -515,7 +522,8 @@ void main() {
       expect(knowledge.lastGrade, 4);
       expect(s.messages.map((m) => m.fromUser), [true, false]);
       expect(s.messages.last.text, 'Los adjetivos dicen cómo es algo.');
-      expect(s.messages.last.sources, ['Español · 4to_esp_II · pág. 60']);
+      expect(s.messages.last.sources.map((x) => x.label), ['Español · 4to_esp_II · pág. 60']);
+      expect(s.messages.last.sources.single.page, 60);
       expect(s.generating, isFalse);
       expect(engine.lastTurns!.last.content, contains('Pregunta del niño: ¿Qué es un adjetivo?'));
       expect(engine.lastTurns!.first.content, contains('4.º grado'));
@@ -657,4 +665,134 @@ void main() {
       expect(knowledge.closed, isTrue);
     });
   });
+
+  group('TutorController con la conversación guardada', () {
+    late AppDatabase db;
+    late int leo;
+    late int ana;
+    late _FakeEngine engine;
+    late _FakeKnowledge knowledge;
+
+    Future<int> newChild(String name) =>
+        ChildProfileRepositoryImpl(db, const PinHasher(iterations: 10)).create(
+          ChildProfileInput(name: name, avatar: 'emoji:🦊', birthDate: DateTime(2015, 3, 1)),
+        );
+
+    setUp(() async {
+      db = AppDatabase(NativeDatabase.memory());
+      leo = await newChild('Leo');
+      ana = await newChild('Ana');
+    });
+    tearDown(() => db.close());
+
+    /// Abre el chat de [childId] como lo haria la app: con sesion y base de datos.
+    Future<ProviderContainer> open(int childId) async {
+      SharedPreferences.setMockInitialValues({});
+      engine = _FakeEngine();
+      knowledge = _FakeKnowledge(const [_chunk]);
+      final c = ProviderContainer(overrides: [
+        sharedPreferencesProvider.overrideWithValue(await SharedPreferences.getInstance()),
+        appDatabaseProvider.overrideWithValue(db),
+        externalFilesRepositoryProvider.overrideWithValue(_FakeFiles()),
+        tutorEngineProvider.overrideWithValue(engine),
+        knowledgeRepositoryFactoryProvider.overrideWithValue((_) => knowledge),
+      ]);
+      addTearDown(c.dispose);
+      c.read(sessionProvider.notifier).selectChild(childId);
+      c.listen(tutorControllerProvider, (_, _) {});
+      await c.read(tutorControllerProvider.notifier).prepare();
+      return c;
+    }
+
+    /// Lo guardado del niño, como "N:texto" (niño) y "T:texto" (tutor). Deja
+    /// terminar antes las escrituras encadenadas.
+    Future<List<String>> saved(int childId) async {
+      await pumpEventQueue();
+      final stored = await TutorHistoryRepositoryImpl(db).load(childId);
+      return [for (final m in stored) '${m.fromUser ? 'N' : 'T'}:${m.text}'];
+    }
+
+    test('guarda la pregunta y la respuesta con sus fuentes', () async {
+      final c = await open(leo);
+      engine.pieces = ['Dice cómo es algo. ', '¿Un ejemplo?'];
+      await c.read(tutorControllerProvider.notifier).ask('¿Qué es un adjetivo?', grade: 4);
+      expect(await saved(leo), ['N:¿Qué es un adjetivo?', 'T:Dice cómo es algo. ¿Un ejemplo?']);
+      final stored = await TutorHistoryRepositoryImpl(db).load(leo);
+      expect(stored.last.sources.single.label, 'Español · 4to_esp_II · pág. 60');
+      expect(stored.last.sources.single.page, 60);
+    });
+
+    test('al volver a abrir el chat recupera la conversación y se sigue desde ahí', () async {
+      var c = await open(leo);
+      engine.pieces = ['Dice cómo es algo. ', '¿Cuál es el adjetivo de "casa grande"?'];
+      await c.read(tutorControllerProvider.notifier).ask('¿Qué es un adjetivo?', grade: 4);
+      await pumpEventQueue();
+      c.dispose();
+
+      c = await open(leo);
+      final msgs = c.read(tutorControllerProvider).messages;
+      expect(msgs.map((m) => m.fromUser), [true, false]);
+      expect(msgs.last.text, 'Dice cómo es algo. ¿Cuál es el adjetivo de "casa grande"?');
+      expect(msgs.last.sources, isNotEmpty);
+      expect(msgs.every((m) => !m.streaming), isTrue);
+
+      // Contesta a la pregunta que quedó pendiente: el tutor lo ve como respuesta.
+      await c.read(tutorControllerProvider.notifier).ask('grande', grade: 4);
+      expect(engine.lastTurns!.map((t) => t.role), ['system', 'user', 'assistant', 'user']);
+      expect(engine.lastTurns!.last.content, contains('Respuesta del niño a tu pregunta: grande'));
+    });
+
+    test('cada niño recupera solo su conversación', () async {
+      var c = await open(leo);
+      await c.read(tutorControllerProvider.notifier).ask('¿Qué es un adjetivo?', grade: 4);
+      await pumpEventQueue();
+      c.dispose();
+
+      c = await open(ana);
+      expect(c.read(tutorControllerProvider).messages, isEmpty);
+    });
+
+    test('un aviso de error o una respuesta detenida sin texto no se guardan', () async {
+      final c = await open(leo);
+      final ctl = c.read(tutorControllerProvider.notifier);
+      engine.generateError = const TutorEngineException('boom');
+      await ctl.ask('adjetivos', grade: 4);
+      expect(c.read(tutorControllerProvider).messages.last.text, contains('No pude generar'));
+
+      engine.generateError = null;
+      engine.manual = StreamController<String>();
+      final pending = ctl.ask('sustantivos', grade: 4);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      await ctl.stop();
+      await pending;
+      expect(c.read(tutorControllerProvider).messages.last.text, '…');
+
+      expect(await saved(leo), ['N:adjetivos', 'N:sustantivos']);
+    });
+
+    test('una respuesta detenida con texto parcial sí se guarda', () async {
+      final c = await open(leo);
+      final ctl = c.read(tutorControllerProvider.notifier);
+      engine.manual = StreamController<String>();
+      final pending = ctl.ask('adjetivos', grade: 4);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      engine.manual!.add('Un adjetivo ');
+      await Future<void>.delayed(Duration.zero);
+      await ctl.stop();
+      await pending;
+      expect(await saved(leo), ['N:adjetivos', 'T:Un adjetivo']);
+    });
+
+    test('si la base falla, se sigue conversando sin guardar', () async {
+      final c = await open(leo);
+      await db.close();
+      await c.read(tutorControllerProvider.notifier).ask('¿Qué es un adjetivo?', grade: 4);
+      final last = c.read(tutorControllerProvider).messages.last;
+      expect(last.text, 'Los adjetivos dicen cómo es algo.');
+      expect(last.streaming, isFalse);
+    });
+  });
+
 }

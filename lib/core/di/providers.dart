@@ -9,6 +9,8 @@ import '../../features/profiles/domain/child_profile.dart';
 import '../../features/profiles/domain/child_profile_repository.dart';
 import '../../features/setup/data/guardian_repository_impl.dart';
 import '../../features/setup/domain/guardian.dart';
+import '../../features/tutor/data/tutor_history_repository_impl.dart';
+import '../../features/tutor/domain/tutor_history_repository.dart';
 import '../security/pin_hasher.dart';
 import '../security/pin_lockout.dart';
 import '../storage/app_database.dart';
@@ -58,6 +60,12 @@ final childProfileRepositoryProvider = Provider<ChildProfileRepository>(
 
 final childProfilesProvider = StreamProvider<List<ChildProfile>>(
   (ref) => ref.watch(childProfileRepositoryProvider).watchAll(),
+);
+
+// --- Conversaciones del tutor ---
+
+final tutorHistoryRepositoryProvider = Provider<TutorHistoryRepository>(
+  (ref) => TutorHistoryRepositoryImpl(ref.watch(appDatabaseProvider)),
 );
 
 // --- Archivos externos (modelo GGUF y base de conocimiento) ---

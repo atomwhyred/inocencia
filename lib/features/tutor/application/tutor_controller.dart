@@ -6,13 +6,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/storage/platform_info.dart';
+import '../../auth/application/session.dart';
 import '../../external_data/domain/linked_file_status.dart';
 import '../../knowledge/data/fts_query.dart';
 import '../../knowledge/data/knowledge_repository_impl.dart';
 import '../../knowledge/domain/knowledge_chunk.dart';
 import '../data/llama_tutor_engine.dart';
 import '../domain/tutor_engine.dart';
+import '../domain/tutor_history_repository.dart';
 import '../domain/tutor_prompt.dart';
+import '../domain/tutor_source.dart';
 
 /// Se sobrescriben en las pruebas.
 final tutorEngineProvider = Provider.autoDispose<TutorEngine>((ref) {
@@ -51,10 +54,10 @@ class TutorMessage extends Equatable {
   final String text;
 
   /// Libros y paginas en los que se apoya la respuesta.
-  final List<String> sources;
+  final List<TutorSource> sources;
   final bool streaming;
 
-  TutorMessage copyWith({String? text, List<String>? sources, bool? streaming}) =>
+  TutorMessage copyWith({String? text, List<TutorSource>? sources, bool? streaming}) =>
       TutorMessage(
         fromUser: fromUser,
         text: text ?? this.text,
@@ -103,6 +106,14 @@ class TutorController extends Notifier<TutorState> {
   String? _topic;
   Completer<void>? _running;
 
+  /// Nino de la conversacion y donde se guarda. Sin nino activo (o en las
+  /// pruebas sin sesion) la conversacion solo vive en memoria.
+  int? _childId;
+  TutorHistoryRepository? _history;
+
+  /// Las escrituras se encadenan para que los mensajes se guarden en orden.
+  Future<void> _writes = Future<void>.value();
+
   @override
   TutorState build() {
     // `watch` (no `read`): el motor es autoDispose y solo sigue vivo mientras
@@ -119,6 +130,7 @@ class TutorController extends Notifier<TutorState> {
   Future<void> prepare() async {
     if (state.status == TutorStatus.loading || state.status == TutorStatus.ready) return;
     state = state.copyWith(status: TutorStatus.loading);
+    await _loadHistory();
     try {
       final files = await ref.read(externalFilesRepositoryProvider).check();
       if (!files.model.isReady || !files.knowledge.isReady) {
@@ -137,6 +149,35 @@ class TutorController extends Notifier<TutorState> {
     } catch (e) {
       state = state.copyWith(status: TutorStatus.error, problem: 'No se pudo preparar el tutor: $e');
     }
+  }
+
+  /// Recupera la conversacion guardada del nino activo, para seguir donde la dejo.
+  Future<void> _loadHistory() async {
+    final id = ref.read(sessionProvider).activeChildId;
+    if (id == null) return;
+    _childId = id;
+    final repo = ref.read(tutorHistoryRepositoryProvider);
+    _history = repo;
+    if (state.messages.isNotEmpty) return;
+    try {
+      final stored = await repo.load(id);
+      if (stored.isEmpty || state.messages.isNotEmpty) return;
+      state = state.copyWith(messages: [
+        for (final m in stored) TutorMessage(fromUser: m.fromUser, text: m.text, sources: m.sources),
+      ]);
+    } catch (e) {
+      // Un historial ilegible no debe impedir conversar.
+      if (kDebugMode) debugPrint('[tutor] no se pudo cargar la conversación: $e');
+    }
+  }
+
+  void _save(StoredTutorMessage message) {
+    final id = _childId;
+    final repo = _history;
+    if (id == null || repo == null) return;
+    _writes = _writes.then((_) => repo.add(id, message)).catchError((Object e) {
+      if (kDebugMode) debugPrint('[tutor] no se pudo guardar el mensaje: $e');
+    });
   }
 
   static String _filesProblem(LinkedFilesStatus f) {
@@ -161,6 +202,7 @@ class TutorController extends Notifier<TutorState> {
       TutorMessage(fromUser: true, text: question),
       const TutorMessage(fromUser: false, text: '', streaming: true),
     ]);
+    _save(StoredTutorMessage(fromUser: true, text: question));
 
     try {
       // Una respuesta o "¿y el plural?" no tienen terminos propios suficientes
@@ -190,7 +232,7 @@ class TutorController extends Notifier<TutorState> {
       );
       await _generate(turns);
     } catch (e) {
-      _finish('Ups, algo salió mal y no pude responder. Inténtalo de nuevo.');
+      _finish('Ups, algo salió mal y no pude responder. Inténtalo de nuevo.', save: false);
     }
   }
 
@@ -205,8 +247,8 @@ class TutorController extends Notifier<TutorState> {
     return words <= 3 || _continuation.hasMatch(question);
   }
 
-  List<String> _sources(List<KnowledgeChunk> chunks) =>
-      {for (final c in chunks) TutorPrompt.sourceLabel(c)}.toList();
+  List<TutorSource> _sources(List<KnowledgeChunk> chunks) =>
+      {for (final c in chunks) TutorSource.fromChunk(c)}.toList();
 
   /// Marcador de una respuesta detenida antes de escribir nada. Se muestra al
   /// nino pero no viaja al modelo: lo copiaria en su siguiente respuesta.
@@ -252,13 +294,19 @@ class TutorController extends Notifier<TutorState> {
       },
       onError: (Object e) {
         report('error ($e)');
-        _finish(buf.isEmpty ? 'No pude generar una respuesta. Inténtalo de nuevo.' : buf.toString().trim());
+        _finish(
+          buf.isEmpty ? 'No pude generar una respuesta. Inténtalo de nuevo.' : buf.toString().trim(),
+          save: buf.isNotEmpty,
+        );
         if (!done.isCompleted) done.complete();
       },
       onDone: () {
         report('fin');
         final text = buf.toString().trim();
-        _finish(text.isEmpty ? 'No pude generar una respuesta. Inténtalo de nuevo.' : text);
+        _finish(
+          text.isEmpty ? 'No pude generar una respuesta. Inténtalo de nuevo.' : text,
+          save: text.isNotEmpty,
+        );
         if (!done.isCompleted) done.complete();
       },
       cancelOnError: true,
@@ -278,18 +326,24 @@ class TutorController extends Notifier<TutorState> {
     if (running != null && !running.isCompleted) running.complete();
   }
 
-  void _setLast({String? text, List<String>? sources}) {
+  void _setLast({String? text, List<TutorSource>? sources}) {
     if (state.messages.isEmpty) return;
     final msgs = [...state.messages];
     msgs[msgs.length - 1] = msgs.last.copyWith(text: text, sources: sources);
     state = state.copyWith(messages: msgs);
   }
 
-  void _finish(String text) {
+  /// Cierra la respuesta en curso. Se guarda salvo los avisos de error y el
+  /// marcador de "detenida sin escribir nada", que no son parte de la conversacion.
+  void _finish(String text, {bool save = true}) {
     if (state.messages.isEmpty) return;
     final msgs = [...state.messages];
+    final wasStreaming = msgs.last.streaming;
     msgs[msgs.length - 1] = msgs.last.copyWith(text: text, streaming: false);
     state = state.copyWith(messages: msgs);
+    if (save && wasStreaming && text != _stoppedMark) {
+      _save(StoredTutorMessage(fromUser: false, text: text, sources: msgs.last.sources));
+    }
   }
 }
 

@@ -43,6 +43,9 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
   bool _hadPin = false;
   bool _changingPin = false;
 
+  /// Mensajes guardados de la conversacion de este nino con el tutor.
+  int _messageCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -68,6 +71,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
         _hadPin = c.hasPin;
         _pinEnabled = c.hasPin;
         _pinLength = c.pinLength ?? 4;
+        _messageCount = await ref.read(tutorHistoryRepositoryProvider).count(id);
       }
     }
     if (mounted) setState(() => _loading = false);
@@ -151,6 +155,30 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
     if (ok != true) return;
     await ref.read(childProfileRepositoryProvider).delete(widget.childId!);
     if (mounted) widget.onDone();
+  }
+
+  Future<void> _clearConversations() async {
+    final name = _nameController.text;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Borrar conversaciones'),
+        content: Text(
+          '¿Borrar las conversaciones de $name con el tutor ($_messageCount mensajes)? '
+          'Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Borrar')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    await ref.read(tutorHistoryRepositoryProvider).clear(widget.childId!);
+    if (!mounted) return;
+    setState(() => _messageCount = 0);
+    messenger.showSnackBar(const SnackBar(content: Text('Conversaciones borradas.')));
   }
 
   @override
@@ -248,6 +276,23 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
             child: Text(widget.childId == null ? 'Crear perfil' : 'Guardar cambios'),
           ),
           if (widget.childId != null) ...[
+            const SizedBox(height: 24),
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
+              leading: const Icon(Icons.forum_outlined),
+              title: const Text('Conversaciones con el tutor'),
+              subtitle: Text(_messageCount == 0
+                  ? 'No hay conversaciones guardadas.'
+                  : _messageCount == 1
+                      ? '1 mensaje guardado.'
+                      : '$_messageCount mensajes guardados.'),
+              trailing: TextButton(
+                onPressed: _saving || _messageCount == 0 ? null : _clearConversations,
+                child: const Text('Borrar'),
+              ),
+            ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: _saving ? null : _delete,

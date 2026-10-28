@@ -11,7 +11,7 @@ import '../../profiles/presentation/avatar_view.dart';
 import '../application/tutor_controller.dart';
 
 /// Chat con el tutor. La version actual es funcional pero sencilla: el diseno
-/// infantil definitivo (burbujas, animaciones, historial) llega en la Fase 3.
+/// infantil definitivo (burbujas, animaciones) llega mas adelante.
 class TutorPage extends ConsumerStatefulWidget {
   const TutorPage({super.key});
 
@@ -44,14 +44,14 @@ class _TutorPageState extends ConsumerState<TutorPage> {
     ref.read(tutorControllerProvider.notifier).ask(text, grade: grade);
   }
 
-  void _scrollToEnd() {
+  void _scrollToEnd({bool animate = true}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scroll.hasClients) {
-        _scroll.animateTo(
-          _scroll.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOut,
-        );
+      if (!_scroll.hasClients) return;
+      final end = _scroll.position.maxScrollExtent;
+      if (animate) {
+        _scroll.animateTo(end, duration: const Duration(milliseconds: 150), curve: Curves.easeOut);
+      } else {
+        _scroll.jumpTo(end);
       }
     });
   }
@@ -66,6 +66,11 @@ class _TutorPageState extends ConsumerState<TutorPage> {
         .firstOrNull;
     final tutor = ref.watch(tutorControllerProvider);
     ref.listen(tutorControllerProvider.select((s) => s.messages), (_, _) => _scrollToEnd());
+    // La conversacion guardada se carga mientras se prepara el tutor: al quedar
+    // listo se muestra de golpe por el final, donde el nino se quedo.
+    ref.listen(tutorControllerProvider.select((s) => s.status), (_, status) {
+      if (status == TutorStatus.ready) _scrollToEnd(animate: false);
+    });
 
     final grade = child?.gradeAt(ref.read(clockProvider)());
     final ready = tutor.status == TutorStatus.ready;
@@ -230,7 +235,7 @@ class _Bubble extends StatelessWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      message.sources.join('\n'),
+                      message.sources.map((s) => s.label).join('\n'),
                       style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
                     ),
                   ),

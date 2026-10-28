@@ -1,5 +1,6 @@
 import '../../../core/utils/school_grade_calculator.dart';
 import '../../knowledge/domain/knowledge_chunk.dart';
+import 'tutor_source.dart';
 
 /// Un turno de la conversacion tal y como se le pasa al modelo.
 class ChatTurn {
@@ -147,11 +148,7 @@ Reglas:
   }
 
   /// "Español · 4to_esp_II · pág. 89".
-  static String sourceLabel(KnowledgeChunk c) => [
-        c.subject,
-        if (c.book != null) c.book!,
-        if (c.page != null) 'pág. ${c.page}',
-      ].join(' · ');
+  static String sourceLabel(KnowledgeChunk c) => TutorSource.fromChunk(c).label;
 
   static String _clip(String s, int max) {
     final t = s.trim();
