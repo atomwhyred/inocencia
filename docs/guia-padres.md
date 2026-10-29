@@ -67,10 +67,13 @@ al perfil de un niño mayor.
   por cable desde el ordenador.
 - **El tutor no encuentra nada en los libros**: la respuesta lo dice y sugiere preguntar al maestro; prueba a
   preguntarlo con otras palabras.
-- **La lectura en voz alta avisa de que no hay voz**: instala los datos de voz en español en
+- **La lectura en voz alta avisa de que no hay voz** (o la voz habla otro idioma): la app lee en español; hay que
+  tener instalada la voz en español en el teléfono: instala los datos de voz en español en
   *Ajustes › Sistema › Idiomas › Salida de texto a voz › Motor de Google › Instalar datos de voz › Español*.
 - **El teléfono se calienta y el tutor va más lento**: es normal con el modelo mediano; deja descansar el teléfono
   o activa el modo batería.
-- **Respuestas lentas**: un modelo de 3B tarda unos 30-40 segundos por respuesta en un teléfono de gama alta.
+- **Respuestas lentas**: un modelo de 3B tarda unos 30-40 segundos por respuesta en un teléfono de gama alta. Si va
+  mucho más lento, abre el tutor, haz una pregunta y entra en **Zona de padres → Archivos → Diagnóstico del tutor**:
+  pulsa **Copiar** y envía ese texto a quien mantiene la app. No lleva nombres ni preguntas.
 - **Desinstalar la app borra los datos** (perfiles, historial, medallas). Para actualizarla, instala el APK nuevo
   encima, sin desinstalar.

@@ -57,7 +57,7 @@ Decisiones de diseño:
 |---|---|
 | **Perfiles** | Cada niño tiene nombre, avatar y grado (1.º a 6.º; el grado sube solo con los años). Historial, página de lectura y medallas son por niño. Un perfil puede tener su propio PIN. |
 | **Mi tutor** | Chat con un modelo de lenguaje local. Busca antes en los libros, responde con 2-3 frases, termina con una pregunta que se puede contestar con un toque y muestra de qué libro y página sale cada respuesta (con enlace para abrir el PDF). |
-| **Toco** | Un tocororo (ave nacional de Cuba) animado por capas. Duerme mientras carga el modelo, piensa mientras responde, se alegra o anima según el acierto del niño, y al tocarlo da un gesto y un mensaje de ánimo. |
+| **Toco** | Un tocororo (ave nacional de Cuba) animado por capas, en la barra superior del chat. Duerme mientras carga el modelo, piensa mientras responde, se alegra o anima según el acierto del niño, y al tocarlo da un gesto y un mensaje de ánimo. |
 | **Mis libros** | Lector de los PDF originales (imágenes, tablas, ejercicios). Recuerda la página de cada niño en cada libro. |
 | **Lectura en voz alta** | Un botón con altavoz en cada respuesta la lee (reproducir, pausar, parar) con la voz del dispositivo. Solo suena un mensaje a la vez. |
 | **Quiz** | Tres preguntas de opción múltiple sobre el último tema, generadas por el modelo local a partir del texto del libro (se descartan las que no se apoyan en él). |
@@ -72,6 +72,8 @@ Decisiones de diseño:
   RAM; **compartir o copiar** esos archivos a otro dispositivo sin internet.
 - **Apariencia**: tema claro/oscuro, mascota, Pomodoro, lectura en voz alta y modo batería.
 - **Avisos**: recordatorios de estudio (varios, cada uno con su interruptor).
+- **Diagnóstico del tutor** (Zona de padres → Archivos): modelo, hilos, CPU y velocidad de la última respuesta, con
+  botón para copiarlo (sin datos personales); útil cuando el tutor va lento.
 - Entrada protegida con PIN de 4 o 6 dígitos y bloqueo tras varios intentos fallidos.
 
 Guía paso a paso para familias: [docs/guia-padres.md](docs/guia-padres.md).

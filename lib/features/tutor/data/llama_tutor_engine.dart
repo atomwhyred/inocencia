@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 
 import '../domain/cpu_threads.dart';
+import '../domain/tutor_diagnostics.dart';
 import '../domain/tutor_engine.dart';
 import 'llama_worker.dart';
 import 'native_backends.dart';
@@ -17,9 +18,20 @@ import '../domain/tutor_prompt.dart';
 class LlamaTutorEngine implements TutorEngine {
   /// [nativeLibraryDir] resuelve la carpeta de las `.so` de la app, donde estan
   /// las variantes de CPU de llama.cpp.
-  LlamaTutorEngine({this.nativeLibraryDir});
+  LlamaTutorEngine({this.nativeLibraryDir, this.onLoaded, this.onAnswered});
 
   final Future<String?> Function()? nativeLibraryDir;
+
+  /// Avisan del estado del modelo al cargarlo y de la velocidad de cada respuesta
+  /// (alimentan el diagnostico de la zona de padres).
+  final void Function(TutorDiagnostics)? onLoaded;
+  final void Function({
+    required int firstPieceSeconds,
+    required int pieces,
+    required int totalSeconds,
+    required double piecesPerSecond,
+  })?
+  onAnswered;
   LlamaWorker? _worker;
 
   static const contextTokens = 2048;
@@ -77,6 +89,18 @@ class LlamaTutorEngine implements TutorEngine {
       '(${(File(modelPath).lengthSync() / 1e9).toStringAsFixed(2)} GB), '
       '$threadCount hilos de ${Platform.numberOfProcessors} nucleos '
       '(frecuencias ${_coreFreqsKhz()}), ahorro: $lowPower',
+    );
+    onLoaded?.call(
+      TutorDiagnostics(
+        model: modelPath.split('/').last,
+        modelGb: File(modelPath).lengthSync() / 1e9,
+        threads: threadCount,
+        cores: Platform.numberOfProcessors,
+        coreFreqsKhz: _coreFreqsKhz(),
+        variants: NativeBackends.variants,
+        cpuFeatures: NativeBackends.cpuFeatures,
+        batterySaver: lowPower,
+      ),
     );
     // Sin GPU. El binding trae por defecto `splitMode = none` con `mainGpu = 0`
     // y llama.cpp rechaza esa combinacion cuando no hay ninguna GPU (devuelve
@@ -143,6 +167,12 @@ class LlamaTutorEngine implements TutorEngine {
       final total = clock.elapsed;
       final rest = total - (firstPiece ?? Duration.zero);
       final rate = rest.inMilliseconds > 0 ? (pieces - 1) * 1000 / rest.inMilliseconds : 0;
+      onAnswered?.call(
+        firstPieceSeconds: firstPiece?.inSeconds ?? 0,
+        pieces: pieces,
+        totalSeconds: total.inSeconds,
+        piecesPerSecond: rate.toDouble(),
+      );
       debugPrint(
         '[tutor] primera pieza ${firstPiece?.inSeconds} s, $pieces piezas en '
         '${total.inSeconds} s (${rate.toStringAsFixed(1)} piezas/s tras la primera)',

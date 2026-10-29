@@ -160,19 +160,18 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
     if (_cheer != null && mood.activity == MascotActivity.idle) {
       mood = const MascotMood(MascotActivity.idle, MascotEmotion.happy);
     }
-    // Grande al saludar, mientras carga y mientras espera la primera palabra;
-    // pequena el resto. Con el teclado abierto o en pantallas bajas, siempre
-    // pequena para no quitar sitio al chat.
+    // Toco vive en la barra superior, siempre pequeno: libera la pantalla para el chat.
     final screen = MediaQuery.sizeOf(context);
-    final roomy = MediaQuery.viewInsetsOf(context).bottom == 0 && screen.height >= 500;
-    final waiting = mood.activity == MascotActivity.thinking;
-    final bigMascot = mascotOn && roomy && (!ready || tutor.messages.isEmpty || waiting);
-    final bigHeight = (screen.height * 0.105).clamp(65.0, 100.0);
     // El descanso del Pomodoro es el unico protagonista de la pantalla: Toco grande.
     final restHeight = (screen.height * 0.21).clamp(130.0, 200.0);
 
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
+        // En el descanso del Pomodoro Toco ya aparece grande en el centro.
+        title: mascotOn && !resting
+            ? MascotView(mood: mood, height: 48, size: MascotSize.small, onTap: _onMascotTap)
+            : null,
         actions: [
           const PowerToggle(),
           IconButton(
@@ -210,24 +209,6 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
             : MaxContentWidth(
                 child: Column(
                   children: [
-                    if (mascotOn)
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOut,
-                        alignment: Alignment.topCenter,
-                        // Al encoger o crecer la mascota la lista cambia de alto:
-                        // se vuelve al final para que la ultima pregunta se vea.
-                        onEnd: _scrollToEnd,
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: MascotView(
-                            mood: mood,
-                            height: bigMascot ? bigHeight : 52,
-                            size: bigMascot ? MascotSize.large : MascotSize.small,
-                            onTap: _onMascotTap,
-                          ),
-                        ),
-                      ),
                     const PowerSuggestion(),
                     const MedalToast(),
                     if (_cheer != null)

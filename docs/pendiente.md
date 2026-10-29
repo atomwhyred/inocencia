@@ -47,7 +47,8 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 - [ ] Página del PDF frente a la impresa: el tutor y el lector cuentan páginas del PDF (ver [libros.md](libros.md)).
 
 ## Rendimiento en el Xiaomi 17T Pro (Dimensity 9500, 12 GB)
-- [ ] **Respuestas de 1-3 min con el 1.5B, sin explicar.** Un chip así debería ir más rápido que el Pixel 6. La app ya
+- [ ] **Respuestas de 1-3 min con el 1.5B, sin explicar. Esperando el diagnóstico de la persona en Brasil**
+  (Zona de padres → Archivos → Diagnóstico del tutor → Copiar). Un chip así debería ir más rápido que el Pixel 6. La app ya
   escribe un diagnóstico (`adb logcat | grep "\[tutor\]"`): variantes de CPU instaladas, **funciones de CPU que ve
   llama.cpp** (en el Pixel 6: `NEON | ARM_FMA | FP16_VA | DOTPROD | LLAMAFILE | REPACK`), modelo usado, hilos,
   frecuencias de cada núcleo y piezas/s. Falta ejecutarlo en el Xiaomi: si faltan `DOTPROD`/`MATMUL_INT8` se cargó la
@@ -55,7 +56,7 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 - Los hilos ahora salen de los núcleos rápidos (`lib/features/tutor/domain/cpu_threads.dart`), no de «núcleos/2».
 
 ## Seguridad (revisión del 29-oct, pendiente de aplicar antes de publicar)
-- [ ] **Desactivar la copia de seguridad de Android.** Añadir `android:allowBackup="false"` en `<application>` de
+- [x] ~~Desactivar la copia de seguridad de Android~~ (29-oct, `allowBackup="false"`). Antes: añadir `android:allowBackup="false"` en `<application>` de
   `AndroidManifest.xml`. Hoy `adb backup` o la copia en la nube pueden sacar la base con nombres, historial y los
   hashes de PIN (un PIN de 4 dígitos se averigua con 10.000 intentos). Exige recompilar la release.
 - [ ] **Firma propia.** El release usa la clave de depuración, que es pública: cualquiera puede firmar una

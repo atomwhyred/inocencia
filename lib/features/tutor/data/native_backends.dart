@@ -16,6 +16,11 @@ class NativeBackends {
 
   static bool _loaded = false;
 
+  /// `libggml-cpu-*.so` que trae la app y lo que llama.cpp ve de la CPU tras
+  /// cargar la mejor variante (para el diagnostico de la zona de padres).
+  static List<String> variants = const [];
+  static String? cpuFeatures;
+
   /// Idempotente. [libraryDir] es la `nativeLibraryDir` de Android; fuera de
   /// Android (o sin variantes) no hace nada.
   static void loadCpuVariant(String? libraryDir) {
@@ -28,7 +33,7 @@ class NativeBackends {
           );
       loadAll(dir);
       _loaded = true;
-      final variants =
+      variants =
           Directory(libraryDir)
               .listSync()
               .map((f) => f.path.split('/').last)
@@ -36,8 +41,10 @@ class NativeBackends {
               .toList()
             ..sort();
       debugPrint('[tutor] variantes de CPU en la app: $variants');
-      debugPrint('[tutor] CPU segun llama.cpp: ${_systemInfo()}');
+      cpuFeatures = _systemInfo();
+      debugPrint('[tutor] CPU segun llama.cpp: $cpuFeatures');
     } catch (e) {
+      cpuFeatures = 'ERROR al cargar las variantes: $e';
       debugPrint(
         '[tutor] AVISO: no se pudieron cargar las variantes de CPU ($e); '
         'el tutor ira mas lento',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
@@ -8,6 +9,7 @@ import '../../../core/utils/format_bytes.dart';
 import '../../../core/utils/school_grade_calculator.dart';
 import '../../library/application/library_providers.dart';
 import '../../library/domain/library_book.dart';
+import '../../tutor/application/tutor_diagnostics_provider.dart';
 import '../domain/file_exporter.dart';
 import '../domain/linked_file_status.dart';
 import '../domain/model_recommendation.dart';
@@ -149,6 +151,8 @@ class FilesSection extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               _BooksCard(knowledgeReady: s.knowledge.isReady),
+              const SizedBox(height: 12),
+              const DiagnosticsCard(),
             ],
           ),
         ),
@@ -176,6 +180,59 @@ class FilesSection extends ConsumerWidget {
     if (!k.isReady) return null;
     final grades = k.grades.map(SchoolGradeCalculator.label).join(', ');
     return '${k.chunkCount} fragmentos · $grades\n${k.subjects.join(', ')}';
+  }
+}
+
+/// Datos de rendimiento del tutor, para copiarlos y enviarlos si va lento.
+class DiagnosticsCard extends ConsumerWidget {
+  const DiagnosticsCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final d = ref.watch(tutorDiagnosticsProvider);
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.speed_rounded),
+                const SizedBox(width: 12),
+                Text('Diagnóstico del tutor', style: theme.textTheme.titleMedium),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (d.isEmpty)
+              const Text(
+                'Abre el tutor y haz una pregunta: aquí aparecerán los datos de velocidad '
+                'para copiarlos si el tutor va muy lento.',
+              )
+            else ...[
+              SelectableText(
+                d.toReport(),
+                style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+              ),
+              const SizedBox(height: 8),
+              FilledButton.tonalIcon(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: d.toReport()));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Diagnóstico copiado')),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.copy_rounded),
+                label: const Text('Copiar'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 

@@ -1301,12 +1301,15 @@ RESPUESTA: C
     group('Toco, la mascota', () {
       MascotView toco(WidgetTester tester) => tester.widget<MascotView>(find.byType(MascotView));
 
-      testWidgets('saluda grande con el chat vacío y pasa a pequeño junto al nombre', (tester) async {
+      testWidgets('vive en la barra superior, pequeño, con el chat vacío y con mensajes', (tester) async {
         await openPage(tester);
-        expect(toco(tester).size, MascotSize.large);
+        final inBar = find.descendant(of: find.byType(AppBar), matching: find.byType(MascotView));
+        expect(inBar, findsOneWidget);
+        expect(toco(tester).size, MascotSize.small);
         expect(find.textContaining('Soy Toco'), findsOneWidget);
 
         await send(tester, '¿Qué es un adjetivo?');
+        expect(inBar, findsOneWidget);
         expect(find.byType(MascotView), findsOneWidget);
         expect(toco(tester).size, MascotSize.small);
       });
@@ -1325,15 +1328,6 @@ RESPUESTA: C
         engine.pieces = ['¡Muy bien! ', 'Ahora dime: ¿y el plural?'];
         await send(tester, 'grande');
         expect(toco(tester).mood, const MascotMood(MascotActivity.idle, MascotEmotion.happy));
-      });
-
-      testWidgets('con el teclado abierto es pequeño aunque el chat esté vacío', (tester) async {
-        await openPage(tester);
-        expect(toco(tester).size, MascotSize.large);
-        tester.view.viewInsets = const FakeViewPadding(bottom: 400);
-        addTearDown(tester.view.resetViewInsets);
-        await tester.pumpAndSettle();
-        expect(toco(tester).size, MascotSize.small);
       });
 
       testWidgets('arriba al centro, sin avatar y con el aviso de internet solo como icono', (tester) async {
@@ -1376,12 +1370,11 @@ RESPUESTA: C
         expect(questionButton, findsOneWidget);
       });
 
-      testWidgets('sin nombre ni grado bajo Toco, y Toco grande es la mitad que antes', (tester) async {
+      testWidgets('sin nombre ni grado, y Toco cabe en la barra (48 dp)', (tester) async {
         await openPage(tester);
         expect(find.text('¡Hola, Leo!'), findsNothing);
         expect(find.text('6.º grado'), findsNothing);
-        // Saludo: 1100 px de alto * 0.105 = 100 (tope), la mitad que el 200 anterior.
-        expect(tester.getSize(find.byType(MascotView)).height, lessThanOrEqualTo(100));
+        expect(tester.getSize(find.byType(MascotView)).height, lessThanOrEqualTo(kToolbarHeight));
       });
 
       testWidgets('con Toco encendido no hay burbuja de espera; con Toco apagado, sí', (tester) async {

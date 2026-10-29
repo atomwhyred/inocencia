@@ -9,6 +9,7 @@
 
     <application
         android:label="inocencIA"
+        android:allowBackup="false"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:resizeableActivity="true">
