@@ -46,6 +46,14 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   usar el perfilador de Flutter DevTools si el teléfono va justo. El interruptor de Apariencia la apaga.
 - [ ] Página del PDF frente a la impresa: el tutor y el lector cuentan páginas del PDF (ver [libros.md](libros.md)).
 
+## Rendimiento en el Xiaomi 17T Pro (Dimensity 9500, 12 GB)
+- [ ] **Respuestas de 1-3 min con el 1.5B, sin explicar.** Un chip así debería ir más rápido que el Pixel 6. La app ya
+  escribe un diagnóstico (`adb logcat | grep "\[tutor\]"`): variantes de CPU instaladas, **funciones de CPU que ve
+  llama.cpp** (en el Pixel 6: `NEON | ARM_FMA | FP16_VA | DOTPROD | LLAMAFILE | REPACK`), modelo usado, hilos,
+  frecuencias de cada núcleo y piezas/s. Falta ejecutarlo en el Xiaomi: si faltan `DOTPROD`/`MATMUL_INT8` se cargó la
+  variante base; si el modelo es el 3B o el 7B, es esperable; si va a pocas piezas/s con todo bien, es calor o HyperOS.
+- Los hilos ahora salen de los núcleos rápidos (`lib/features/tutor/domain/cpu_threads.dart`), no de «núcleos/2».
+
 ## Seguridad (revisión del 29-oct, pendiente de aplicar antes de publicar)
 - [ ] **Desactivar la copia de seguridad de Android.** Añadir `android:allowBackup="false"` en `<application>` de
   `AndroidManifest.xml`. Hoy `adb backup` o la copia en la nube pueden sacar la base con nombres, historial y los

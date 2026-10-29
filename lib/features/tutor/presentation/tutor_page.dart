@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/responsive/max_content_width.dart';
-import '../../../core/utils/school_grade_calculator.dart';
 import '../../../core/widgets/offline_badge.dart';
 import '../../auth/application/session.dart';
 import '../../achievements/presentation/medal_toast.dart';
@@ -150,7 +149,8 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
     final pomodoro = ref.watch(pomodoroProvider);
     final resting = ref.watch(pomodoroEnabledProvider) && pomodoro.resting;
     // El quiz se hace sobre un tema ya consultado y con el modelo libre.
-    final quizReady = tutor.status == TutorStatus.ready &&
+    final quizReady =
+        tutor.status == TutorStatus.ready &&
         !tutor.generating &&
         tutor.messages.any((m) => !m.fromUser && m.sources.isNotEmpty);
     final ready = tutor.status == TutorStatus.ready;
@@ -167,7 +167,9 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
     final roomy = MediaQuery.viewInsetsOf(context).bottom == 0 && screen.height >= 500;
     final waiting = mood.activity == MascotActivity.thinking;
     final bigMascot = mascotOn && roomy && (!ready || tutor.messages.isEmpty || waiting);
-    final bigHeight = (screen.height * 0.21).clamp(130.0, 200.0);
+    final bigHeight = (screen.height * 0.105).clamp(65.0, 100.0);
+    // El descanso del Pomodoro es el unico protagonista de la pantalla: Toco grande.
+    final restHeight = (screen.height * 0.21).clamp(130.0, 200.0);
 
     return Scaffold(
       appBar: AppBar(
@@ -180,10 +182,12 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
                 ? null
                 : () {
                     ref.read(speechProvider.notifier).stop();
-                    Navigator.of(context).push(MaterialPageRoute<void>(
-                      fullscreenDialog: true,
-                      builder: (_) => QuizPage(grade: grade),
-                    ));
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        fullscreenDialog: true,
+                        builder: (_) => QuizPage(grade: grade),
+                      ),
+                    );
                   },
           ),
           const Padding(padding: EdgeInsets.only(right: 12), child: OfflineBadge(iconOnly: true)),
@@ -200,7 +204,7 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
             ? _RestView(
                 state: pomodoro,
                 mascotOn: mascotOn,
-                height: bigHeight,
+                height: restHeight,
                 onContinue: () => ref.read(pomodoroProvider.notifier).finishRest(),
               )
             : MaxContentWidth(
@@ -232,22 +236,7 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
                         text: _cheer!,
                         onDone: () => setState(() => _cheer = null),
                       ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                      child: Column(
-                        children: [
-                          Text(
-                            '¡Hola, ${child.name}!',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          Text(
-                            SchoolGradeCalculator.label(grade),
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(child: _body(context, tutor)),
+                    Expanded(child: _body(context, tutor, mascotOn: mascotOn)),
                     if (ready && _replyingTo != null && !tutor.generating)
                       _ReplyBanner(
                         question: _replyingTo!,
@@ -271,7 +260,7 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
     );
   }
 
-  Widget _body(BuildContext context, TutorState tutor) {
+  Widget _body(BuildContext context, TutorState tutor, {required bool mascotOn}) {
     switch (tutor.status) {
       case TutorStatus.idle:
       case TutorStatus.loading:
@@ -342,7 +331,7 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Bubble(index: i, message: message),
+                _Bubble(index: i, message: message, mascotOn: mascotOn),
                 if (question != null)
                   _QuestionButton(
                     question: question,
@@ -358,14 +347,19 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.index, required this.message});
+  const _Bubble({required this.index, required this.message, required this.mascotOn});
 
   /// Posicion en la conversacion: identifica el mensaje para la voz.
   final int index;
   final TutorMessage message;
 
+  /// Con Toco encendido, su pose "pensando" ya avisa de que el tutor trabaja.
+  final bool mascotOn;
+
   @override
   Widget build(BuildContext context) {
+    // Sin texto aun y con Toco pensando, no hay burbuja vacia que mostrar.
+    if (mascotOn && message.text.isEmpty && message.streaming) return const SizedBox.shrink();
     final scheme = Theme.of(context).colorScheme;
     final mine = message.fromUser;
     return Align(

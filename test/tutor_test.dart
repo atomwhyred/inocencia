@@ -1375,6 +1375,37 @@ RESPUESTA: C
         await send(tester, '¿Qué es un adjetivo?');
         expect(questionButton, findsOneWidget);
       });
+
+      testWidgets('sin nombre ni grado bajo Toco, y Toco grande es la mitad que antes', (tester) async {
+        await openPage(tester);
+        expect(find.text('¡Hola, Leo!'), findsNothing);
+        expect(find.text('6.º grado'), findsNothing);
+        // Saludo: 1100 px de alto * 0.105 = 100 (tope), la mitad que el 200 anterior.
+        expect(tester.getSize(find.byType(MascotView)).height, lessThanOrEqualTo(100));
+      });
+
+      testWidgets('con Toco encendido no hay burbuja de espera; con Toco apagado, sí', (tester) async {
+        final semantics = tester.ensureSemantics();
+        final c = await openPage(tester);
+        final live = StreamController<String>();
+        engine.manual = live;
+        await tester.enterText(find.byType(TextField), '¿Qué es un adjetivo?');
+        await tester.tap(find.byIcon(Icons.send_rounded));
+        await tester.pump();
+        await tester.pump();
+        expect(find.bySemanticsLabel('Estoy buscando en tu libro…'), findsNothing);
+        expect(toco(tester).mood.activity, MascotActivity.thinking);
+
+        await c.read(mascotEnabledProvider.notifier).set(false);
+        await tester.pump();
+        expect(find.bySemanticsLabel('Estoy buscando en tu libro…'), findsOneWidget);
+
+        live.add('Los adjetivos dicen cómo es algo. ¿Cuál es uno?');
+        await tester.pump();
+        unawaited(live.close());
+        await tester.pumpAndSettle();
+        semantics.dispose();
+      });
     });
   });
 

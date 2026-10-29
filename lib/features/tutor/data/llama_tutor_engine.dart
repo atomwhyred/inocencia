@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 
+import '../domain/cpu_threads.dart';
 import '../domain/tutor_engine.dart';
 import 'llama_worker.dart';
 import 'native_backends.dart';
@@ -22,6 +23,7 @@ class LlamaTutorEngine implements TutorEngine {
   LlamaWorker? _worker;
 
   static const contextTokens = 2048;
+
   /// Las respuestas son cortas por diseno (~60 palabras): el tope solo evita que
   /// un modelo desbocado alargue la espera.
   static const maxAnswerTokens = 220;
@@ -35,8 +37,8 @@ class LlamaTutorEngine implements TutorEngine {
   @override
   bool get isLoaded => _worker != null;
 
-  /// Hilos de calculo: la mitad de los nucleos (los grandes) rinden mejor que
-  /// usar todos, porque los pequenos frenan al conjunto.
+  /// Hilos de calculo: los de los nucleos rapidos del chip ([CpuThreads]). Los
+  /// pequenos frenarian al conjunto, porque llama.cpp reparte el trabajo a partes iguales.
   /// Con el modo ahorro, dos hilos: la bateria dura mas y el telefono no se calienta.
   static const lowPowerThreads = 2;
 
@@ -45,7 +47,20 @@ class LlamaTutorEngine implements TutorEngine {
 
   bool _lowPower = false;
 
-  static int get threads => (Platform.numberOfProcessors / 2).round().clamp(2, 6);
+  static int get threads =>
+      CpuThreads.choose(_coreFreqsKhz(), coreCount: Platform.numberOfProcessors);
+
+  /// Frecuencia maxima de cada nucleo (kHz); vacia si Android no deja leerla.
+  static List<int> _coreFreqsKhz() {
+    final freqs = <int>[];
+    try {
+      for (var i = 0; i < Platform.numberOfProcessors; i++) {
+        final f = File('/sys/devices/system/cpu/cpu$i/cpufreq/cpuinfo_max_freq');
+        if (f.existsSync()) freqs.add(int.tryParse(f.readAsStringSync().trim()) ?? 0);
+      }
+    } catch (_) {}
+    return freqs;
+  }
 
   @override
   Future<void> load(String modelPath, {bool lowPower = false}) async {
@@ -56,6 +71,13 @@ class LlamaTutorEngine implements TutorEngine {
     }
     // Elige la variante de CPU antes de que el modelo se cargue en su isolate.
     NativeBackends.loadCpuVariant(await nativeLibraryDir?.call());
+    final threadCount = lowPower ? lowPowerThreads : threads;
+    debugPrint(
+      '[tutor] modelo ${modelPath.split('/').last} '
+      '(${(File(modelPath).lengthSync() / 1e9).toStringAsFixed(2)} GB), '
+      '$threadCount hilos de ${Platform.numberOfProcessors} nucleos '
+      '(frecuencias ${_coreFreqsKhz()}), ahorro: $lowPower',
+    );
     // Sin GPU. El binding trae por defecto `splitMode = none` con `mainGpu = 0`
     // y llama.cpp rechaza esa combinacion cuando no hay ninguna GPU (devuelve
     // nulo al instante): se usan los valores propios de llama.cpp. Tambien
@@ -75,8 +97,8 @@ class LlamaTutorEngine implements TutorEngine {
       // caber entero en un lote: con 512 fallaba con ~730 tokens.
       ..nBatch = contextTokens
       ..nUbatch = 512
-      ..nThreads = lowPower ? lowPowerThreads : threads
-      ..nThreadsBatch = lowPower ? lowPowerThreads : threads
+      ..nThreads = threadCount
+      ..nThreadsBatch = threadCount
       ..nPredict = maxAnswerTokens + _prefixReserve;
     // Respuestas fieles al libro: poca aleatoriedad.
     final sampler = SamplerParams()
@@ -85,14 +107,16 @@ class LlamaTutorEngine implements TutorEngine {
       ..topP = 0.9
       ..penaltyRepeat = 1.1;
 
-    _worker = await LlamaWorker.start(WorkerLoad(
-      path: modelPath,
-      model: model,
-      context: context,
-      sampler: sampler,
-      // En depuracion llama.cpp cuenta por que falla una carga.
-      verbose: kDebugMode,
-    ));
+    _worker = await LlamaWorker.start(
+      WorkerLoad(
+        path: modelPath,
+        model: model,
+        context: context,
+        sampler: sampler,
+        // En depuracion llama.cpp cuenta por que falla una carga.
+        verbose: kDebugMode,
+      ),
+    );
   }
 
   @override
@@ -111,10 +135,26 @@ class LlamaTutorEngine implements TutorEngine {
     );
     late final StreamController<String> out;
     StreamSubscription<String>? sub;
+    final clock = Stopwatch()..start();
+    Duration? firstPiece;
+    var pieces = 0;
+    void report() {
+      if (pieces == 0) return;
+      final total = clock.elapsed;
+      final rest = total - (firstPiece ?? Duration.zero);
+      final rate = rest.inMilliseconds > 0 ? (pieces - 1) * 1000 / rest.inMilliseconds : 0;
+      debugPrint(
+        '[tutor] primera pieza ${firstPiece?.inSeconds} s, $pieces piezas en '
+        '${total.inSeconds} s (${rate.toStringAsFixed(1)} piezas/s tras la primera)',
+      );
+    }
+
     out = StreamController<String>(
       onListen: () {
         sub = stream.listen(
           (piece) {
+            pieces++;
+            firstPiece ??= clock.elapsed;
             final clean = piece.replaceAll('<|im_end|>', '');
             if (clean.isNotEmpty && !out.isClosed) out.add(clean);
           },
@@ -122,6 +162,7 @@ class LlamaTutorEngine implements TutorEngine {
             if (!out.isClosed) out.addError(e);
           },
           onDone: () {
+            report();
             if (!out.isClosed) out.close();
           },
         );

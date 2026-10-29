@@ -22,15 +22,42 @@ class NativeBackends {
     if (_loaded || libraryDir == null || !Platform.isAndroid) return;
     final dir = libraryDir.toNativeUtf8();
     try {
-      final loadAll = DynamicLibrary.open('libggml.so').lookupFunction<
-          Void Function(Pointer<Utf8>),
-          void Function(Pointer<Utf8>)>('ggml_backend_load_all_from_path');
+      final loadAll = DynamicLibrary.open('libggml.so')
+          .lookupFunction<Void Function(Pointer<Utf8>), void Function(Pointer<Utf8>)>(
+            'ggml_backend_load_all_from_path',
+          );
       loadAll(dir);
       _loaded = true;
+      final variants =
+          Directory(libraryDir)
+              .listSync()
+              .map((f) => f.path.split('/').last)
+              .where((n) => n.startsWith('libggml-cpu'))
+              .toList()
+            ..sort();
+      debugPrint('[tutor] variantes de CPU en la app: $variants');
+      debugPrint('[tutor] CPU segun llama.cpp: ${_systemInfo()}');
     } catch (e) {
-      debugPrint('[tutor] no se pudieron cargar las variantes de CPU: $e');
+      debugPrint(
+        '[tutor] AVISO: no se pudieron cargar las variantes de CPU ($e); '
+        'el tutor ira mas lento',
+      );
     } finally {
       malloc.free(dir);
+    }
+  }
+
+  /// Funciones de CPU que llama.cpp ve ahora (NEON, SVE, i8mm...): dice que
+  /// variante se cargo de verdad.
+  static String _systemInfo() {
+    try {
+      final info = DynamicLibrary.open('libllama.so')
+          .lookupFunction<Pointer<Utf8> Function(), Pointer<Utf8> Function()>(
+            'llama_print_system_info',
+          );
+      return info().toDartString().trim();
+    } catch (e) {
+      return 'no disponible ($e)';
     }
   }
 }
