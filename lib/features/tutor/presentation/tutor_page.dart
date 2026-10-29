@@ -168,9 +168,11 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
+        // 2 dp mas alta que la barra normal para que Toco se vea mejor.
+        toolbarHeight: kToolbarHeight + 2,
         // En el descanso del Pomodoro Toco ya aparece grande en el centro.
         title: mascotOn && !resting
-            ? MascotView(mood: mood, height: 48, size: MascotSize.small, onTap: _onMascotTap)
+            ? MascotView(mood: mood, height: 50, size: MascotSize.small, onTap: _onMascotTap)
             : null,
         actions: [
           const PowerToggle(),

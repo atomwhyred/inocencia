@@ -1370,11 +1370,11 @@ RESPUESTA: C
         expect(questionButton, findsOneWidget);
       });
 
-      testWidgets('sin nombre ni grado, y Toco cabe en la barra (48 dp)', (tester) async {
+      testWidgets('sin nombre ni grado, y Toco cabe en la barra (50 dp)', (tester) async {
         await openPage(tester);
         expect(find.text('¡Hola, Leo!'), findsNothing);
         expect(find.text('6.º grado'), findsNothing);
-        expect(tester.getSize(find.byType(MascotView)).height, lessThanOrEqualTo(kToolbarHeight));
+        expect(tester.getSize(find.byType(MascotView)).height, lessThanOrEqualTo(kToolbarHeight + 2));
       });
 
       testWidgets('con Toco encendido no hay burbuja de espera; con Toco apagado, sí', (tester) async {
