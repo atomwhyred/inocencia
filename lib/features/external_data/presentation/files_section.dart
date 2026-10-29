@@ -8,8 +8,10 @@ import '../../../core/utils/format_bytes.dart';
 import '../../../core/utils/school_grade_calculator.dart';
 import '../../library/application/library_providers.dart';
 import '../../library/domain/library_book.dart';
+import '../domain/file_exporter.dart';
 import '../domain/linked_file_status.dart';
 import '../domain/model_recommendation.dart';
+import 'export_dialogs.dart';
 import 'path_browser_page.dart';
 
 final _storageFoldersProvider = FutureProvider.autoDispose<List<String>>(
@@ -124,6 +126,10 @@ class FilesSection extends ConsumerWidget {
                 onBrowse: () => _browse(context, ref, _Kind.model),
                 onDetect: () => _detect(context, ref, _Kind.model),
                 onUnlink: () => _store(ref, _Kind.model, null),
+                onShare: s.model.isReady
+                    ? () => shareItems(context, ref, _single(s.model), title: 'Modelo de IA de inocencIA')
+                    : null,
+                onCopy: s.model.isReady ? () => copyItems(context, ref, _single(s.model)) : null,
               ),
               const SizedBox(height: 12),
               _FileCard(
@@ -134,6 +140,12 @@ class FilesSection extends ConsumerWidget {
                 onBrowse: () => _browse(context, ref, _Kind.knowledge),
                 onDetect: () => _detect(context, ref, _Kind.knowledge),
                 onUnlink: () => _store(ref, _Kind.knowledge, null),
+                onShare: s.knowledge.isReady
+                    ? () => shareItems(context, ref, _single(s.knowledge), title: 'Base de libros de inocencIA')
+                    : null,
+                onCopy: s.knowledge.isReady
+                    ? () => copyItems(context, ref, _single(s.knowledge))
+                    : null,
               ),
               const SizedBox(height: 12),
               _BooksCard(knowledgeReady: s.knowledge.isReady),
@@ -156,6 +168,9 @@ class FilesSection extends ConsumerWidget {
       ],
     );
   }
+
+  List<ExportItem> _single(LinkedFileStatus st) =>
+      st.path == null ? const [] : [ExportItem(path: st.path!, sizeBytes: st.sizeBytes ?? 0)];
 
   String? _knowledgeDetails(KnowledgeDbStatus k) {
     if (!k.isReady) return null;
@@ -274,6 +289,16 @@ class _BooksCard extends ConsumerWidget {
       ),
     );
     if (path != null) await _link(ref, path);
+  }
+
+  Future<void> _exportBooks(BuildContext context, WidgetRef ref, {required bool share}) async {
+    final items = await pickBooksToExport(context, action: share ? 'Compartir' : 'Copiar');
+    if (items == null || items.isEmpty || !context.mounted) return;
+    if (share) {
+      await shareItems(context, ref, items, title: 'Libros de inocencIA');
+    } else {
+      await copyItems(context, ref, items);
+    }
   }
 
   Future<void> _detect(BuildContext context, WidgetRef ref) async {
@@ -405,26 +430,12 @@ class _BooksCard extends ConsumerWidget {
         for (final f in s.folders)
           SelectableText(f, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            FilledButton.icon(
-              onPressed: () => _browse(context, ref),
-              icon: const Icon(Icons.folder_open_rounded),
-              label: const Text('Buscar carpeta'),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => _detect(context, ref),
-              icon: const Icon(Icons.search_rounded),
-              label: const Text('Detectar'),
-            ),
-            if (s.linkedFolder != null)
-              TextButton(
-                onPressed: () => _link(ref, null),
-                child: const Text('Quitar vínculo'),
-              ),
-          ],
+        _FileActions(
+          onBrowse: () => _browse(context, ref),
+          onDetect: () => _detect(context, ref),
+          onUnlink: s.linkedFolder != null ? () => _link(ref, null) : null,
+          onShare: s.available > 0 ? () => _exportBooks(context, ref, share: true) : null,
+          onCopy: s.available > 0 ? () => _exportBooks(context, ref, share: false) : null,
         ),
       ],
     );
@@ -517,6 +528,8 @@ class _FileCard extends StatelessWidget {
     required this.onBrowse,
     required this.onDetect,
     required this.onUnlink,
+    this.onShare,
+    this.onCopy,
     this.details,
   });
 
@@ -527,6 +540,10 @@ class _FileCard extends StatelessWidget {
   final VoidCallback onBrowse;
   final VoidCallback onDetect;
   final VoidCallback onUnlink;
+
+  /// Pasar el archivo a otro dispositivo; `null` si aun no esta listo.
+  final VoidCallback? onShare;
+  final VoidCallback? onCopy;
 
   @override
   Widget build(BuildContext context) {
@@ -571,27 +588,82 @@ class _FileCard extends StatelessWidget {
                 child: Text(status.message!, style: TextStyle(color: scheme.error)),
               ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilledButton.icon(
-                  onPressed: onBrowse,
-                  icon: const Icon(Icons.folder_open_rounded),
-                  label: const Text('Buscar'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: onDetect,
-                  icon: const Icon(Icons.search_rounded),
-                  label: const Text('Detectar'),
-                ),
-                if (status.state != LinkState.notLinked)
-                  TextButton(onPressed: onUnlink, child: const Text('Quitar vínculo')),
-              ],
+            _FileActions(
+              onBrowse: onBrowse,
+              onDetect: onDetect,
+              onUnlink: status.state != LinkState.notLinked ? onUnlink : null,
+              onShare: onShare,
+              onCopy: onCopy,
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Los botones de una tarjeta de archivos: la misma fila para el modelo, la base y los
+/// libros. Arriba buscar/detectar/quitar el vinculo; debajo pasar el archivo a otro
+/// dispositivo (compartir por ShareIt, Zapya o Bluetooth, o copiar a una carpeta o SD).
+class _FileActions extends StatelessWidget {
+  const _FileActions({
+    required this.onBrowse,
+    required this.onDetect,
+    required this.onUnlink,
+    required this.onShare,
+    required this.onCopy,
+  });
+
+  final VoidCallback onBrowse;
+  final VoidCallback onDetect;
+
+  /// `null` si no hay vinculo que quitar.
+  final VoidCallback? onUnlink;
+
+  /// `null` si todavia no hay nada que exportar.
+  final VoidCallback? onShare;
+  final VoidCallback? onCopy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            FilledButton.icon(
+              onPressed: onBrowse,
+              icon: const Icon(Icons.folder_open_rounded),
+              label: const Text('Buscar'),
+            ),
+            OutlinedButton.icon(
+              onPressed: onDetect,
+              icon: const Icon(Icons.search_rounded),
+              label: const Text('Detectar'),
+            ),
+            if (onUnlink != null) TextButton(onPressed: onUnlink, child: const Text('Quitar vínculo')),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              onPressed: onShare,
+              icon: const Icon(Icons.share_rounded),
+              label: const Text('Compartir'),
+            ),
+            OutlinedButton.icon(
+              onPressed: onCopy,
+              icon: const Icon(Icons.sd_storage_rounded),
+              label: const Text('Copiar a…'),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

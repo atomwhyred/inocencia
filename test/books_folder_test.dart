@@ -11,6 +11,7 @@ import 'package:inocencia/core/security/pin_hasher.dart';
 import 'package:inocencia/core/storage/app_database.dart';
 import 'package:inocencia/features/external_data/data/external_files_repository_impl.dart';
 import 'package:inocencia/features/external_data/domain/external_files_repository.dart';
+import 'package:inocencia/features/external_data/domain/file_exporter.dart';
 import 'package:inocencia/features/external_data/domain/linked_file_status.dart';
 import 'package:inocencia/features/external_data/presentation/files_section.dart';
 import 'package:inocencia/features/external_data/presentation/path_browser_page.dart';
@@ -55,6 +56,25 @@ class _Files implements ExternalFilesRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// Apunta lo que la pantalla pide exportar, sin abrir el menu de Android ni copiar.
+class _FakeExporter implements FileExporter {
+  final shared = <List<ExportItem>>[];
+  final copied = <List<ExportItem>>[];
+
+  @override
+  Future<bool> share(List<ExportItem> items, {String? title}) async {
+    shared.add(items);
+    return true;
+  }
+
+  @override
+  Future<CopyResult> copy(List<ExportItem> items, String destDir,
+      {void Function(CopyProgress progress)? onProgress, CopyCancel? cancel}) async {
+    copied.add(items);
+    return CopyResult(copied: items.length);
+  }
+}
+
 void main() {
   test('la carpeta de libros que elige el padre se recuerda y se puede quitar', () async {
     SharedPreferences.setMockInitialValues({});
@@ -73,10 +93,11 @@ void main() {
     late Directory tmp;
     late AppDatabase db;
     late _Files files;
+    late _FakeExporter exporter;
 
-    // Los tres cuadros de archivos tienen "Quitar vínculo"; el de libros es el último.
+    // Los tres cuadros de archivos tienen "Quitar vínculo": se toma el de la tarjeta de libros.
     final quitarBooks = find.descendant(
-      of: find.ancestor(of: find.text('Buscar carpeta'), matching: find.byType(Card)),
+      of: find.ancestor(of: find.text('Libros para leer (PDF)'), matching: find.byType(Card)),
       matching: find.text('Quitar vínculo'),
     );
 
@@ -124,11 +145,13 @@ void main() {
         ));
       }
       files = _Files('${tmp.path}/knowledge.db', '${tmp.path}/files', '${tmp.path}/phone');
+      exporter = _FakeExporter();
 
       final container = ProviderContainer(overrides: [
         appDatabaseProvider.overrideWithValue(db),
         sharedPreferencesProvider.overrideWithValue(await SharedPreferences.getInstance()),
         externalFilesRepositoryProvider.overrideWithValue(files),
+        fileExporterProvider.overrideWithValue(exporter),
         deviceRamProvider.overrideWith((ref) async => null),
       ]);
       addTearDown(() async {
@@ -182,6 +205,84 @@ void main() {
       await settle(tester);
       expect(files.booksFolder, isNull);
       expect(find.textContaining('Leo (6.º grado): 0 de 3 libros'), findsOneWidget);
+    });
+
+    testWidgets('las tres tarjetas llevan los mismos botones, con "Buscar" igual en todas', (tester) async {
+      await boot(tester);
+      expect(find.text('Buscar'), findsNWidgets(3));
+      expect(find.text('Buscar carpeta'), findsNothing);
+      expect(find.text('Detectar'), findsNWidgets(3));
+      expect(find.text('Compartir'), findsNWidgets(3));
+      expect(find.text('Copiar a…'), findsNWidgets(3));
+      // El mismo tipo de boton y el mismo estilo en las tres.
+      final browse = tester.widgetList<FilledButton>(find.widgetWithText(FilledButton, 'Buscar')).toList();
+      expect(browse, hasLength(3));
+      final detect = tester.widgetList<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Detectar')).toList();
+      expect(detect, hasLength(3));
+    });
+
+    testWidgets('el modelo y la base se pueden compartir; los libros no, mientras no haya ninguno',
+        (tester) async {
+      await boot(tester);
+      OutlinedButton share(int card) =>
+          tester.widgetList<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Compartir')).toList()[card];
+      expect(share(0).onPressed, isNotNull); // modelo
+      expect(share(1).onPressed, isNotNull); // base
+      expect(share(2).onPressed, isNull); // libros: ninguno copiado
+    });
+
+    testWidgets('compartir el modelo pasa su ruta al menu de compartir', (tester) async {
+      await boot(tester);
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Compartir').first);
+      await tester.pump();
+      expect(exporter.shared, hasLength(1));
+      expect(exporter.shared.single.single.path, '/fake/model.gguf');
+    });
+
+    testWidgets('los libros se eligen por grado y no se repiten al compartir', (tester) async {
+      await boot(tester);
+      files.booksFolder = '${tmp.path}/phone/Download/libros';
+      await tester.tap(find.text('Comprobar de nuevo'));
+      await settle(tester);
+
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Compartir').last);
+      await settle(tester);
+
+      expect(find.text('Compartir libros'), findsOneWidget);
+      expect(find.text('Todos los grados'), findsOneWidget);
+      expect(find.text('3.º grado'), findsOneWidget);
+      expect(find.text('6.º grado'), findsOneWidget);
+      expect(find.text('1 libro · 4 B'), findsOneWidget); // 3.º: un PDF de prueba
+      expect(find.text('2 libros · 8 B'), findsOneWidget); // 6.º: dos
+      expect(find.text('3 archivos · 12 B'), findsOneWidget);
+
+      // Quitar el 3.º deja solo los de 6.º.
+      await tester.tap(find.text('3.º grado'));
+      await tester.pump();
+      expect(find.text('2 archivos · 8 B'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Compartir'));
+      await settle(tester);
+      expect(exporter.shared, hasLength(1));
+      expect(exporter.shared.single.map((i) => i.path.split('/').last).toList()..sort(),
+          ['6to_esp.pdf', '6to_matematica.pdf']);
+    });
+
+    testWidgets('sin ningún grado elegido no se envía nada', (tester) async {
+      await boot(tester);
+      files.booksFolder = '${tmp.path}/phone/Download/libros';
+      await tester.tap(find.text('Comprobar de nuevo'));
+      await settle(tester);
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Compartir').last);
+      await settle(tester);
+
+      await tester.tap(find.text('Todos los grados'));
+      await tester.pump();
+      expect(find.text('No hay ningún grado elegido.'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Compartir'));
+      await tester.pump();
+      expect(exporter.shared, isEmpty);
+      expect(find.text('Compartir libros'), findsOneWidget); // el diálogo sigue abierto
     });
   });
 

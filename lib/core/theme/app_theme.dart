@@ -117,6 +117,8 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(64, 52),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          // Igual que el boton relleno: Buscar y Detectar se ven del mismo tamano.
+          textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(

@@ -70,4 +70,29 @@ class PlatformInfo {
       // Plataforma sin puente nativo.
     }
   }
+
+  /// Espacio libre, en bytes, del volumen que contiene [path] (null si no se sabe).
+  Future<int?> freeBytes(String path) async {
+    if (!Platform.isAndroid) return null;
+    try {
+      return await _channel.invokeMethod<int>('freeBytes', {'path': path});
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
+  /// Abre el menu de compartir de Android con estos archivos, sin copiarlos.
+  /// `false` si no hay nada que compartir o la plataforma no lo permite.
+  Future<bool> shareFiles(List<String> paths, {String? title}) async {
+    if (!Platform.isAndroid) return false;
+    try {
+      return await _channel.invokeMethod<bool>('shareFiles', {'paths': paths, 'title': title}) ?? false;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
+    }
+  }
 }

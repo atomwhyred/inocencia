@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/external_data/data/external_files_repository_impl.dart';
+import '../../features/external_data/data/file_exporter_impl.dart';
 import '../../features/external_data/domain/external_files_repository.dart';
+import '../../features/external_data/domain/file_exporter.dart';
 import '../../features/external_data/domain/linked_file_status.dart';
 import '../../features/library/data/library_repository_impl.dart';
 import '../../features/library/data/reading_progress_repository_impl.dart';
@@ -87,6 +89,9 @@ final readingProgressRepositoryProvider = Provider<ReadingProgressRepository>(
 final externalFilesRepositoryProvider = Provider<ExternalFilesRepository>(
   (ref) => ExternalFilesRepositoryImpl(ref.watch(sharedPreferencesProvider)),
 );
+
+/// Pasa a otros dispositivos el modelo, la base y los libros (compartir o copiar).
+final fileExporterProvider = Provider<FileExporter>((ref) => FileExporterImpl());
 
 /// Si Android pide "Acceso a todos los archivos" y si ya esta concedido.
 final allFilesAccessProvider =

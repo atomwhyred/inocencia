@@ -31,6 +31,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Sirve a ShareIt, Zapya, Bluetooth... los archivos que la app comparte (sin copiarlos). -->
+        <provider
+            android:name=".ShareProvider"
+            android:authorities="com.inocencia.app.share"
+            android:exported="false"
+            android:grantUriPermissions="true"/>
+
         <!-- android_alarm_manager_plus: mismo patron que CAJAFACTUR (avisos exactos y fiables). -->
         <service
             android:name="dev.fluttercommunity.plus.androidalarmmanager.AlarmService"
