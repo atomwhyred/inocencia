@@ -13,6 +13,7 @@ import 'package:inocencia/features/mascot/application/mascot_atlas.dart';
 import 'package:inocencia/features/mascot/application/mascot_settings.dart';
 import 'package:inocencia/features/mascot/domain/mascot_cheers.dart';
 import 'package:inocencia/features/mascot/domain/mascot_mood.dart';
+import 'package:inocencia/features/pomodoro/application/pomodoro.dart';
 import 'package:inocencia/features/profiles/presentation/avatar_view.dart';
 import 'package:inocencia/features/mascot/presentation/mascot_view.dart';
 import 'package:inocencia/features/profiles/data/child_profile_repository_impl.dart';
@@ -862,7 +863,7 @@ void main() {
     late AppDatabase db;
     late _FakeEngine engine;
 
-    Future<ProviderContainer> openPage(WidgetTester tester) async {
+    Future<ProviderContainer> openPage(WidgetTester tester, {DateTime Function()? clock}) async {
       tester.view.physicalSize = const Size(500, 1100);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -881,6 +882,9 @@ void main() {
         // Toco sin animacion (pumpAndSettle no terminaria) y sin leer sus capas del disco.
         mascotAnimateProvider.overrideWithValue(false),
         mascotAtlasProvider.overrideWith((ref) async => null),
+        // Sin Timer periodico: las pruebas del Pomodoro avanzan el reloj a mano.
+        pomodoroTickProvider.overrideWithValue(null),
+        if (clock != null) clockProvider.overrideWithValue(clock),
       ]);
       c.read(sessionProvider.notifier).selectChild(leo);
       addTearDown(() async {
@@ -948,6 +952,85 @@ void main() {
       engine.pieces = ['Los adjetivos dicen cómo es algo.'];
       await send(tester, '¿Qué es un adjetivo?');
       expect(find.byIcon(Icons.touch_app_rounded), findsNothing);
+    });
+
+    group('Pomodoro infantil', () {
+      late DateTime now;
+
+      Future<ProviderContainer> open(WidgetTester tester) async {
+        // Leo nacio en 2015: 5.º grado, 20 + 5 minutos.
+        now = DateTime(2026, 10, 29, 9);
+        return openPage(tester, clock: () => now);
+      }
+
+      Future<void> studyFor(WidgetTester tester, ProviderContainer c, Duration d) async {
+        final plan = PomodoroPlan.forGrade(5);
+        for (var i = 0; i < d.inSeconds; i += 5) {
+          now = now.add(const Duration(seconds: 5));
+          c.read(pomodoroProvider.notifier).tick(plan);
+        }
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('al acabar el estudio el chat se congela y Toco pasa al centro con la cuenta atrás',
+          (tester) async {
+        final c = await open(tester);
+        expect(find.byType(TextField), findsOneWidget);
+        await studyFor(tester, c, const Duration(minutes: 20));
+
+        expect(find.byType(TextField), findsNothing);
+        expect(find.textContaining('hora de descansar'), findsOneWidget);
+        expect(find.text('05:00'), findsOneWidget);
+        expect(find.text('¡Listo, sigamos!'), findsNothing);
+        final screen = tester.view.physicalSize;
+        final toco = tester.getCenter(find.byType(MascotView));
+        expect(toco.dx, closeTo(screen.width / 2, 1));
+        expect(toco.dy, greaterThan(screen.height * 0.25));
+
+        // Congelado: preguntar no hace nada.
+        await c.read(tutorControllerProvider.notifier).ask('hola', grade: 5);
+        expect(engine.generateCalls, 0);
+
+        // Tocar a Toco antes de tiempo no devuelve al chat.
+        await tester.tap(find.byType(MascotView));
+        await tester.pumpAndSettle();
+        expect(find.byType(TextField), findsNothing);
+      });
+
+      testWidgets('solo el mensaje de Toco, al acabar el descanso, devuelve al chat', (tester) async {
+        final c = await open(tester);
+        await studyFor(tester, c, const Duration(minutes: 20));
+        now = now.add(const Duration(minutes: 5));
+        c.read(pomodoroProvider.notifier).tick(PomodoroPlan.forGrade(5));
+        await tester.pumpAndSettle();
+
+        expect(find.text('¡Descansaste muy bien!'), findsOneWidget);
+        expect(find.byType(TextField), findsNothing);
+        await tester.tap(find.text('¡Listo, sigamos!'));
+        await tester.pumpAndSettle();
+        expect(find.byType(TextField), findsOneWidget);
+        await send(tester, '¿Qué es un adjetivo?');
+        expect(engine.generateCalls, 1);
+      });
+
+      testWidgets('tocar a Toco al acabar el descanso también vuelve', (tester) async {
+        final c = await open(tester);
+        await studyFor(tester, c, const Duration(minutes: 20));
+        now = now.add(const Duration(minutes: 5));
+        c.read(pomodoroProvider.notifier).tick(PomodoroPlan.forGrade(5));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(MascotView));
+        await tester.pumpAndSettle();
+        expect(find.byType(TextField), findsOneWidget);
+      });
+
+      testWidgets('si el padre lo apaga, el chat no se congela', (tester) async {
+        final c = await open(tester);
+        await c.read(pomodoroEnabledProvider.notifier).set(false);
+        await studyFor(tester, c, const Duration(minutes: 30));
+        expect(find.byType(TextField), findsOneWidget);
+        expect(find.textContaining('hora de descansar'), findsNothing);
+      });
     });
 
     group('Toco, la mascota', () {

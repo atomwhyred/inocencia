@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_mode_controller.dart';
 import '../../mascot/application/mascot_settings.dart';
+import '../../pomodoro/application/pomodoro.dart';
 
 /// Seccion "Apariencia" del panel: claro, oscuro o seguir el dispositivo.
 class AppearanceSection extends ConsumerWidget {
@@ -92,6 +93,19 @@ class AppearanceSection extends ConsumerWidget {
             onChanged: (v) => ref.read(mascotEnabledProvider.notifier).set(v),
           ),
         ),
+        const SizedBox(height: 12),
+        Card(
+          child: SwitchListTile(
+            secondary: const Icon(Icons.timer_outlined),
+            title: const Text('Pomodoro infantil'),
+            subtitle: const Text(
+              'Después de 15 minutos de estudio (1.º a 3.º) o 20 (4.º a 6.º) el chat se pausa '
+              '5 minutos para descansar y estirarse. El niño vuelve tocando a Toco.',
+            ),
+            value: ref.watch(pomodoroEnabledProvider),
+            onChanged: (v) => ref.read(pomodoroEnabledProvider.notifier).set(v),
+          ),
+        ),
       ],
     );
   }
@@ -120,7 +134,10 @@ class _Preview extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Text(label, style: TextStyle(color: scheme.onSurface, fontWeight: FontWeight.w600)),
+            Text(
+              label,
+              style: TextStyle(color: scheme.onSurface, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -156,12 +173,12 @@ class _Dot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: 22,
-        height: 22,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.black12),
-        ),
-      );
+    width: 22,
+    height: 22,
+    decoration: BoxDecoration(
+      color: color,
+      shape: BoxShape.circle,
+      border: Border.all(color: Colors.black12),
+    ),
+  );
 }

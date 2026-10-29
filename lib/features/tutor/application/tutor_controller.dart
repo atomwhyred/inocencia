@@ -11,6 +11,7 @@ import '../../external_data/domain/linked_file_status.dart';
 import '../../knowledge/data/fts_query.dart';
 import '../../knowledge/data/knowledge_repository_impl.dart';
 import '../../knowledge/domain/knowledge_chunk.dart';
+import '../../pomodoro/application/pomodoro.dart';
 import '../data/llama_tutor_engine.dart';
 import '../domain/tutor_engine.dart';
 import '../domain/tutor_history_repository.dart';
@@ -195,6 +196,8 @@ class TutorController extends Notifier<TutorState> {
   Future<void> ask(String text, {required int grade, bool answering = false}) async {
     final question = text.trim();
     if (question.isEmpty || state.status != TutorStatus.ready || state.generating) return;
+    // En el descanso del Pomodoro el chat esta congelado.
+    if (ref.read(chatFrozenProvider)) return;
 
     final history = _historyTurns();
     final previousQuestion =

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +13,7 @@ import '../../mascot/application/mascot_settings.dart';
 import '../../mascot/domain/mascot_cheers.dart';
 import '../../mascot/domain/mascot_mood.dart';
 import '../../mascot/presentation/mascot_view.dart';
+import '../../pomodoro/application/pomodoro.dart';
 import '../application/tutor_controller.dart';
 import '../domain/tutor_prompt.dart';
 import '../domain/tutor_source.dart';
@@ -24,7 +27,7 @@ class TutorPage extends ConsumerStatefulWidget {
   ConsumerState<TutorPage> createState() => _TutorPageState();
 }
 
-class _TutorPageState extends ConsumerState<TutorPage> {
+class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserver {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   final _focus = FocusNode();
@@ -44,12 +47,48 @@ class _TutorPageState extends ConsumerState<TutorPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // El Pomodoro cuenta el estudio mientras el chat esta abierto y a la vista.
+    ref.read(pomodoroProvider.notifier).resume();
+    final every = ref.read(pomodoroTickProvider);
+    if (every != null) _pomodoroTimer = Timer.periodic(every, (_) => _tickPomodoro());
     // Cargar el modelo tarda unos segundos: se empieza al entrar, no al preguntar.
     Future.microtask(() => ref.read(tutorControllerProvider.notifier).prepare());
   }
 
+  Timer? _pomodoroTimer;
+  PomodoroController? _pomodoro;
+  PomodoroPlan _plan = PomodoroPlan.forGrade(1);
+
+  void _tickPomodoro() {
+    if (!mounted || !ref.read(pomodoroEnabledProvider)) return;
+    ref
+        .read(pomodoroProvider.notifier)
+        .tick(_plan, busy: ref.read(tutorControllerProvider).generating);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final notifier = ref.read(pomodoroProvider.notifier);
+    if (state == AppLifecycleState.resumed) {
+      notifier.resume();
+      _tickPomodoro();
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      notifier.pause();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _pomodoro = ref.read(pomodoroProvider.notifier);
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _pomodoroTimer?.cancel();
+    _pomodoro?.pause();
     _input.dispose();
     _scroll.dispose();
     _focus.dispose();
@@ -96,6 +135,9 @@ class _TutorPageState extends ConsumerState<TutorPage> {
     });
 
     final grade = child?.gradeAt(ref.read(clockProvider)());
+    if (grade != null) _plan = PomodoroPlan.forGrade(grade);
+    final pomodoro = ref.watch(pomodoroProvider);
+    final resting = ref.watch(pomodoroEnabledProvider) && pomodoro.resting;
     final ready = tutor.status == TutorStatus.ready;
     final mascotOn = ref.watch(mascotEnabledProvider);
     var mood = moodFor(tutor, replying: _replyingTo != null && !tutor.generating);
@@ -125,6 +167,13 @@ class _TutorPageState extends ConsumerState<TutorPage> {
       body: SafeArea(
         child: child == null || grade == null
             ? const Center(child: CircularProgressIndicator())
+            : resting
+            ? _RestView(
+                state: pomodoro,
+                mascotOn: mascotOn,
+                height: bigHeight,
+                onContinue: () => ref.read(pomodoroProvider.notifier).finishRest(),
+              )
             : MaxContentWidth(
                 child: Column(
                   children: [
@@ -620,6 +669,75 @@ class _CheerBubble extends StatelessWidget {
           text,
           textAlign: TextAlign.center,
           style: TextStyle(color: scheme.onTertiaryContainer, fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+}
+
+/// Descanso del Pomodoro: el chat esta congelado y Toco, en el centro, invita a
+/// estirarse. Solo su mensaje (o tocarlo) devuelve al estudio, y solo cuando
+/// la cuenta atras llego a cero.
+class _RestView extends StatelessWidget {
+  const _RestView({
+    required this.state,
+    required this.mascotOn,
+    required this.height,
+    required this.onContinue,
+  });
+
+  final PomodoroState state;
+  final bool mascotOn;
+  final double height;
+  final VoidCallback onContinue;
+
+  static String clock(Duration d) {
+    final s = d.inSeconds < 0 ? 0 : d.inSeconds;
+    return '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final over = state.restOver;
+    final mood = MascotMood(
+      MascotActivity.idle,
+      over ? MascotEmotion.happy : MascotEmotion.neutral,
+    );
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (mascotOn)
+              MascotView(mood: mood, height: height, onTap: over ? onContinue : null)
+            else
+              const Icon(Icons.self_improvement_rounded, size: 96),
+            const SizedBox(height: 12),
+            Text(
+              over ? '¡Descansaste muy bien!' : '¡Buen trabajo! Es hora de descansar: levántate, estira los brazos y respira hondo.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            if (!over)
+              Semantics(
+                label: 'Descanso, quedan ${clock(state.restLeft)}',
+                child: Text(
+                  clock(state.restLeft),
+                  style: theme.textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              )
+            else ...[
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed: onContinue,
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: const Text('¡Listo, sigamos!'),
+              ),
+            ],
+          ],
         ),
       ),
     );
