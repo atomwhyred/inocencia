@@ -46,6 +46,19 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   usar el perfilador de Flutter DevTools si el teléfono va justo. El interruptor de Apariencia la apaga.
 - [ ] Página del PDF frente a la impresa: el tutor y el lector cuentan páginas del PDF (ver [libros.md](libros.md)).
 
+## Seguridad (revisión del 29-oct, pendiente de aplicar antes de publicar)
+- [ ] **Desactivar la copia de seguridad de Android.** Añadir `android:allowBackup="false"` en `<application>` de
+  `AndroidManifest.xml`. Hoy `adb backup` o la copia en la nube pueden sacar la base con nombres, historial y los
+  hashes de PIN (un PIN de 4 dígitos se averigua con 10.000 intentos). Exige recompilar la release.
+- [ ] **Firma propia.** El release usa la clave de depuración, que es pública: cualquiera puede firmar una
+  «actualización» falsa. Crear un keystore propio, configurarlo en `signingConfigs` y guardarlo fuera del repositorio.
+  Cambiar de clave obliga a desinstalar una vez (se pierden los datos de las instalaciones de prueba).
+- [ ] **Revisar `MANAGE_EXTERNAL_STORAGE`.** Se usa solo para el explorador de carpetas opcional de Android 11+.
+  Valorar quitarlo (basta la carpeta de la app y el selector del sistema) o explicarlo en el README; Google Play lo restringe.
+- Sin problema: la release no declara `INTERNET`, la búsqueda en los libros usa consultas con parámetros, los PIN van
+  con PBKDF2 + sal y bloqueo tras 5 fallos, y el proveedor de archivos no está exportado. El PIN sigue siendo una
+  barrera doméstica (con root o borrando los datos de la app se salta).
+
 ## Aparcado a petición del usuario
 - Calor del teléfono con el modelo trabajando (la latencia crece por temperatura, no por el historial).
 - Calidad del modelo de 3B (pistas y preguntas de seguimiento a veces flojas).
