@@ -14,6 +14,8 @@ import '../../mascot/domain/mascot_cheers.dart';
 import '../../mascot/domain/mascot_mood.dart';
 import '../../mascot/presentation/mascot_view.dart';
 import '../../pomodoro/application/pomodoro.dart';
+import '../../speech/application/speech_controller.dart';
+import '../../speech/presentation/speak_button.dart';
 import '../application/tutor_controller.dart';
 import '../domain/tutor_prompt.dart';
 import '../domain/tutor_source.dart';
@@ -58,6 +60,7 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
 
   Timer? _pomodoroTimer;
   PomodoroController? _pomodoro;
+  SpeechController? _speech;
   PomodoroPlan _plan = PomodoroPlan.forGrade(1);
 
   void _tickPomodoro() {
@@ -75,6 +78,7 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
       _tickPomodoro();
     } else if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
       notifier.pause();
+      _speech?.stop();
     }
   }
 
@@ -82,6 +86,7 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
   void didChangeDependencies() {
     super.didChangeDependencies();
     _pomodoro = ref.read(pomodoroProvider.notifier);
+    _speech = ref.read(speechProvider.notifier);
   }
 
   @override
@@ -89,6 +94,7 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
     WidgetsBinding.instance.removeObserver(this);
     _pomodoroTimer?.cancel();
     _pomodoro?.pause();
+    _speech?.stop();
     _input.dispose();
     _scroll.dispose();
     _focus.dispose();
@@ -99,6 +105,7 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
     final text = _input.text;
     if (text.trim().isEmpty) return;
     final answering = _replyingTo != null;
+    ref.read(speechProvider.notifier).stop();
     _input.clear();
     setState(() => _replyingTo = null);
     ref.read(tutorControllerProvider.notifier).ask(text, grade: grade, answering: answering);
@@ -311,7 +318,7 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Bubble(message: message),
+                _Bubble(index: i, message: message),
                 if (question != null)
                   _QuestionButton(
                     question: question,
@@ -327,8 +334,10 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.message});
+  const _Bubble({required this.index, required this.message});
 
+  /// Posicion en la conversacion: identifica el mensaje para la voz.
+  final int index;
   final TutorMessage message;
 
   @override
@@ -362,6 +371,11 @@ class _Bubble extends StatelessWidget {
               const SizedBox(height: 8),
               for (final source in message.sources) _SourceChip(source: source),
             ],
+            if (!mine && !message.streaming && message.text.isNotEmpty)
+              Align(
+                alignment: Alignment.centerRight,
+                child: SpeakButton(messageId: index, text: message.text),
+              ),
           ],
         ),
       ),

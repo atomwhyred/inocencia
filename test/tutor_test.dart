@@ -14,6 +14,7 @@ import 'package:inocencia/features/mascot/application/mascot_settings.dart';
 import 'package:inocencia/features/mascot/domain/mascot_cheers.dart';
 import 'package:inocencia/features/mascot/domain/mascot_mood.dart';
 import 'package:inocencia/features/pomodoro/application/pomodoro.dart';
+import 'package:inocencia/features/speech/application/speech_controller.dart';
 import 'package:inocencia/features/profiles/presentation/avatar_view.dart';
 import 'package:inocencia/features/mascot/presentation/mascot_view.dart';
 import 'package:inocencia/features/profiles/data/child_profile_repository_impl.dart';
@@ -30,6 +31,7 @@ import 'package:inocencia/features/tutor/domain/tutor_prompt.dart';
 import 'package:inocencia/features/tutor/presentation/tutor_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqlite3/sqlite3.dart';
+import 'speech_test.dart' show FakeSpeechService;
 
 class _FakeEngine implements TutorEngine {
   bool loaded = false;
@@ -884,6 +886,7 @@ void main() {
         mascotAtlasProvider.overrideWith((ref) async => null),
         // Sin Timer periodico: las pruebas del Pomodoro avanzan el reloj a mano.
         pomodoroTickProvider.overrideWithValue(null),
+        speechServiceProvider.overrideWithValue(FakeSpeechService()),
         if (clock != null) clockProvider.overrideWithValue(clock),
       ]);
       c.read(sessionProvider.notifier).selectChild(leo);
@@ -952,6 +955,44 @@ void main() {
       engine.pieces = ['Los adjetivos dicen cómo es algo.'];
       await send(tester, '¿Qué es un adjetivo?');
       expect(find.byIcon(Icons.touch_app_rounded), findsNothing);
+    });
+
+    group('lectura en voz alta', () {
+      testWidgets('solo las respuestas del tutor traen altavoz; tocarlo lee y se puede parar',
+          (tester) async {
+        await openPage(tester);
+        await send(tester, '¿Qué es un adjetivo?');
+        // Una burbuja del niño y otra del tutor: un solo altavoz.
+        expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.volume_up_rounded));
+        await tester.pump();
+        await tester.pump();
+        expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.stop_rounded));
+        await tester.pumpAndSettle();
+        expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.stop_rounded), findsNothing);
+      });
+
+      testWidgets('si el padre lo apaga no hay altavoz', (tester) async {
+        final c = await openPage(tester);
+        await c.read(speechEnabledProvider.notifier).set(false);
+        await send(tester, '¿Qué es un adjetivo?');
+        expect(find.byIcon(Icons.volume_up_rounded), findsNothing);
+      });
+
+      testWidgets('enviar una pregunta nueva calla la lectura', (tester) async {
+        final c = await openPage(tester);
+        await send(tester, '¿Qué es un adjetivo?');
+        await tester.tap(find.byIcon(Icons.volume_up_rounded));
+        await tester.pump();
+        expect(c.read(speechProvider).status.name, 'speaking');
+        await send(tester, 'otra cosa');
+        expect(c.read(speechProvider).status.name, 'idle');
+      });
     });
 
     group('Pomodoro infantil', () {

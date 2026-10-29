@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_mode_controller.dart';
 import '../../mascot/application/mascot_settings.dart';
 import '../../pomodoro/application/pomodoro.dart';
+import '../../speech/application/speech_controller.dart';
 
 /// Seccion "Apariencia" del panel: claro, oscuro o seguir el dispositivo.
 class AppearanceSection extends ConsumerWidget {
@@ -91,6 +92,19 @@ class AppearanceSection extends ConsumerWidget {
             ),
             value: ref.watch(mascotEnabledProvider),
             onChanged: (v) => ref.read(mascotEnabledProvider.notifier).set(v),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: SwitchListTile(
+            secondary: const Icon(Icons.volume_up_rounded),
+            title: const Text('Leer las respuestas en voz alta'),
+            subtitle: const Text(
+              'Cada respuesta del tutor trae un altavoz para escucharla. Usa la voz en español '
+              'del teléfono y funciona sin internet.',
+            ),
+            value: ref.watch(speechEnabledProvider),
+            onChanged: (v) => ref.read(speechEnabledProvider.notifier).set(v),
           ),
         ),
         const SizedBox(height: 12),
