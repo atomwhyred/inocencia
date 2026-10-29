@@ -6,6 +6,7 @@ import '../../../core/responsive/max_content_width.dart';
 import '../../../core/responsive/window_size_class.dart';
 import '../../../core/utils/school_grade_calculator.dart';
 import '../../../core/widgets/offline_badge.dart';
+import '../../achievements/application/achievement_service.dart';
 import '../../auth/application/active_child.dart';
 import '../../auth/application/session.dart';
 import '../../profiles/presentation/avatar_view.dart';
@@ -19,6 +20,11 @@ class HomePage extends ConsumerWidget {
     final child = ref.watch(activeChildProvider);
     final grade = ref.watch(activeGradeProvider);
     final wide = !WindowSizeClass.of(context).isCompact;
+    final progress = ref.watch(childProgressProvider).value;
+    final medalsSubtitle = progress == null
+        ? 'Tus estrellas y medallas'
+        : '${progress.earned.length} ${progress.earned.length == 1 ? 'medalla' : 'medallas'} · '
+              '${progress.stars} ${progress.stars == 1 ? 'estrella' : 'estrellas'}';
 
     final cards = [
       _HomeCard(
@@ -36,6 +42,14 @@ class HomePage extends ConsumerWidget {
         color: Theme.of(context).colorScheme.tertiaryContainer,
         onColor: Theme.of(context).colorScheme.onTertiaryContainer,
         onTap: () => context.push('/books'),
+      ),
+      _HomeCard(
+        icon: Icons.emoji_events_rounded,
+        title: 'Mis medallas',
+        subtitle: medalsSubtitle,
+        color: Theme.of(context).colorScheme.secondaryContainer,
+        onColor: Theme.of(context).colorScheme.onSecondaryContainer,
+        onTap: () => context.push('/medals'),
       ),
     ];
 
@@ -67,10 +81,14 @@ class HomePage extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('¡Hola, ${child.name}!',
-                                  style: Theme.of(context).textTheme.headlineSmall),
-                              Text(SchoolGradeCalculator.label(grade),
-                                  style: Theme.of(context).textTheme.bodyMedium),
+                              Text(
+                                '¡Hola, ${child.name}!',
+                                style: Theme.of(context).textTheme.headlineSmall,
+                              ),
+                              Text(
+                                SchoolGradeCalculator.label(grade),
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
                             ],
                           ),
                         ),
@@ -79,7 +97,7 @@ class HomePage extends ConsumerWidget {
                     const SizedBox(height: 28),
                     Text('¿Qué quieres hacer hoy?', style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 16),
-                    if (wide)
+                    if (wide) ...[
                       IntrinsicHeight(
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -89,11 +107,11 @@ class HomePage extends ConsumerWidget {
                             Expanded(child: cards[1]),
                           ],
                         ),
-                      )
-                    else ...[
-                      cards[0],
-                      const SizedBox(height: 16),
-                      cards[1],
+                      ),
+                      const SizedBox(height: 20),
+                      cards[2],
+                    ] else ...[
+                      for (final card in cards) ...[card, const SizedBox(height: 16)],
                     ],
                   ],
                 ),
@@ -141,14 +159,16 @@ class _HomeCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(color: onColor, fontWeight: FontWeight.w700)),
+                        Text(
+                          title,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(color: onColor, fontWeight: FontWeight.w700),
+                        ),
                         const SizedBox(height: 4),
-                        Text(subtitle,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: onColor)),
+                        Text(
+                          subtitle,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: onColor),
+                        ),
                       ],
                     ),
                   ),

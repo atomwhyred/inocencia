@@ -17,6 +17,11 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   necesita instalar una vez la voz en español (Ajustes › Sistema › Idiomas › Salida de texto a voz › Motor de
   Google › Instalar datos de voz › Español), con internet o copiando el paquete. **Sin probar el audio real en
   español**; la lógica (pausa, parar, una a la vez) está probada con una voz falsa.
+- [ ] **Calidad de los quizzes con el 3B.** El quiz (botón arriba a la derecha del chat) funciona de punta a punta en el
+  Pixel 6, pero el Qwen 3B escribe preguntas flojas: a veces cita "el recuadro de la página 138" o marca como correcta
+  una opción sin sentido (se vio "cine" como mayúscula). Se filtran: la respuesta correcta debe salir del texto del
+  libro y no se admiten preguntas que dependan de páginas o dibujos. Aun así conviene revisar con un adulto, probar
+  con el 7B o generar las preguntas con plantillas a partir del texto del libro. Cada pregunta tarda ~40 s en un 3B.
 - [ ] **Probar el modelo de 7B en un móvil de 12 GB.** Está descargado (`models/qwen2.5-7b-instruct-q4_k_m.gguf`)
   y en el catálogo, pero **sin medir**: no cabe con margen en el Pixel 6 de 8 GB. Se espera ~2,3× la latencia
   del 3B ([models.md](models.md)).

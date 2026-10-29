@@ -187,5 +187,6 @@ class _Flag extends Notifier<bool> {
   @override
   bool build() => false;
 
+  @override
   set state(bool v) => super.state = v;
 }

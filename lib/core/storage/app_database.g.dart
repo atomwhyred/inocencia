@@ -1577,6 +1577,612 @@ class ReadingProgressCompanion extends UpdateCompanion<ReadingProgressRow> {
   }
 }
 
+class $AchievementsTable extends Achievements
+    with TableInfo<$AchievementsTable, AchievementRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AchievementsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _childIdMeta = const VerificationMeta(
+    'childId',
+  );
+  @override
+  late final GeneratedColumn<int> childId = GeneratedColumn<int>(
+    'child_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES child_profiles (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+    'code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _earnedAtMeta = const VerificationMeta(
+    'earnedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> earnedAt = GeneratedColumn<DateTime>(
+    'earned_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, childId, code, earnedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'achievements';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AchievementRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('child_id')) {
+      context.handle(
+        _childIdMeta,
+        childId.isAcceptableOrUnknown(data['child_id']!, _childIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_childIdMeta);
+    }
+    if (data.containsKey('code')) {
+      context.handle(
+        _codeMeta,
+        code.isAcceptableOrUnknown(data['code']!, _codeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codeMeta);
+    }
+    if (data.containsKey('earned_at')) {
+      context.handle(
+        _earnedAtMeta,
+        earnedAt.isAcceptableOrUnknown(data['earned_at']!, _earnedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {childId, code},
+  ];
+  @override
+  AchievementRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AchievementRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      childId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}child_id'],
+      )!,
+      code: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}code'],
+      )!,
+      earnedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}earned_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AchievementsTable createAlias(String alias) {
+    return $AchievementsTable(attachedDatabase, alias);
+  }
+}
+
+class AchievementRow extends DataClass implements Insertable<AchievementRow> {
+  final int id;
+  final int childId;
+  final String code;
+  final DateTime earnedAt;
+  const AchievementRow({
+    required this.id,
+    required this.childId,
+    required this.code,
+    required this.earnedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['child_id'] = Variable<int>(childId);
+    map['code'] = Variable<String>(code);
+    map['earned_at'] = Variable<DateTime>(earnedAt);
+    return map;
+  }
+
+  AchievementsCompanion toCompanion(bool nullToAbsent) {
+    return AchievementsCompanion(
+      id: Value(id),
+      childId: Value(childId),
+      code: Value(code),
+      earnedAt: Value(earnedAt),
+    );
+  }
+
+  factory AchievementRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AchievementRow(
+      id: serializer.fromJson<int>(json['id']),
+      childId: serializer.fromJson<int>(json['childId']),
+      code: serializer.fromJson<String>(json['code']),
+      earnedAt: serializer.fromJson<DateTime>(json['earnedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'childId': serializer.toJson<int>(childId),
+      'code': serializer.toJson<String>(code),
+      'earnedAt': serializer.toJson<DateTime>(earnedAt),
+    };
+  }
+
+  AchievementRow copyWith({
+    int? id,
+    int? childId,
+    String? code,
+    DateTime? earnedAt,
+  }) => AchievementRow(
+    id: id ?? this.id,
+    childId: childId ?? this.childId,
+    code: code ?? this.code,
+    earnedAt: earnedAt ?? this.earnedAt,
+  );
+  AchievementRow copyWithCompanion(AchievementsCompanion data) {
+    return AchievementRow(
+      id: data.id.present ? data.id.value : this.id,
+      childId: data.childId.present ? data.childId.value : this.childId,
+      code: data.code.present ? data.code.value : this.code,
+      earnedAt: data.earnedAt.present ? data.earnedAt.value : this.earnedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AchievementRow(')
+          ..write('id: $id, ')
+          ..write('childId: $childId, ')
+          ..write('code: $code, ')
+          ..write('earnedAt: $earnedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, childId, code, earnedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AchievementRow &&
+          other.id == this.id &&
+          other.childId == this.childId &&
+          other.code == this.code &&
+          other.earnedAt == this.earnedAt);
+}
+
+class AchievementsCompanion extends UpdateCompanion<AchievementRow> {
+  final Value<int> id;
+  final Value<int> childId;
+  final Value<String> code;
+  final Value<DateTime> earnedAt;
+  const AchievementsCompanion({
+    this.id = const Value.absent(),
+    this.childId = const Value.absent(),
+    this.code = const Value.absent(),
+    this.earnedAt = const Value.absent(),
+  });
+  AchievementsCompanion.insert({
+    this.id = const Value.absent(),
+    required int childId,
+    required String code,
+    this.earnedAt = const Value.absent(),
+  }) : childId = Value(childId),
+       code = Value(code);
+  static Insertable<AchievementRow> custom({
+    Expression<int>? id,
+    Expression<int>? childId,
+    Expression<String>? code,
+    Expression<DateTime>? earnedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (childId != null) 'child_id': childId,
+      if (code != null) 'code': code,
+      if (earnedAt != null) 'earned_at': earnedAt,
+    });
+  }
+
+  AchievementsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? childId,
+    Value<String>? code,
+    Value<DateTime>? earnedAt,
+  }) {
+    return AchievementsCompanion(
+      id: id ?? this.id,
+      childId: childId ?? this.childId,
+      code: code ?? this.code,
+      earnedAt: earnedAt ?? this.earnedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (childId.present) {
+      map['child_id'] = Variable<int>(childId.value);
+    }
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (earnedAt.present) {
+      map['earned_at'] = Variable<DateTime>(earnedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AchievementsCompanion(')
+          ..write('id: $id, ')
+          ..write('childId: $childId, ')
+          ..write('code: $code, ')
+          ..write('earnedAt: $earnedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ChildCountersTable extends ChildCounters
+    with TableInfo<$ChildCountersTable, ChildCounterRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChildCountersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _childIdMeta = const VerificationMeta(
+    'childId',
+  );
+  @override
+  late final GeneratedColumn<int> childId = GeneratedColumn<int>(
+    'child_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES child_profiles (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _counterMeta = const VerificationMeta(
+    'counter',
+  );
+  @override
+  late final GeneratedColumn<String> counter = GeneratedColumn<String>(
+    'counter',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<int> amount = GeneratedColumn<int>(
+    'amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, childId, counter, amount];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'child_counters';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ChildCounterRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('child_id')) {
+      context.handle(
+        _childIdMeta,
+        childId.isAcceptableOrUnknown(data['child_id']!, _childIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_childIdMeta);
+    }
+    if (data.containsKey('counter')) {
+      context.handle(
+        _counterMeta,
+        counter.isAcceptableOrUnknown(data['counter']!, _counterMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_counterMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {childId, counter},
+  ];
+  @override
+  ChildCounterRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ChildCounterRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      childId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}child_id'],
+      )!,
+      counter: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}counter'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}amount'],
+      )!,
+    );
+  }
+
+  @override
+  $ChildCountersTable createAlias(String alias) {
+    return $ChildCountersTable(attachedDatabase, alias);
+  }
+}
+
+class ChildCounterRow extends DataClass implements Insertable<ChildCounterRow> {
+  final int id;
+  final int childId;
+  final String counter;
+  final int amount;
+  const ChildCounterRow({
+    required this.id,
+    required this.childId,
+    required this.counter,
+    required this.amount,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['child_id'] = Variable<int>(childId);
+    map['counter'] = Variable<String>(counter);
+    map['amount'] = Variable<int>(amount);
+    return map;
+  }
+
+  ChildCountersCompanion toCompanion(bool nullToAbsent) {
+    return ChildCountersCompanion(
+      id: Value(id),
+      childId: Value(childId),
+      counter: Value(counter),
+      amount: Value(amount),
+    );
+  }
+
+  factory ChildCounterRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ChildCounterRow(
+      id: serializer.fromJson<int>(json['id']),
+      childId: serializer.fromJson<int>(json['childId']),
+      counter: serializer.fromJson<String>(json['counter']),
+      amount: serializer.fromJson<int>(json['amount']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'childId': serializer.toJson<int>(childId),
+      'counter': serializer.toJson<String>(counter),
+      'amount': serializer.toJson<int>(amount),
+    };
+  }
+
+  ChildCounterRow copyWith({
+    int? id,
+    int? childId,
+    String? counter,
+    int? amount,
+  }) => ChildCounterRow(
+    id: id ?? this.id,
+    childId: childId ?? this.childId,
+    counter: counter ?? this.counter,
+    amount: amount ?? this.amount,
+  );
+  ChildCounterRow copyWithCompanion(ChildCountersCompanion data) {
+    return ChildCounterRow(
+      id: data.id.present ? data.id.value : this.id,
+      childId: data.childId.present ? data.childId.value : this.childId,
+      counter: data.counter.present ? data.counter.value : this.counter,
+      amount: data.amount.present ? data.amount.value : this.amount,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChildCounterRow(')
+          ..write('id: $id, ')
+          ..write('childId: $childId, ')
+          ..write('counter: $counter, ')
+          ..write('amount: $amount')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, childId, counter, amount);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ChildCounterRow &&
+          other.id == this.id &&
+          other.childId == this.childId &&
+          other.counter == this.counter &&
+          other.amount == this.amount);
+}
+
+class ChildCountersCompanion extends UpdateCompanion<ChildCounterRow> {
+  final Value<int> id;
+  final Value<int> childId;
+  final Value<String> counter;
+  final Value<int> amount;
+  const ChildCountersCompanion({
+    this.id = const Value.absent(),
+    this.childId = const Value.absent(),
+    this.counter = const Value.absent(),
+    this.amount = const Value.absent(),
+  });
+  ChildCountersCompanion.insert({
+    this.id = const Value.absent(),
+    required int childId,
+    required String counter,
+    this.amount = const Value.absent(),
+  }) : childId = Value(childId),
+       counter = Value(counter);
+  static Insertable<ChildCounterRow> custom({
+    Expression<int>? id,
+    Expression<int>? childId,
+    Expression<String>? counter,
+    Expression<int>? amount,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (childId != null) 'child_id': childId,
+      if (counter != null) 'counter': counter,
+      if (amount != null) 'amount': amount,
+    });
+  }
+
+  ChildCountersCompanion copyWith({
+    Value<int>? id,
+    Value<int>? childId,
+    Value<String>? counter,
+    Value<int>? amount,
+  }) {
+    return ChildCountersCompanion(
+      id: id ?? this.id,
+      childId: childId ?? this.childId,
+      counter: counter ?? this.counter,
+      amount: amount ?? this.amount,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (childId.present) {
+      map['child_id'] = Variable<int>(childId.value);
+    }
+    if (counter.present) {
+      map['counter'] = Variable<String>(counter.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<int>(amount.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChildCountersCompanion(')
+          ..write('id: $id, ')
+          ..write('childId: $childId, ')
+          ..write('counter: $counter, ')
+          ..write('amount: $amount')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1586,6 +2192,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ReadingProgressTable readingProgress = $ReadingProgressTable(
     this,
   );
+  late final $AchievementsTable achievements = $AchievementsTable(this);
+  late final $ChildCountersTable childCounters = $ChildCountersTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1595,6 +2203,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     childProfiles,
     tutorMessages,
     readingProgress,
+    achievements,
+    childCounters,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -1611,6 +2221,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('reading_progress', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'child_profiles',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('achievements', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'child_profiles',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('child_counters', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -1866,6 +2490,42 @@ final class $$ChildProfilesTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$AchievementsTable, List<AchievementRow>>
+  _achievementsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.achievements,
+    aliasName: 'child_profiles__id__achievements__child_id',
+  );
+
+  $$AchievementsTableProcessedTableManager get achievementsRefs {
+    final manager = $$AchievementsTableTableManager(
+      $_db,
+      $_db.achievements,
+    ).filter((f) => f.childId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_achievementsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ChildCountersTable, List<ChildCounterRow>>
+  _childCountersRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.childCounters,
+    aliasName: 'child_profiles__id__child_counters__child_id',
+  );
+
+  $$ChildCountersTableProcessedTableManager get childCountersRefs {
+    final manager = $$ChildCountersTableTableManager(
+      $_db,
+      $_db.childCounters,
+    ).filter((f) => f.childId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_childCountersRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ChildProfilesTableFilterComposer
@@ -1958,6 +2618,56 @@ class $$ChildProfilesTableFilterComposer
           }) => $$ReadingProgressTableFilterComposer(
             $db: $db,
             $table: $db.readingProgress,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> achievementsRefs(
+    Expression<bool> Function($$AchievementsTableFilterComposer f) f,
+  ) {
+    final $$AchievementsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.achievements,
+      getReferencedColumn: (t) => t.childId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AchievementsTableFilterComposer(
+            $db: $db,
+            $table: $db.achievements,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> childCountersRefs(
+    Expression<bool> Function($$ChildCountersTableFilterComposer f) f,
+  ) {
+    final $$ChildCountersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.childCounters,
+      getReferencedColumn: (t) => t.childId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChildCountersTableFilterComposer(
+            $db: $db,
+            $table: $db.childCounters,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -2102,6 +2812,56 @@ class $$ChildProfilesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> achievementsRefs<T extends Object>(
+    Expression<T> Function($$AchievementsTableAnnotationComposer a) f,
+  ) {
+    final $$AchievementsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.achievements,
+      getReferencedColumn: (t) => t.childId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AchievementsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.achievements,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> childCountersRefs<T extends Object>(
+    Expression<T> Function($$ChildCountersTableAnnotationComposer a) f,
+  ) {
+    final $$ChildCountersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.childCounters,
+      getReferencedColumn: (t) => t.childId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChildCountersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.childCounters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ChildProfilesTableTableManager
@@ -2120,6 +2880,8 @@ class $$ChildProfilesTableTableManager
           PrefetchHooks Function({
             bool tutorMessagesRefs,
             bool readingProgressRefs,
+            bool achievementsRefs,
+            bool childCountersRefs,
           })
         > {
   $$ChildProfilesTableTableManager(_$AppDatabase db, $ChildProfilesTable table)
@@ -2182,12 +2944,19 @@ class $$ChildProfilesTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({tutorMessagesRefs = false, readingProgressRefs = false}) {
+              ({
+                tutorMessagesRefs = false,
+                readingProgressRefs = false,
+                achievementsRefs = false,
+                childCountersRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (tutorMessagesRefs) db.tutorMessages,
                     if (readingProgressRefs) db.readingProgress,
+                    if (achievementsRefs) db.achievements,
+                    if (childCountersRefs) db.childCounters,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -2232,6 +3001,46 @@ class $$ChildProfilesTableTableManager
                           referencedColumn: 'child_id',
                           typedResults: items,
                         ),
+                      if (achievementsRefs)
+                        await $_getPrefetchedDataByColumns<
+                          ChildProfileRow,
+                          $ChildProfilesTable,
+                          AchievementRow,
+                          $AchievementsTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ChildProfilesTableReferences
+                              ._achievementsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ChildProfilesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).achievementsRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'child_id',
+                          typedResults: items,
+                        ),
+                      if (childCountersRefs)
+                        await $_getPrefetchedDataByColumns<
+                          ChildProfileRow,
+                          $ChildProfilesTable,
+                          ChildCounterRow,
+                          $ChildCountersTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ChildProfilesTableReferences
+                              ._childCountersRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ChildProfilesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).childCountersRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'child_id',
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -2252,7 +3061,12 @@ typedef $$ChildProfilesTableProcessedTableManager =
       $$ChildProfilesTableUpdateCompanionBuilder,
       (ChildProfileRow, $$ChildProfilesTableReferences),
       ChildProfileRow,
-      PrefetchHooks Function({bool tutorMessagesRefs, bool readingProgressRefs})
+      PrefetchHooks Function({
+        bool tutorMessagesRefs,
+        bool readingProgressRefs,
+        bool achievementsRefs,
+        bool childCountersRefs,
+      })
     >;
 typedef $$TutorMessagesTableCreateCompanionBuilder =
     TutorMessagesCompanion Function({
@@ -2907,6 +3721,591 @@ typedef $$ReadingProgressTableProcessedTableManager =
       ReadingProgressRow,
       PrefetchHooks Function({bool childId})
     >;
+typedef $$AchievementsTableCreateCompanionBuilder =
+    AchievementsCompanion Function({
+      Value<int> id,
+      required int childId,
+      required String code,
+      Value<DateTime> earnedAt,
+    });
+typedef $$AchievementsTableUpdateCompanionBuilder =
+    AchievementsCompanion Function({
+      Value<int> id,
+      Value<int> childId,
+      Value<String> code,
+      Value<DateTime> earnedAt,
+    });
+
+final class $$AchievementsTableReferences
+    extends BaseReferences<_$AppDatabase, $AchievementsTable, AchievementRow> {
+  $$AchievementsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ChildProfilesTable _childIdTable(_$AppDatabase db) => db.childProfiles
+      .createAlias('achievements__child_id__child_profiles__id');
+
+  $$ChildProfilesTableProcessedTableManager get childId {
+    final $_column = $_itemColumn<int>('child_id')!;
+
+    final manager = $$ChildProfilesTableTableManager(
+      $_db,
+      $_db.childProfiles,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_childIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AchievementsTableFilterComposer
+    extends Composer<_$AppDatabase, $AchievementsTable> {
+  $$AchievementsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get earnedAt => $composableBuilder(
+    column: $table.earnedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ChildProfilesTableFilterComposer get childId {
+    final $$ChildProfilesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.childId,
+      referencedTable: $db.childProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChildProfilesTableFilterComposer(
+            $db: $db,
+            $table: $db.childProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AchievementsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AchievementsTable> {
+  $$AchievementsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get earnedAt => $composableBuilder(
+    column: $table.earnedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ChildProfilesTableOrderingComposer get childId {
+    final $$ChildProfilesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.childId,
+      referencedTable: $db.childProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChildProfilesTableOrderingComposer(
+            $db: $db,
+            $table: $db.childProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AchievementsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AchievementsTable> {
+  $$AchievementsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get earnedAt =>
+      $composableBuilder(column: $table.earnedAt, builder: (column) => column);
+
+  $$ChildProfilesTableAnnotationComposer get childId {
+    final $$ChildProfilesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.childId,
+      referencedTable: $db.childProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChildProfilesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.childProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AchievementsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AchievementsTable,
+          AchievementRow,
+          $$AchievementsTableFilterComposer,
+          $$AchievementsTableOrderingComposer,
+          $$AchievementsTableAnnotationComposer,
+          $$AchievementsTableCreateCompanionBuilder,
+          $$AchievementsTableUpdateCompanionBuilder,
+          (AchievementRow, $$AchievementsTableReferences),
+          AchievementRow,
+          PrefetchHooks Function({bool childId})
+        > {
+  $$AchievementsTableTableManager(_$AppDatabase db, $AchievementsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AchievementsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AchievementsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AchievementsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> childId = const Value.absent(),
+                Value<String> code = const Value.absent(),
+                Value<DateTime> earnedAt = const Value.absent(),
+              }) => AchievementsCompanion(
+                id: id,
+                childId: childId,
+                code: code,
+                earnedAt: earnedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int childId,
+                required String code,
+                Value<DateTime> earnedAt = const Value.absent(),
+              }) => AchievementsCompanion.insert(
+                id: id,
+                childId: childId,
+                code: code,
+                earnedAt: earnedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AchievementsTable, AchievementRow>(table),
+                  $$AchievementsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({childId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (childId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.childId,
+                        referencedTable: $$AchievementsTableReferences
+                            ._childIdTable(db),
+                        referencedColumn: $$AchievementsTableReferences
+                            ._childIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AchievementsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AchievementsTable,
+      AchievementRow,
+      $$AchievementsTableFilterComposer,
+      $$AchievementsTableOrderingComposer,
+      $$AchievementsTableAnnotationComposer,
+      $$AchievementsTableCreateCompanionBuilder,
+      $$AchievementsTableUpdateCompanionBuilder,
+      (AchievementRow, $$AchievementsTableReferences),
+      AchievementRow,
+      PrefetchHooks Function({bool childId})
+    >;
+typedef $$ChildCountersTableCreateCompanionBuilder =
+    ChildCountersCompanion Function({
+      Value<int> id,
+      required int childId,
+      required String counter,
+      Value<int> amount,
+    });
+typedef $$ChildCountersTableUpdateCompanionBuilder =
+    ChildCountersCompanion Function({
+      Value<int> id,
+      Value<int> childId,
+      Value<String> counter,
+      Value<int> amount,
+    });
+
+final class $$ChildCountersTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $ChildCountersTable, ChildCounterRow> {
+  $$ChildCountersTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ChildProfilesTable _childIdTable(_$AppDatabase db) => db.childProfiles
+      .createAlias('child_counters__child_id__child_profiles__id');
+
+  $$ChildProfilesTableProcessedTableManager get childId {
+    final $_column = $_itemColumn<int>('child_id')!;
+
+    final manager = $$ChildProfilesTableTableManager(
+      $_db,
+      $_db.childProfiles,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_childIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ChildCountersTableFilterComposer
+    extends Composer<_$AppDatabase, $ChildCountersTable> {
+  $$ChildCountersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get counter => $composableBuilder(
+    column: $table.counter,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ChildProfilesTableFilterComposer get childId {
+    final $$ChildProfilesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.childId,
+      referencedTable: $db.childProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChildProfilesTableFilterComposer(
+            $db: $db,
+            $table: $db.childProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChildCountersTableOrderingComposer
+    extends Composer<_$AppDatabase, $ChildCountersTable> {
+  $$ChildCountersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get counter => $composableBuilder(
+    column: $table.counter,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ChildProfilesTableOrderingComposer get childId {
+    final $$ChildProfilesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.childId,
+      referencedTable: $db.childProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChildProfilesTableOrderingComposer(
+            $db: $db,
+            $table: $db.childProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChildCountersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ChildCountersTable> {
+  $$ChildCountersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get counter =>
+      $composableBuilder(column: $table.counter, builder: (column) => column);
+
+  GeneratedColumn<int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  $$ChildProfilesTableAnnotationComposer get childId {
+    final $$ChildProfilesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.childId,
+      referencedTable: $db.childProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChildProfilesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.childProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChildCountersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ChildCountersTable,
+          ChildCounterRow,
+          $$ChildCountersTableFilterComposer,
+          $$ChildCountersTableOrderingComposer,
+          $$ChildCountersTableAnnotationComposer,
+          $$ChildCountersTableCreateCompanionBuilder,
+          $$ChildCountersTableUpdateCompanionBuilder,
+          (ChildCounterRow, $$ChildCountersTableReferences),
+          ChildCounterRow,
+          PrefetchHooks Function({bool childId})
+        > {
+  $$ChildCountersTableTableManager(_$AppDatabase db, $ChildCountersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ChildCountersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ChildCountersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ChildCountersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> childId = const Value.absent(),
+                Value<String> counter = const Value.absent(),
+                Value<int> amount = const Value.absent(),
+              }) => ChildCountersCompanion(
+                id: id,
+                childId: childId,
+                counter: counter,
+                amount: amount,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int childId,
+                required String counter,
+                Value<int> amount = const Value.absent(),
+              }) => ChildCountersCompanion.insert(
+                id: id,
+                childId: childId,
+                counter: counter,
+                amount: amount,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ChildCountersTable, ChildCounterRow>(table),
+                  $$ChildCountersTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({childId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (childId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.childId,
+                        referencedTable: $$ChildCountersTableReferences
+                            ._childIdTable(db),
+                        referencedColumn: $$ChildCountersTableReferences
+                            ._childIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ChildCountersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ChildCountersTable,
+      ChildCounterRow,
+      $$ChildCountersTableFilterComposer,
+      $$ChildCountersTableOrderingComposer,
+      $$ChildCountersTableAnnotationComposer,
+      $$ChildCountersTableCreateCompanionBuilder,
+      $$ChildCountersTableUpdateCompanionBuilder,
+      (ChildCounterRow, $$ChildCountersTableReferences),
+      ChildCounterRow,
+      PrefetchHooks Function({bool childId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2919,4 +4318,8 @@ class $AppDatabaseManager {
       $$TutorMessagesTableTableManager(_db, _db.tutorMessages);
   $$ReadingProgressTableTableManager get readingProgress =>
       $$ReadingProgressTableTableManager(_db, _db.readingProgress);
+  $$AchievementsTableTableManager get achievements =>
+      $$AchievementsTableTableManager(_db, _db.achievements);
+  $$ChildCountersTableTableManager get childCounters =>
+      $$ChildCountersTableTableManager(_db, _db.childCounters);
 }

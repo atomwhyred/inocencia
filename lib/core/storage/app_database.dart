@@ -70,12 +70,45 @@ class ReadingProgress extends Table {
       ];
 }
 
-@DriftDatabase(tables: [Guardians, ChildProfiles, TutorMessages, ReadingProgress])
+/// Medallas que ha ganado cada nino. El catalogo (titulos, iconos) vive en el
+/// codigo; aqui solo se guarda el codigo y cuando se gano.
+@DataClassName('AchievementRow')
+class Achievements extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get childId =>
+      integer().references(ChildProfiles, #id, onDelete: KeyAction.cascade)();
+  TextColumn get code => text()();
+  DateTimeColumn get earnedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+        {childId, code},
+      ];
+}
+
+/// Contadores de cada nino (aciertos, quizzes, racha...) de los que salen las medallas.
+@DataClassName('ChildCounterRow')
+class ChildCounters extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get childId =>
+      integer().references(ChildProfiles, #id, onDelete: KeyAction.cascade)();
+  TextColumn get counter => text()();
+  IntColumn get amount => integer().withDefault(const Constant(0))();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+        {childId, counter},
+      ];
+}
+
+@DriftDatabase(
+  tables: [Guardians, ChildProfiles, TutorMessages, ReadingProgress, Achievements, ChildCounters],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openOnDevice());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -83,6 +116,10 @@ class AppDatabase extends _$AppDatabase {
           if (from < 2) {
             await m.createTable(tutorMessages);
             await m.createTable(readingProgress);
+          }
+          if (from < 3) {
+            await m.createTable(achievements);
+            await m.createTable(childCounters);
           }
         },
         // SQLite no aplica las claves foraneas (ni su borrado en cascada) si no

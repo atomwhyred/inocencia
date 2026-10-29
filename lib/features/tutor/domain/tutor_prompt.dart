@@ -154,6 +154,9 @@ Reglas:
     ];
   }
 
+  /// Los fragmentos del libro tal y como se le pasan al modelo.
+  static String bookContext(List<KnowledgeChunk> chunks) => _context(chunks);
+
   static String _context(List<KnowledgeChunk> chunks) {
     final buf = StringBuffer('TEXTOS DEL LIBRO:');
     var used = 0;

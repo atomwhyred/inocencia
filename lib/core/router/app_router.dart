@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/achievements/presentation/medals_page.dart';
 import '../../features/admin/presentation/admin_page.dart';
 import '../../features/auth/application/session.dart';
 import '../../features/auth/presentation/child_pin_page.dart';
@@ -38,7 +39,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (loc.startsWith('/admin') && !session.parentUnlocked) return '/parent-pin';
       // Lo del nino (inicio, tutor y libros) exige haber elegido perfil.
-      final childOnly = loc == '/home' || loc == '/tutor' || loc.startsWith('/books');
+      final childOnly = loc == '/home' || loc == '/tutor' ||
+          loc == '/medals' ||
+          loc.startsWith('/books');
       if (childOnly && session.activeChildId == null) return '/';
       return null;
     },
@@ -57,6 +60,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/home', builder: (_, _) => const HomePage()),
       GoRoute(path: '/tutor', builder: (_, _) => const TutorPage()),
+      GoRoute(path: '/medals', builder: (_, _) => const MedalsPage()),
       GoRoute(
         path: '/books',
         builder: (_, _) => const BooksPage(),

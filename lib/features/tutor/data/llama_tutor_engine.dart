@@ -87,7 +87,7 @@ class LlamaTutorEngine implements TutorEngine {
   }
 
   @override
-  Stream<String> generate(List<ChatTurn> turns) {
+  Stream<String> generate(List<ChatTurn> turns, {int? maxTokens}) {
     final worker = _worker;
     if (worker == null) {
       return Stream.error(const TutorEngineException('El modelo no esta cargado.'));
@@ -98,7 +98,7 @@ class LlamaTutorEngine implements TutorEngine {
     final (id, stream) = worker.generate(
       system: hasSystem ? _chatml(turns.take(1)) : '',
       suffix: '${_chatml(hasSystem ? turns.skip(1) : turns)}<|im_start|>assistant\n',
-      maxTokens: maxAnswerTokens,
+      maxTokens: maxTokens ?? maxAnswerTokens,
     );
     late final StreamController<String> out;
     StreamSubscription<String>? sub;

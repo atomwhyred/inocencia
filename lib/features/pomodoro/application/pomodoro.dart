@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
+import '../../achievements/application/achievement_service.dart';
 import '../../auth/application/session.dart';
 
 /// Si el padre quiere el "Pomodoro infantil": estudiar un rato y descansar.
@@ -125,6 +126,9 @@ class PomodoroController extends Notifier<PomodoroState> {
         restEnd: now.add(plan.rest),
         restLeft: plan.rest,
       );
+      // Un bloque de estudio entero: cuenta para la medalla de sesion completada.
+      final child = ref.read(sessionProvider).activeChildId;
+      if (child != null) ref.read(achievementServiceProvider).studySessionDone(child);
     }
   }
 

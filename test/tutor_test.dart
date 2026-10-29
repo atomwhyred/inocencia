@@ -13,7 +13,9 @@ import 'package:inocencia/features/mascot/application/mascot_atlas.dart';
 import 'package:inocencia/features/mascot/application/mascot_settings.dart';
 import 'package:inocencia/features/mascot/domain/mascot_cheers.dart';
 import 'package:inocencia/features/mascot/domain/mascot_mood.dart';
+import 'package:inocencia/features/achievements/application/achievement_service.dart';
 import 'package:inocencia/features/pomodoro/application/pomodoro.dart';
+import 'package:inocencia/features/quiz/application/quiz_controller.dart';
 import 'package:inocencia/features/speech/application/speech_controller.dart';
 import 'package:inocencia/features/profiles/presentation/avatar_view.dart';
 import 'package:inocencia/features/mascot/presentation/mascot_view.dart';
@@ -40,6 +42,7 @@ class _FakeEngine implements TutorEngine {
   List<String> pieces = ['Los ', 'adjetivos ', 'dicen cómo es algo.'];
   Object? generateError;
   int generateCalls = 0;
+  int? lastMaxTokens;
   StreamController<String>? manual;
 
   @override
@@ -52,9 +55,10 @@ class _FakeEngine implements TutorEngine {
   }
 
   @override
-  Stream<String> generate(List<ChatTurn> turns) {
+  Stream<String> generate(List<ChatTurn> turns, {int? maxTokens}) {
     generateCalls++;
     lastTurns = turns;
+    lastMaxTokens = maxTokens;
     if (manual != null) return manual!.stream;
     if (generateError != null) return Stream.error(generateError!);
     return Stream.fromIterable(pieces);
@@ -83,7 +87,7 @@ class _SlowEngine implements TutorEngine {
   }
 
   @override
-  Stream<String> generate(List<ChatTurn> turns) => const Stream.empty();
+  Stream<String> generate(List<ChatTurn> turns, {int? maxTokens}) => const Stream.empty();
 
   @override
   Future<void> dispose() async {
@@ -992,6 +996,168 @@ void main() {
         expect(c.read(speechProvider).status.name, 'speaking');
         await send(tester, 'otra cosa');
         expect(c.read(speechProvider).status.name, 'idle');
+      });
+    });
+
+    group('Quiz', () {
+      const quiz = '''
+P1: ¿Qué tienen el mismo género y número que los sustantivos?
+A) Los adjetivos
+B) Los verbos
+C) Las sumas
+RESPUESTA: A
+P2: ¿Con qué concuerdan los adjetivos?
+A) los relojes
+B) los sustantivos
+C) las nubes
+RESPUESTA: B
+P3: ¿Qué comparten el adjetivo y el sustantivo?
+A) el color
+B) la rima
+C) el mismo género y número
+RESPUESTA: C
+''';
+
+      final quizButton = find.byTooltip('Hacer un quiz');
+
+      Future<void> openQuiz(WidgetTester tester) async {
+        await tester.tap(quizButton);
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('el botón solo se activa cuando ya hay un tema del libro', (tester) async {
+        await openPage(tester);
+        expect(tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.quiz_rounded)).onPressed, isNull);
+        await send(tester, '¿Qué es un adjetivo?');
+        expect(tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.quiz_rounded)).onPressed, isNotNull);
+      });
+
+      testWidgets('3 preguntas, respuesta inmediata, resultado, estrellas y medallas', (tester) async {
+        final c = await openPage(tester);
+        await send(tester, '¿Qué es un adjetivo?');
+        engine.pieces = [quiz];
+        await openQuiz(tester);
+
+        expect(engine.lastMaxTokens, 420);
+        expect(find.text('Pregunta 1 de 3'), findsOneWidget);
+        expect(find.text('¿Qué tienen el mismo género y número que los sustantivos?'), findsOneWidget);
+
+        await tester.tap(find.text('Los adjetivos'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Ganaste una estrella'), findsOneWidget);
+        await tester.tap(find.text('Siguiente'));
+        await tester.pumpAndSettle();
+
+        // Falla a posta: ve cual era la correcta, sin castigo.
+        expect(find.text('Pregunta 2 de 3'), findsOneWidget);
+        await tester.tap(find.text('los relojes'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Casi. La respuesta correcta era la'), findsOneWidget);
+        expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+        // Ya contesto: tocar otra opcion no cambia nada.
+        await tester.tap(find.text('los sustantivos'));
+        await tester.pumpAndSettle();
+        expect(c.read(quizControllerProvider).correct, 1);
+        await tester.tap(find.text('Siguiente'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('el mismo género y número'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Ver mi resultado'));
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Acertaste 2 de 3'), findsOneWidget);
+        expect(find.byIcon(Icons.star_rounded), findsNWidgets(2));
+
+        // Medallas y estrellas quedan guardadas.
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+        final progress = await tester.runAsync(
+          () => c.read(achievementRepositoryProvider).watch(c.read(sessionProvider).activeChildId!).first,
+        );
+        expect(progress!.stars, 2);
+        expect(progress.earned.keys, containsAll(['first_topic', 'first_quiz']));
+        expect(progress.earned.keys, isNot(contains('perfect_quiz')));
+
+        await tester.tap(find.text('Volver al chat'));
+        await tester.pumpAndSettle();
+        expect(find.byType(TextField), findsOneWidget);
+      });
+
+      testWidgets('si el modelo escribe mal el quiz se reintenta una vez y luego avisa con cariño',
+          (tester) async {
+        await openPage(tester);
+        await send(tester, '¿Qué es un adjetivo?');
+        engine.pieces = ['No sé qué preguntar.'];
+        final before = engine.generateCalls;
+        await openQuiz(tester);
+
+        expect(engine.generateCalls - before, 2);
+        expect(find.text(QuizController.unavailable), findsOneWidget);
+        await tester.tap(find.text('Volver al chat'));
+        await tester.pumpAndSettle();
+        expect(find.byType(TextField), findsOneWidget);
+      });
+
+      testWidgets('cada pregunta aparece en cuanto está lista y se espera por la siguiente', (tester) async {
+        final c = await openPage(tester);
+        await send(tester, '¿Qué es un adjetivo?');
+        final live = StreamController<String>();
+        engine.manual = live;
+        await tester.tap(find.byIcon(Icons.quiz_rounded));
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Toco está preparando tu quiz…'), findsOneWidget);
+
+        // Solo la primera pregunta: ya se puede contestar sin esperar al resto.
+        live.add('P1: ¿Qué tienen el mismo género y número que los sustantivos?\nA) Los adjetivos\nB) Los verbos\n'
+            'C) Las sumas\nRESPUESTA: A\nP2: ¿Con qué concuerdan los adjetivos?\nA) los relojes');
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Pregunta 1 de 1'), findsOneWidget);
+        await tester.tap(find.text('Los adjetivos'));
+        await tester.pump();
+        await tester.tap(find.text('Siguiente'));
+        await tester.pump();
+        expect(find.text('Toco está escribiendo la siguiente pregunta…'), findsOneWidget);
+
+        // Llegan las otras dos: sigue solo con la segunda y el modelo se para al tener 3.
+        live.add('\nB) los sustantivos\nC) las nubes\nRESPUESTA: B\nP3: ¿Qué comparten el adjetivo y el sustantivo?\nA) el color\n'
+            'B) la rima\nC) el mismo género y número\nRESPUESTA: C\n');
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Pregunta 2 de 3'), findsOneWidget);
+        expect(c.read(quizControllerProvider).expecting, isFalse);
+        expect(live.hasListener, isFalse, reason: 'con 3 preguntas se deja de generar');
+        unawaited(live.close());
+      });
+
+      testWidgets('si el modelo se corta tras la primera, el quiz acaba con esa pregunta', (tester) async {
+        final c = await openPage(tester);
+        await send(tester, '¿Qué es un adjetivo?');
+        engine.pieces = [
+          'P1: ¿Qué tienen el mismo género y número que los sustantivos?\nA) Los adjetivos\nB) Los verbos\n'
+              'C) Las sumas\nRESPUESTA: A',
+        ];
+        await openQuiz(tester);
+        expect(find.text('Pregunta 1 de 1'), findsOneWidget);
+        await tester.tap(find.text('Los adjetivos'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Ver mi resultado'));
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Acertaste 1 de 1'), findsOneWidget);
+        expect(c.read(quizControllerProvider).status, QuizStatus.finished);
+      });
+
+      testWidgets('un quiz a medias se puede cerrar con la X', (tester) async {
+        await openPage(tester);
+        await send(tester, '¿Qué es un adjetivo?');
+        engine.pieces = [quiz];
+        await openQuiz(tester);
+        await tester.tap(find.byTooltip('Cerrar el quiz'));
+        await tester.pumpAndSettle();
+        expect(find.byType(TextField), findsOneWidget);
       });
     });
 

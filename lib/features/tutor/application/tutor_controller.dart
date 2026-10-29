@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/storage/platform_info.dart';
+import '../../achievements/application/achievement_service.dart';
 import '../../auth/application/session.dart';
 import '../../external_data/domain/linked_file_status.dart';
 import '../../knowledge/data/fts_query.dart';
@@ -107,6 +108,10 @@ class TutorController extends Notifier<TutorState> {
   String? _topic;
   Completer<void>? _running;
 
+  /// Fragmentos del libro de la ultima consulta: el "contexto activo" con el
+  /// que se prepara un quiz.
+  List<KnowledgeChunk> _lastChunks = const [];
+
   /// Nino de la conversacion y donde se guarda. Sin nino activo (o en las
   /// pruebas sin sesion) la conversacion solo vive en memoria.
   int? _childId;
@@ -132,6 +137,9 @@ class TutorController extends Notifier<TutorState> {
     if (state.status == TutorStatus.loading || state.status == TutorStatus.ready) return;
     state = state.copyWith(status: TutorStatus.loading);
     await _loadHistory();
+    final child = _childId;
+    // Un dia mas que el nino estudia: cuenta para la racha de dias seguidos.
+    if (child != null) unawaited(ref.read(achievementServiceProvider).dayOpened(child));
     try {
       final files = await ref.read(externalFilesRepositoryProvider).check();
       if (!files.model.isReady || !files.knowledge.isReady) {
@@ -150,6 +158,16 @@ class TutorController extends Notifier<TutorState> {
     } catch (e) {
       state = state.copyWith(status: TutorStatus.error, problem: 'No se pudo preparar el tutor: $e');
     }
+  }
+
+  /// Textos del libro para un quiz: los de la ultima consulta o, si se acaba de
+  /// reabrir el chat, los del ultimo tema que el nino pregunto.
+  Future<List<KnowledgeChunk>> quizChunks(int grade) async {
+    if (_lastChunks.isNotEmpty) return _lastChunks;
+    final query = _topic ?? state.messages.where((m) => m.fromUser).map((m) => m.text).lastOrNull;
+    final knowledge = _knowledge;
+    if (query == null || knowledge == null) return const [];
+    return _lastChunks = await knowledge.search(query, grade: grade);
   }
 
   /// Recupera la conversacion guardada del nino activo, para seguir donde la dejo.
@@ -227,6 +245,7 @@ class TutorController extends Notifier<TutorState> {
         return;
       }
 
+      _lastChunks = chunks;
       _setLast(sources: _sources(chunks));
       final turns = TutorPrompt.build(
         grade: grade,
@@ -348,6 +367,10 @@ class TutorController extends Notifier<TutorState> {
     state = state.copyWith(messages: msgs);
     if (save && wasStreaming && text != _stoppedMark) {
       _save(StoredTutorMessage(fromUser: false, text: text, sources: msgs.last.sources));
+      final child = _childId;
+      if (child != null && msgs.last.sources.isNotEmpty) {
+        unawaited(ref.read(achievementServiceProvider).topicLearned(child));
+      }
     }
   }
 }

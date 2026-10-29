@@ -9,11 +9,13 @@ import '../../../core/responsive/max_content_width.dart';
 import '../../../core/utils/school_grade_calculator.dart';
 import '../../../core/widgets/offline_badge.dart';
 import '../../auth/application/session.dart';
+import '../../achievements/presentation/medal_toast.dart';
 import '../../mascot/application/mascot_settings.dart';
 import '../../mascot/domain/mascot_cheers.dart';
 import '../../mascot/domain/mascot_mood.dart';
 import '../../mascot/presentation/mascot_view.dart';
 import '../../pomodoro/application/pomodoro.dart';
+import '../../quiz/presentation/quiz_page.dart';
 import '../../speech/application/speech_controller.dart';
 import '../../speech/presentation/speak_button.dart';
 import '../application/tutor_controller.dart';
@@ -145,6 +147,10 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
     if (grade != null) _plan = PomodoroPlan.forGrade(grade);
     final pomodoro = ref.watch(pomodoroProvider);
     final resting = ref.watch(pomodoroEnabledProvider) && pomodoro.resting;
+    // El quiz se hace sobre un tema ya consultado y con el modelo libre.
+    final quizReady = tutor.status == TutorStatus.ready &&
+        !tutor.generating &&
+        tutor.messages.any((m) => !m.fromUser && m.sources.isNotEmpty);
     final ready = tutor.status == TutorStatus.ready;
     final mascotOn = ref.watch(mascotEnabledProvider);
     var mood = moodFor(tutor, replying: _replyingTo != null && !tutor.generating);
@@ -163,8 +169,21 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
 
     return Scaffold(
       appBar: AppBar(
-        actions: const [
-          Padding(padding: EdgeInsets.only(right: 12), child: OfflineBadge(iconOnly: true)),
+        actions: [
+          IconButton(
+            tooltip: 'Hacer un quiz',
+            icon: const Icon(Icons.quiz_rounded),
+            onPressed: !quizReady || grade == null
+                ? null
+                : () {
+                    ref.read(speechProvider.notifier).stop();
+                    Navigator.of(context).push(MaterialPageRoute<void>(
+                      fullscreenDialog: true,
+                      builder: (_) => QuizPage(grade: grade),
+                    ));
+                  },
+          ),
+          const Padding(padding: EdgeInsets.only(right: 12), child: OfflineBadge(iconOnly: true)),
         ],
         // El inicio del nino es la pantalla anterior; la flecha vuelve a el.
         leading: BackButton(
@@ -202,6 +221,7 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
                           ),
                         ),
                       ),
+                    const MedalToast(),
                     if (_cheer != null)
                       _CheerBubble(
                         key: ValueKey(_cheer! + _cheers.toString()),

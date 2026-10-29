@@ -24,6 +24,7 @@ import 'package:inocencia/features/tutor/domain/tutor_history_repository.dart';
 import 'package:inocencia/features/tutor/domain/tutor_source.dart';
 import 'package:inocencia/features/mascot/application/mascot_atlas.dart';
 import 'package:inocencia/features/mascot/application/mascot_settings.dart';
+import 'package:inocencia/features/achievements/data/achievement_repository_impl.dart';
 import 'package:inocencia/features/profiles/data/child_profile_repository_impl.dart';
 import 'package:inocencia/features/profiles/domain/child_profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -84,7 +85,7 @@ class _IdleEngine implements TutorEngine {
   Future<void> load(String modelPath) async => loaded = true;
 
   @override
-  Stream<String> generate(List<ChatTurn> turns) => const Stream.empty();
+  Stream<String> generate(List<ChatTurn> turns, {int? maxTokens}) => const Stream.empty();
 
   @override
   Future<void> dispose() async => loaded = false;
@@ -312,6 +313,32 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Leo'), findsOneWidget);
     expect(find.textContaining(RegExp(r'grado$')), findsOneWidget);
+  });
+
+  testWidgets('Mis medallas: el inicio resume el progreso y la pantalla muestra ganadas y por ganar',
+      (tester) async {
+    await boot(tester);
+    final repo = AchievementRepositoryImpl(db);
+    await tester.runAsync(() async {
+      await repo.award(leo, 'first_topic', DateTime(2026, 10, 29));
+      await repo.addToCounter(leo, 'correct', 4);
+    });
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.tap(find.text('Leo'));
+    await settle(tester, 300);
+
+    expect(find.text('Mis medallas'), findsOneWidget);
+    expect(find.text('1 medalla · 4 estrellas'), findsOneWidget);
+
+    await tester.tap(find.text('Mis medallas'));
+    await settle(tester, 300);
+    expect(find.text('4'), findsOneWidget);
+    expect(find.text('Primer tema'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'Primer tema\.\s*Ganada')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'Quiz perfecto\.\s*Por ganar')), findsOneWidget);
+    expect(find.byIcon(Icons.lock_outline_rounded), findsWidgets);
   });
 
   testWidgets('el lector y los libros exigen haber elegido perfil', (tester) async {

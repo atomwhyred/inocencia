@@ -10,7 +10,10 @@ abstract class TutorEngine {
 
   /// Genera la respuesta pieza a pieza. El stream termina al acabar; cancelar
   /// la suscripcion detiene la generacion.
-  Stream<String> generate(List<ChatTurn> turns);
+  ///
+  /// [maxTokens] cambia el largo maximo de la respuesta (el quiz necesita mas
+  /// que una explicacion corta).
+  Stream<String> generate(List<ChatTurn> turns, {int? maxTokens});
 
   /// Libera el modelo y su memoria.
   Future<void> dispose();
