@@ -70,6 +70,8 @@ else
   ARGS+=(-DGGML_BACKEND_DL=OFF)
   [ -n "$ARM_ARCH" ] && ARGS+=(-DGGML_CPU_ARM_ARCH="$ARM_ARCH")
 fi
+# sgemm.cpp (llamafile) usa NEON fp16 que armv7 no tiene: no compila en 32 bits.
+[ "$ABI" = "armeabi-v7a" ] && ARGS+=(-DGGML_LLAMAFILE=OFF)
 
 echo "NDK: $NDK"
 echo "ABI: $ABI ${ARM_ARCH:+($ARM_ARCH)}"

@@ -42,10 +42,11 @@ flutter analyze && flutter test  # los tests compilan PDFium (pdfrx): necesitan 
 flutter run                      # en un dispositivo conectado
 ```
 
-APK de release (arm64, valido para móvil y tablet; solo hay librerías nativas para arm64-v8a):
+APK de release, uno por arquitectura (arm64 para móviles y tablets actuales, armeabi-v7a para los de 32 bits;
+hay que compilar antes las `.so` de las dos con `native/llama/build_android.sh arm64-v8a` y `... armeabi-v7a`):
 
 ```bash
-flutter build apk --release --split-per-abi --target-platform android-arm64 --build-number <N>
+flutter build apk --release --split-per-abi --target-platform android-arm,android-arm64 --build-number <N>
 ```
 
 Sube siempre `--build-number` para poder actualizar sobre una instalación anterior sin desinstalar
@@ -60,6 +61,7 @@ Clean Architecture por funcionalidades en `lib/features/` (`auth`, `tutor`, `kno
 
 ## Documentación
 
+- [docs/guia-padres.md](docs/guia-padres.md): guía para padres (instalar, copiar modelo y libros, perfiles).
 - [docs/pendiente.md](docs/pendiente.md): estado actual y lo que falta.
 - [docs/models.md](docs/models.md): modelos probados y mediciones en un Pixel 6.
 - [docs/libros.md](docs/libros.md): cómo dar los libros a la app.

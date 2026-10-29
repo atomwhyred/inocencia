@@ -31,8 +31,11 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 - [ ] **APK de producción firmado.** Hoy el release se firma con la clave de depuración
   (`android/app/build.gradle.kts`). Hay que crear el keystore y compilar por ABI
   (`flutter build apk --release --split-per-abi`).
-- [ ] **Manual corto para padres**: copiar modelo, `knowledge.db` y PDF; vincular carpetas; borrar
-  conversaciones; apagar la mascota.
+- [x] ~~Manual corto para padres~~ (29-oct): [guia-padres.md](guia-padres.md). Falta revisarlo con un padre real
+  (feedback de los amigos) y añadir cómo borrar conversaciones.
+- [ ] **APK de 32 bits (armeabi-v7a) sin probar en un teléfono real.** Se compila (sin llamafile, que no compila en
+  armv7) y arranca la app en el empaquetado, pero no hay un teléfono de 32 bits para medir. Un proceso de 32 bits
+  tiene unos 3 GB de espacio de direcciones: lo realista es el modelo de 1.5B.
 - [ ] **Copia de seguridad o exportación del historial** (opcional, no se pidió).
 
 ## Pulido
