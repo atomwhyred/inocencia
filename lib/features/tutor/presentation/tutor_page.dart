@@ -8,9 +8,9 @@ import '../../../core/utils/school_grade_calculator.dart';
 import '../../../core/widgets/offline_badge.dart';
 import '../../auth/application/session.dart';
 import '../../mascot/application/mascot_settings.dart';
+import '../../mascot/domain/mascot_cheers.dart';
 import '../../mascot/domain/mascot_mood.dart';
 import '../../mascot/presentation/mascot_view.dart';
-import '../../profiles/presentation/avatar_view.dart';
 import '../application/tutor_controller.dart';
 import '../domain/tutor_prompt.dart';
 import '../domain/tutor_source.dart';
@@ -32,6 +32,14 @@ class _TutorPageState extends ConsumerState<TutorPage> {
   /// Pregunta del tutor que el nino toco para contestarla: se muestra sobre la
   /// caja de texto y su siguiente mensaje se trata como respuesta.
   String? _replyingTo;
+
+  /// Mensaje de animo que Toco dice al tocarlo; se desvanece solo.
+  String? _cheer;
+  int _cheers = 0;
+
+  void _onMascotTap() {
+    setState(() => _cheer = mascotCheer(_cheers++));
+  }
 
   @override
   void initState() {
@@ -78,11 +86,7 @@ class _TutorPageState extends ConsumerState<TutorPage> {
   @override
   Widget build(BuildContext context) {
     final childId = ref.watch(sessionProvider).activeChildId;
-    final child = ref
-        .watch(childProfilesProvider)
-        .value
-        ?.where((c) => c.id == childId)
-        .firstOrNull;
+    final child = ref.watch(childProfilesProvider).value?.where((c) => c.id == childId).firstOrNull;
     final tutor = ref.watch(tutorControllerProvider);
     ref.listen(tutorControllerProvider.select((s) => s.messages), (_, _) => _scrollToEnd());
     // La conversacion guardada se carga mientras se prepara el tutor: al quedar
@@ -94,23 +98,29 @@ class _TutorPageState extends ConsumerState<TutorPage> {
     final grade = child?.gradeAt(ref.read(clockProvider)());
     final ready = tutor.status == TutorStatus.ready;
     final mascotOn = ref.watch(mascotEnabledProvider);
-    final mood = moodFor(tutor, replying: _replyingTo != null && !tutor.generating);
+    var mood = moodFor(tutor, replying: _replyingTo != null && !tutor.generating);
+    // Al tocarlo, Toco se alegra un momento (si no esta ocupado con la respuesta).
+    if (_cheer != null && mood.activity == MascotActivity.idle) {
+      mood = const MascotMood(MascotActivity.idle, MascotEmotion.happy);
+    }
     // Grande al saludar, mientras carga y mientras espera la primera palabra;
     // pequena el resto. Con el teclado abierto o en pantallas bajas, siempre
     // pequena para no quitar sitio al chat.
     final screen = MediaQuery.sizeOf(context);
     final roomy = MediaQuery.viewInsetsOf(context).bottom == 0 && screen.height >= 500;
     final waiting = mood.activity == MascotActivity.thinking;
-    final bigMascot = mascotOn &&
-        roomy &&
-        (!ready || tutor.messages.isEmpty || waiting);
-    final bigHeight = (screen.height * 0.24).clamp(150.0, 230.0);
+    final bigMascot = mascotOn && roomy && (!ready || tutor.messages.isEmpty || waiting);
+    final bigHeight = (screen.height * 0.21).clamp(130.0, 200.0);
 
     return Scaffold(
       appBar: AppBar(
-        title: const OfflineBadge(compact: true),
+        actions: const [
+          Padding(padding: EdgeInsets.only(right: 12), child: OfflineBadge(iconOnly: true)),
+        ],
         // El inicio del nino es la pantalla anterior; la flecha vuelve a el.
-        leading: BackButton(onPressed: () => context.canPop() ? context.pop() : context.go('/home')),
+        leading: BackButton(
+          onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+        ),
       ),
       body: SafeArea(
         child: child == null || grade == null
@@ -118,28 +128,6 @@ class _TutorPageState extends ConsumerState<TutorPage> {
             : MaxContentWidth(
                 child: Column(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                      child: Row(
-                        children: [
-                          AvatarView(avatar: child.avatar, radius: 22),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('¡Hola, ${child.name}!',
-                                    style: Theme.of(context).textTheme.titleMedium),
-                                Text(SchoolGradeCalculator.label(grade),
-                                    style: Theme.of(context).textTheme.bodySmall),
-                              ],
-                            ),
-                          ),
-                          if (mascotOn && !bigMascot)
-                            MascotView(mood: mood, height: 60, size: MascotSize.small),
-                        ],
-                      ),
-                    ),
                     if (mascotOn)
                       AnimatedSize(
                         duration: const Duration(milliseconds: 250),
@@ -148,27 +136,54 @@ class _TutorPageState extends ConsumerState<TutorPage> {
                         // Al encoger o crecer la mascota la lista cambia de alto:
                         // se vuelve al final para que la ultima pregunta se vea.
                         onEnd: _scrollToEnd,
-                        child: bigMascot
-                            ? Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: MascotView(mood: mood, height: bigHeight),
-                              )
-                            : const SizedBox(width: double.infinity),
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: MascotView(
+                            mood: mood,
+                            height: bigMascot ? bigHeight : 52,
+                            size: bigMascot ? MascotSize.large : MascotSize.small,
+                            onTap: _onMascotTap,
+                          ),
+                        ),
                       ),
+                    if (_cheer != null)
+                      _CheerBubble(
+                        key: ValueKey(_cheer! + _cheers.toString()),
+                        text: _cheer!,
+                        onDone: () => setState(() => _cheer = null),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                      child: Column(
+                        children: [
+                          Text(
+                            '¡Hola, ${child.name}!',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          Text(
+                            SchoolGradeCalculator.label(grade),
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
                     Expanded(child: _body(context, tutor)),
                     if (ready && _replyingTo != null && !tutor.generating)
                       _ReplyBanner(
                         question: _replyingTo!,
                         onCancel: () => setState(() => _replyingTo = null),
                       ),
-                    if (ready) _InputBar(
-                      controller: _input,
-                      focusNode: _focus,
-                      hint: _replyingTo == null ? 'Escribe tu pregunta…' : 'Escribe tu respuesta…',
-                      generating: tutor.generating,
-                      onSend: () => _send(grade),
-                      onStop: () => ref.read(tutorControllerProvider.notifier).stop(),
-                    ),
+                    if (ready)
+                      _InputBar(
+                        controller: _input,
+                        focusNode: _focus,
+                        hint: _replyingTo == null
+                            ? 'Escribe tu pregunta…'
+                            : 'Escribe tu respuesta…',
+                        generating: tutor.generating,
+                        onSend: () => _send(grade),
+                        onStop: () => ref.read(tutorControllerProvider.notifier).stop(),
+                      ),
                   ],
                 ),
               ),
@@ -368,8 +383,10 @@ class _ThinkingState extends State<_Thinking> with SingleTickerProviderStateMixi
   ];
   static const _secondsPerPhrase = 7;
 
-  late final AnimationController _anim =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat();
+  late final AnimationController _anim = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  )..repeat();
   final _clock = Stopwatch()..start();
 
   @override
@@ -384,7 +401,8 @@ class _ThinkingState extends State<_Thinking> with SingleTickerProviderStateMixi
     return AnimatedBuilder(
       animation: _anim,
       builder: (_, _) {
-        final phrase = _phrases[(_clock.elapsed.inSeconds ~/ _secondsPerPhrase).clamp(0, _phrases.length - 1)];
+        final phrase =
+            _phrases[(_clock.elapsed.inSeconds ~/ _secondsPerPhrase).clamp(0, _phrases.length - 1)];
         return Semantics(
           label: phrase,
           child: ExcludeSemantics(
@@ -483,27 +501,28 @@ class _ReplyBanner extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(12, 4, 12, 0),
       padding: const EdgeInsets.fromLTRB(14, 6, 4, 6),
       decoration: BoxDecoration(
-        color: scheme.secondaryContainer,
+        color: scheme.tertiaryContainer,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
           Expanded(
             child: Text.rich(
-              TextSpan(children: [
-                const TextSpan(text: 'Respondiendo a: ', style: TextStyle(fontWeight: FontWeight.w700)),
-                TextSpan(text: question),
-              ]),
+              TextSpan(
+                children: [
+                  const TextSpan(
+                    text: 'Respondiendo a: ',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  TextSpan(text: question),
+                ],
+              ),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(color: scheme.onSecondaryContainer),
             ),
           ),
-          IconButton(
-            tooltip: 'Quitar',
-            onPressed: onCancel,
-            icon: const Icon(Icons.close_rounded),
-          ),
+          IconButton(tooltip: 'Quitar', onPressed: onCancel, icon: const Icon(Icons.close_rounded)),
         ],
       ),
     );
@@ -559,6 +578,49 @@ class _InputBar extends StatelessWidget {
                   icon: const Icon(Icons.send_rounded),
                 ),
         ],
+      ),
+    );
+  }
+}
+
+/// Globo con el mensaje de Toco: aparece, se queda unos segundos y se va solo
+/// (con una animacion, sin `Timer`).
+class _CheerBubble extends StatelessWidget {
+  const _CheerBubble({super.key, required this.text, required this.onDone});
+
+  final String text;
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(seconds: 5),
+      onEnd: onDone,
+      builder: (context, t, child) {
+        // Entra en el primer 8 %, sale en el ultimo 15 %.
+        final opacity =
+            (t < 0.08
+                    ? t / 0.08
+                    : t > 0.85
+                    ? (1 - t) / 0.15
+                    : 1.0)
+                .clamp(0.0, 1.0);
+        return Opacity(opacity: opacity, child: child);
+      },
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(24, 4, 24, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: scheme.tertiaryContainer,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: scheme.onTertiaryContainer, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }

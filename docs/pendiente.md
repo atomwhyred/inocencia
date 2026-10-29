@@ -7,10 +7,11 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 
 ## Cierre del proyecto
 - [x] ~~Probar en una tablet real~~ (Xiaomi Pad 5, 28-oct: bien).
-- [ ] **Fases 3 y 4 de la lista de mejoras del usuario** (pendientes de confirmar): grado bajo el nombre en los
-  perfiles; chat sin avatar, mascota al centro y solo el icono sin internet a la derecha; tocar a Toco para un
-  gesto y un mensaje motivador; temporizador Pomodoro infantil (15+5 min de 1.º a 3.º, 20+5 de 4.º a 6.º, con
-  interruptor en el panel de padres, activado por defecto).
+- [x] ~~Fase 3~~ (29-oct): grado bajo el nombre en los perfiles; chat sin avatar, Toco arriba al centro y solo el
+  icono sin internet a la derecha; tocar a Toco da un gesto (estrellitas) y un mensaje que promete un juego.
+- [ ] **Fase 4 de la lista de mejoras del usuario** (pendiente de confirmar): temporizador Pomodoro infantil
+  (15+5 min de 1.º a 3.º, 20+5 de 4.º a 6.º, con interruptor en el panel de padres, activado por defecto; al
+  acabar, el chat se congela y Toco pasa al centro con la cuenta atrás del descanso).
 - [ ] **Probar el modelo de 7B en un móvil de 12 GB.** Está descargado (`models/qwen2.5-7b-instruct-q4_k_m.gguf`)
   y en el catálogo, pero **sin medir**: no cabe con margen en el Pixel 6 de 8 GB. Se espera ~2,3× la latencia
   del 3B ([models.md](models.md)).

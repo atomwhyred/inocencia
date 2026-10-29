@@ -307,6 +307,13 @@ void main() {
     expect(find.text('Página 3 de 3'), findsOneWidget);
   });
 
+  testWidgets('en la pantalla de perfiles cada niño muestra su grado bajo el nombre', (tester) async {
+    await boot(tester);
+    await tester.pumpAndSettle();
+    expect(find.text('Leo'), findsOneWidget);
+    expect(find.textContaining(RegExp(r'grado$')), findsOneWidget);
+  });
+
   testWidgets('el lector y los libros exigen haber elegido perfil', (tester) async {
     await boot(tester);
     container.read(routerProvider).go('/books/6to_matematica');

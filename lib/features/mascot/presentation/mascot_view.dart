@@ -22,11 +22,15 @@ class MascotView extends ConsumerStatefulWidget {
     required this.mood,
     this.height = 160,
     this.size = MascotSize.large,
+    this.onTap,
   });
 
   final MascotMood mood;
   final double height;
   final MascotSize size;
+
+  /// Al tocar a Toco (sin accion si es `null`).
+  final VoidCallback? onTap;
 
   /// Texto para lectores de pantalla.
   static String semanticsLabel(MascotMood mood) {
@@ -149,20 +153,26 @@ class _MascotViewState extends ConsumerState<MascotView>
     return Semantics(
       label: MascotView.semanticsLabel(widget.mood),
       image: true,
+      button: widget.onTap != null,
+      onTap: widget.onTap,
       excludeSemantics: true,
-      child: SizedBox(
-        height: widget.height,
-        width: widget.height * aspect,
-        child: RepaintBoundary(
-          child: CustomPaint(
-            painter: MascotPainter(
-              atlas: atlas,
-              mood: widget.mood,
-              previousMood: _animating ? _previousMood : null,
-              moodSince: _moodSince,
-              clock: _clock,
-              colors: MascotInk.of(Theme.of(context).colorScheme),
-              size: widget.size,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        child: SizedBox(
+          height: widget.height,
+          width: widget.height * aspect,
+          child: RepaintBoundary(
+            child: CustomPaint(
+              painter: MascotPainter(
+                atlas: atlas,
+                mood: widget.mood,
+                previousMood: _animating ? _previousMood : null,
+                moodSince: _moodSince,
+                clock: _clock,
+                colors: MascotInk.of(Theme.of(context).colorScheme),
+                size: widget.size,
+              ),
             ),
           ),
         ),

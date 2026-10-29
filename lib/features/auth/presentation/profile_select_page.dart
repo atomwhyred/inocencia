@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/responsive/max_content_width.dart';
+import '../../../core/utils/school_grade_calculator.dart';
 import '../../../core/widgets/offline_badge.dart';
 import '../../profiles/domain/child_profile.dart';
 import '../../profiles/presentation/avatar_view.dart';
@@ -26,6 +27,7 @@ class ProfileSelectPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profiles = ref.watch(childProfilesProvider);
+    final now = ref.watch(clockProvider)();
     return Scaffold(
       appBar: AppBar(
         title: const Text(appName),
@@ -66,7 +68,11 @@ class ProfileSelectPage extends ConsumerWidget {
                     runSpacing: 20,
                     children: [
                       for (final c in list)
-                        _ProfileCard(child: c, onTap: () => _open(context, ref, c)),
+                        _ProfileCard(
+                          child: c,
+                          grade: c.gradeAt(now),
+                          onTap: () => _open(context, ref, c),
+                        ),
                     ],
                   ),
               ],
@@ -79,9 +85,10 @@ class ProfileSelectPage extends ConsumerWidget {
 }
 
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({required this.child, required this.onTap});
+  const _ProfileCard({required this.child, required this.grade, required this.onTap});
 
   final ChildProfile child;
+  final int grade;
   final VoidCallback onTap;
 
   @override
@@ -103,6 +110,12 @@ class _ProfileCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleMedium,
+                ),
+                Text(
+                  SchoolGradeCalculator.label(grade),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 if (child.hasPin)
                   const Padding(

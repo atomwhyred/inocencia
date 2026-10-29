@@ -11,7 +11,9 @@ import 'package:inocencia/core/storage/app_database.dart';
 import 'package:inocencia/features/auth/application/session.dart';
 import 'package:inocencia/features/mascot/application/mascot_atlas.dart';
 import 'package:inocencia/features/mascot/application/mascot_settings.dart';
+import 'package:inocencia/features/mascot/domain/mascot_cheers.dart';
 import 'package:inocencia/features/mascot/domain/mascot_mood.dart';
+import 'package:inocencia/features/profiles/presentation/avatar_view.dart';
 import 'package:inocencia/features/mascot/presentation/mascot_view.dart';
 import 'package:inocencia/features/profiles/data/child_profile_repository_impl.dart';
 import 'package:inocencia/features/profiles/domain/child_profile.dart';
@@ -984,6 +986,36 @@ void main() {
         addTearDown(tester.view.resetViewInsets);
         await tester.pumpAndSettle();
         expect(toco(tester).size, MascotSize.small);
+      });
+
+      testWidgets('arriba al centro, sin avatar y con el aviso de internet solo como icono', (tester) async {
+        await openPage(tester);
+        expect(find.byType(AvatarView), findsNothing);
+        expect(find.text('Sin internet'), findsNothing);
+        expect(find.bySemanticsLabel('Funciona sin internet, en este dispositivo'), findsOneWidget);
+        final screen = tester.view.physicalSize.width;
+        expect(tester.getCenter(find.byType(MascotView)).dx, closeTo(screen / 2, 1));
+        expect(tester.getCenter(find.byIcon(Icons.wifi_off_rounded)).dx, greaterThan(screen * 0.8));
+      });
+
+      testWidgets('al tocarlo se alegra, anima con un juego y el mensaje se va solo', (tester) async {
+        await openPage(tester);
+        await tester.tap(find.byType(MascotView));
+        await tester.pump();
+        expect(find.textContaining('jug'), findsOneWidget);
+        expect(toco(tester).mood, const MascotMood(MascotActivity.idle, MascotEmotion.happy));
+
+        await tester.pumpAndSettle();
+        expect(find.textContaining('jug'), findsNothing);
+        expect(toco(tester).mood, const MascotMood(MascotActivity.idle));
+
+        // Cada toque dice algo distinto.
+        await tester.tap(find.byType(MascotView));
+        await tester.pump();
+        final first = mascotCheer(0);
+        expect(find.text(first), findsNothing);
+        expect(find.text(mascotCheer(1)), findsOneWidget);
+        await tester.pumpAndSettle();
       });
 
       testWidgets('el padre puede apagarla: no queda rastro de Toco', (tester) async {

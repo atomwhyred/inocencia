@@ -16,7 +16,7 @@ class SplashGate extends ConsumerStatefulWidget {
   final Widget child;
 
   /// Cuanto dura la pantalla de bienvenida, desvanecimiento incluido.
-  static const duration = Duration(milliseconds: 1800);
+  static const duration = Duration(milliseconds: 3000);
 
   @override
   ConsumerState<SplashGate> createState() => _SplashGateState();
