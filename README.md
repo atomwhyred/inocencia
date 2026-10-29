@@ -339,7 +339,12 @@ Las ideas y los informes de fallos son bienvenidos (issues). Antes de enviar cam
 
 ## Licencia y créditos
 
-**Licencia del código: por definir.** Añade un archivo `LICENSE` antes de publicar el repositorio.
+El código de este repositorio se distribuye bajo la **licencia Apache 2.0** (ver [LICENSE](LICENSE) y
+[NOTICE](NOTICE)). La licencia cubre el código, no los modelos ni los libros, que tienen sus propios términos.
+
+La app está pensada para **niños menores de edad**: no recoge datos, no tiene cuentas ni anuncios y no usa
+internet. Si la distribuyes o la modificas, mantén ese principio y revisa la normativa de protección de menores de
+tu país.
 
 Créditos y avisos:
 

@@ -1,0 +1,11 @@
+inocencIA
+Copyright 2026 atomwhyred
+
+Este producto incluye software desarrollado por terceros, cada uno con su propia licencia:
+  - Flutter y los paquetes de pubspec.yaml
+  - llama.cpp (MIT) y llama_cpp_dart
+  - PDFium (via pdfrx)
+  - Modelos Qwen2.5 (Apache-2.0 el de 1.5B y 7B; licencia Qwen Research el de 3B). Los modelos NO forman
+    parte de este repositorio.
+
+Los libros de texto y su contenido pertenecen a sus autores y editoriales y no estan incluidos.
