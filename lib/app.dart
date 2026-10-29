@@ -10,6 +10,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_controller.dart';
 import 'core/widgets/splash_gate.dart';
+import 'features/power/application/power_mode.dart';
 import 'features/auth/application/session.dart';
 import 'features/notifications/application/reminder_controller.dart';
 
@@ -59,12 +60,14 @@ class _InocenciaAppState extends ConsumerState<InocenciaApp>
 
   @override
   Widget build(BuildContext context) {
+    final saver = ref.watch(batterySaverProvider);
     return MaterialApp.router(
       title: appName,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      themeMode: ref.watch(themeModeProvider),
+      // Modo Bateria / Apagon: negro puro, sin tocar la eleccion de tema del padre.
+      theme: saver ? AppTheme.saver() : AppTheme.light(),
+      darkTheme: saver ? AppTheme.saver() : AppTheme.dark(),
+      themeMode: saver ? ThemeMode.dark : ref.watch(themeModeProvider),
       routerConfig: ref.watch(routerProvider),
       // Bienvenida con Toco y una frase al azar, encima de la app mientras carga.
       builder: (context, child) => SplashGate(child: child ?? const SizedBox.shrink()),

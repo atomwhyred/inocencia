@@ -15,6 +15,7 @@ import 'package:inocencia/features/mascot/domain/mascot_cheers.dart';
 import 'package:inocencia/features/mascot/domain/mascot_mood.dart';
 import 'package:inocencia/features/achievements/application/achievement_service.dart';
 import 'package:inocencia/features/pomodoro/application/pomodoro.dart';
+import 'package:inocencia/features/power/application/power_mode.dart';
 import 'package:inocencia/features/quiz/application/quiz_controller.dart';
 import 'package:inocencia/features/speech/application/speech_controller.dart';
 import 'package:inocencia/features/profiles/presentation/avatar_view.dart';
@@ -43,15 +44,19 @@ class _FakeEngine implements TutorEngine {
   Object? generateError;
   int generateCalls = 0;
   int? lastMaxTokens;
+  bool? lastLowPower;
+  int loads = 0;
   StreamController<String>? manual;
 
   @override
   bool get isLoaded => loaded;
 
   @override
-  Future<void> load(String modelPath) async {
+  Future<void> load(String modelPath, {bool lowPower = false}) async {
     if (loadError != null) throw loadError!;
     loaded = true;
+    loads++;
+    lastLowPower = lowPower;
   }
 
   @override
@@ -78,7 +83,7 @@ class _SlowEngine implements TutorEngine {
   bool get isLoaded => loaded;
 
   @override
-  Future<void> load(String modelPath) async {
+  Future<void> load(String modelPath, {bool lowPower = false}) async {
     _loading = true;
     await Future<void>.delayed(const Duration(milliseconds: 80));
     if (disposedWhileLoading) throw const TutorEngineException('Disposed');
@@ -869,11 +874,15 @@ void main() {
     late AppDatabase db;
     late _FakeEngine engine;
 
-    Future<ProviderContainer> openPage(WidgetTester tester, {DateTime Function()? clock}) async {
+    Future<ProviderContainer> openPage(
+      WidgetTester tester, {
+      DateTime Function()? clock,
+      Map<String, Object> prefs = const {},
+    }) async {
       tester.view.physicalSize = const Size(500, 1100);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues(prefs);
       db = AppDatabase(NativeDatabase.memory());
       final leo = await ChildProfileRepositoryImpl(db, const PinHasher(iterations: 10)).create(
         ChildProfileInput(name: 'Leo', avatar: 'emoji:🦊', birthDate: DateTime(2015, 3, 1)),
@@ -1158,6 +1167,55 @@ RESPUESTA: C
         await tester.tap(find.byTooltip('Cerrar el quiz'));
         await tester.pumpAndSettle();
         expect(find.byType(TextField), findsOneWidget);
+      });
+    });
+
+    group('modo batería / apagón', () {
+      testWidgets('cambiar el modo recarga el modelo con menos consumo, sin perder la conversación',
+          (tester) async {
+        final c = await openPage(tester);
+        await send(tester, '¿Qué es un adjetivo?');
+        expect(engine.loads, 1);
+        expect(engine.lastLowPower, isFalse);
+
+        await c.read(batterySaverProvider.notifier).set(true);
+        await tester.pumpAndSettle();
+        expect(engine.loads, 2);
+        expect(engine.lastLowPower, isTrue);
+        expect(find.text('¿Qué es un adjetivo?'), findsOneWidget);
+        // Sigue contestando tras la recarga.
+        await send(tester, 'otra cosa');
+        expect(engine.generateCalls, 2);
+
+        await c.read(batterySaverProvider.notifier).set(false);
+        await tester.pumpAndSettle();
+        expect(engine.loads, 3);
+        expect(engine.lastLowPower, isFalse);
+      });
+
+      testWidgets('si el tutor está contestando, la recarga espera a que acabe', (tester) async {
+        final c = await openPage(tester);
+        final live = StreamController<String>();
+        engine.manual = live;
+        await tester.enterText(find.byType(TextField), '¿Qué es un adjetivo?');
+        await tester.tap(find.byIcon(Icons.send_rounded));
+        await tester.pump();
+        await tester.pump();
+        await c.read(batterySaverProvider.notifier).set(true);
+        await tester.pump();
+        expect(engine.loads, 1, reason: 'no se recarga a media respuesta');
+
+        live.add('Los adjetivos dicen cómo es algo. ¿Cuál es uno?');
+        await tester.pumpAndSettle();
+        expect(engine.loads, 2);
+        expect(engine.lastLowPower, isTrue);
+        unawaited(live.close());
+      });
+
+      testWidgets('arrancar con el modo ya activo carga el modelo en modo ligero', (tester) async {
+        final c = await openPage(tester, prefs: {'battery_saver': true});
+        expect(c.read(batterySaverProvider), isTrue);
+        expect(engine.lastLowPower, isTrue);
       });
     });
 

@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_mode_controller.dart';
 import '../../mascot/application/mascot_settings.dart';
 import '../../pomodoro/application/pomodoro.dart';
+import '../../power/application/power_mode.dart';
 import '../../speech/application/speech_controller.dart';
 
 /// Seccion "Apariencia" del panel: claro, oscuro o seguir el dispositivo.
@@ -92,6 +93,20 @@ class AppearanceSection extends ConsumerWidget {
             ),
             value: ref.watch(mascotEnabledProvider),
             onChanged: (v) => ref.read(mascotEnabledProvider.notifier).set(v),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: SwitchListTile(
+            secondary: const Icon(Icons.battery_saver_rounded),
+            title: const Text('Modo batería / apagón'),
+            subtitle: const Text(
+              'Fondo negro, sin animaciones y el tutor usa menos procesador y contesta más '
+              'corto. Ideal con poca batería o sin electricidad. También está en el icono de '
+              'la batería de la barra superior.',
+            ),
+            value: ref.watch(batterySaverProvider),
+            onChanged: (v) => ref.read(batterySaverProvider.notifier).set(v),
           ),
         ),
         const SizedBox(height: 12),

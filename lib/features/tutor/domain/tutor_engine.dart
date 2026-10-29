@@ -4,7 +4,10 @@ import 'tutor_prompt.dart';
 /// pruebas se sustituye por uno falso.
 abstract class TutorEngine {
   /// Carga el modelo GGUF (varios segundos). Lanza si el archivo no sirve.
-  Future<void> load(String modelPath);
+  ///
+  /// Con [lowPower] el motor usa menos hilos de CPU y respuestas mas cortas
+  /// (modo Bateria / Apagon): consume menos y calienta menos.
+  Future<void> load(String modelPath, {bool lowPower = false});
 
   bool get isLoaded;
 

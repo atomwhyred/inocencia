@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../power/presentation/power_toggle.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/responsive/max_content_width.dart';
 import '../../../core/responsive/window_size_class.dart';
@@ -50,6 +51,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
       appBar: AppBar(
         title: const Text('Zona de padres'),
         actions: [
+          const PowerToggle(),
           TextButton.icon(
             onPressed: _exit,
             icon: const Icon(Icons.logout_rounded),

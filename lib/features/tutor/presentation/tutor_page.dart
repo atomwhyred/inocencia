@@ -15,6 +15,8 @@ import '../../mascot/domain/mascot_cheers.dart';
 import '../../mascot/domain/mascot_mood.dart';
 import '../../mascot/presentation/mascot_view.dart';
 import '../../pomodoro/application/pomodoro.dart';
+import '../../power/application/power_mode.dart';
+import '../../power/presentation/power_toggle.dart';
 import '../../quiz/presentation/quiz_page.dart';
 import '../../speech/application/speech_controller.dart';
 import '../../speech/presentation/speak_button.dart';
@@ -170,6 +172,7 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
     return Scaffold(
       appBar: AppBar(
         actions: [
+          const PowerToggle(),
           IconButton(
             tooltip: 'Hacer un quiz',
             icon: const Icon(Icons.quiz_rounded),
@@ -221,6 +224,7 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
                           ),
                         ),
                       ),
+                    const PowerSuggestion(),
                     const MedalToast(),
                     if (_cheer != null)
                       _CheerBubble(
@@ -469,8 +473,17 @@ class _ThinkingState extends State<_Thinking> with SingleTickerProviderStateMixi
   late final AnimationController _anim = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1200),
-  )..repeat();
+  );
   final _clock = Stopwatch()..start();
+
+  @override
+  void initState() {
+    super.initState();
+    // En el modo ahorro los puntos quedan quietos: no se repinta cada fotograma.
+    if (!ProviderScope.containerOf(context, listen: false).read(batterySaverProvider)) {
+      _anim.repeat();
+    }
+  }
 
   @override
   void dispose() {

@@ -22,6 +22,11 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   una opción sin sentido (se vio "cine" como mayúscula). Se filtran: la respuesta correcta debe salir del texto del
   libro y no se admiten preguntas que dependan de páginas o dibujos. Aun así conviene revisar con un adulto, probar
   con el 7B o generar las preguntas con plantillas a partir del texto del libro. Cada pregunta tarda ~40 s en un 3B.
+- [ ] **Modo batería / apagón: falta verlo en el teléfono.** Código y tests listos (tema negro puro, Toco y puntos
+  quietos, tutor con 2 hilos y respuestas de 160 tokens, icono de batería arriba, aviso al bajar del 20 % sin
+  cargador). En el Pixel 6 solo se comprobó que la app lee bien la batería (nivel, estado y ahorro del sistema). Falta
+  ver el fondo negro, la recarga del modelo y el aviso con batería baja real (la simulación con `dumpsys battery`
+  se reinicia sola mientras el USB carga el móvil).
 - [ ] **Probar el modelo de 7B en un móvil de 12 GB.** Está descargado (`models/qwen2.5-7b-instruct-q4_k_m.gguf`)
   y en el catálogo, pero **sin medir**: no cabe con margen en el Pixel 6 de 8 GB. Se espera ~2,3× la latencia
   del 3B ([models.md](models.md)).

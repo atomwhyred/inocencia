@@ -86,7 +86,25 @@ class AppTheme {
     inversePrimary: AppColors.blue,
   );
 
+  /// Modo Bateria / Apagon: negro puro (las pantallas AMOLED apagan esos pixeles)
+  /// y contraste alto. Sale del esquema oscuro con las superficies en negro.
+  static final saverScheme = darkScheme.copyWith(
+    surface: const Color(0xFF000000),
+    surfaceContainerLowest: const Color(0xFF000000),
+    surfaceContainerLow: const Color(0xFF101010),
+    surfaceContainer: const Color(0xFF151515),
+    surfaceContainerHigh: const Color(0xFF1C1C1C),
+    surfaceContainerHighest: const Color(0xFF242424),
+    onSurface: const Color(0xFFFFFFFF),
+    onSurfaceVariant: const Color(0xFFE0E0E0),
+    outline: const Color(0xFFB0B0B0),
+    outlineVariant: const Color(0xFF404040),
+    tertiaryContainer: const Color(0xFF1F1F3D),
+    primaryContainer: const Color(0xFF0A2A8C),
+  );
+
   static ThemeData light() => _build(lightScheme);
+  static ThemeData saver() => _build(saverScheme);
   static ThemeData dark() => _build(darkScheme);
 
   static ThemeData _build(ColorScheme scheme) {

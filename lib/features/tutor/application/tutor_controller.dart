@@ -13,6 +13,7 @@ import '../../knowledge/data/fts_query.dart';
 import '../../knowledge/data/knowledge_repository_impl.dart';
 import '../../knowledge/domain/knowledge_chunk.dart';
 import '../../pomodoro/application/pomodoro.dart';
+import '../../power/application/power_mode.dart';
 import '../data/llama_tutor_engine.dart';
 import '../domain/tutor_engine.dart';
 import '../domain/tutor_history_repository.dart';
@@ -112,6 +113,11 @@ class TutorController extends Notifier<TutorState> {
   /// que se prepara un quiz.
   List<KnowledgeChunk> _lastChunks = const [];
 
+  /// Modelo cargado y con que modo de consumo, para recargarlo si cambia.
+  String? _modelPath;
+  bool _loadedLowPower = false;
+  bool _reloadPending = false;
+
   /// Nino de la conversacion y donde se guarda. Sin nino activo (o en las
   /// pruebas sin sesion) la conversacion solo vive en memoria.
   int? _childId;
@@ -125,6 +131,8 @@ class TutorController extends Notifier<TutorState> {
     // `watch` (no `read`): el motor es autoDispose y solo sigue vivo mientras
     // alguien lo observe; con `read` se destruia a mitad de cargar el modelo.
     _engine = ref.watch(tutorEngineProvider);
+    // Cambiar de modo ahorro exige recargar el modelo (los hilos se fijan al cargarlo).
+    ref.listen(batterySaverProvider, (_, _) => _applyPowerMode());
     ref.onDispose(() async {
       await _sub?.cancel();
       await _knowledge?.close();
@@ -151,7 +159,32 @@ class TutorController extends Notifier<TutorState> {
       }
       await _knowledge?.close();
       _knowledge = ref.read(knowledgeRepositoryFactoryProvider)(files.knowledge.path!);
-      await _engine.load(files.model.path!);
+      _modelPath = files.model.path!;
+      _loadedLowPower = ref.read(batterySaverProvider);
+      await _engine.load(_modelPath!, lowPower: _loadedLowPower);
+      state = state.copyWith(status: TutorStatus.ready);
+    } on TutorEngineException catch (e) {
+      state = state.copyWith(status: TutorStatus.error, problem: e.message);
+    } catch (e) {
+      state = state.copyWith(status: TutorStatus.error, problem: 'No se pudo preparar el tutor: $e');
+    }
+  }
+
+  /// El modo ahorro cambio: recarga el modelo con el consumo nuevo (unos
+  /// segundos). Si el tutor esta contestando, espera a que acabe.
+  Future<void> _applyPowerMode() async {
+    final path = _modelPath;
+    final lowPower = ref.read(batterySaverProvider);
+    if (path == null || state.status != TutorStatus.ready || lowPower == _loadedLowPower) return;
+    if (state.generating) {
+      _reloadPending = true;
+      return;
+    }
+    _reloadPending = false;
+    state = state.copyWith(status: TutorStatus.loading);
+    try {
+      _loadedLowPower = lowPower;
+      await _engine.load(path, lowPower: lowPower);
       state = state.copyWith(status: TutorStatus.ready);
     } on TutorEngineException catch (e) {
       state = state.copyWith(status: TutorStatus.error, problem: e.message);
@@ -365,6 +398,7 @@ class TutorController extends Notifier<TutorState> {
     final wasStreaming = msgs.last.streaming;
     msgs[msgs.length - 1] = msgs.last.copyWith(text: text, streaming: false);
     state = state.copyWith(messages: msgs);
+    if (_reloadPending) unawaited(_applyPowerMode());
     if (save && wasStreaming && text != _stoppedMark) {
       _save(StoredTutorMessage(fromUser: false, text: text, sources: msgs.last.sources));
       final child = _childId;

@@ -37,10 +37,19 @@ class LlamaTutorEngine implements TutorEngine {
 
   /// Hilos de calculo: la mitad de los nucleos (los grandes) rinden mejor que
   /// usar todos, porque los pequenos frenan al conjunto.
+  /// Con el modo ahorro, dos hilos: la bateria dura mas y el telefono no se calienta.
+  static const lowPowerThreads = 2;
+
+  /// Tope de la respuesta en modo ahorro (menos tokens = menos calculo).
+  static const lowPowerAnswerTokens = 160;
+
+  bool _lowPower = false;
+
   static int get threads => (Platform.numberOfProcessors / 2).round().clamp(2, 6);
 
   @override
-  Future<void> load(String modelPath) async {
+  Future<void> load(String modelPath, {bool lowPower = false}) async {
+    _lowPower = lowPower;
     await dispose();
     if (!File(modelPath).existsSync()) {
       throw const TutorEngineException('No se encuentra el archivo del modelo.');
@@ -66,8 +75,8 @@ class LlamaTutorEngine implements TutorEngine {
       // caber entero en un lote: con 512 fallaba con ~730 tokens.
       ..nBatch = contextTokens
       ..nUbatch = 512
-      ..nThreads = threads
-      ..nThreadsBatch = threads
+      ..nThreads = lowPower ? lowPowerThreads : threads
+      ..nThreadsBatch = lowPower ? lowPowerThreads : threads
       ..nPredict = maxAnswerTokens + _prefixReserve;
     // Respuestas fieles al libro: poca aleatoriedad.
     final sampler = SamplerParams()
@@ -98,7 +107,7 @@ class LlamaTutorEngine implements TutorEngine {
     final (id, stream) = worker.generate(
       system: hasSystem ? _chatml(turns.take(1)) : '',
       suffix: '${_chatml(hasSystem ? turns.skip(1) : turns)}<|im_start|>assistant\n',
-      maxTokens: maxTokens ?? maxAnswerTokens,
+      maxTokens: maxTokens ?? (_lowPower ? lowPowerAnswerTokens : maxAnswerTokens),
     );
     late final StreamController<String> out;
     StreamSubscription<String>? sub;

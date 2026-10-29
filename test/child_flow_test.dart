@@ -82,7 +82,7 @@ class _IdleEngine implements TutorEngine {
   bool get isLoaded => loaded;
 
   @override
-  Future<void> load(String modelPath) async => loaded = true;
+  Future<void> load(String modelPath, {bool lowPower = false}) async => loaded = true;
 
   @override
   Stream<String> generate(List<ChatTurn> turns, {int? maxTokens}) => const Stream.empty();

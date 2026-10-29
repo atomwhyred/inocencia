@@ -9,6 +9,7 @@ import '../../../core/widgets/offline_badge.dart';
 import '../../achievements/application/achievement_service.dart';
 import '../../auth/application/active_child.dart';
 import '../../auth/application/session.dart';
+import '../../power/presentation/power_toggle.dart';
 import '../../profiles/presentation/avatar_view.dart';
 
 /// Inicio del nino: de aqui va a hablar con su tutor o a leer sus libros.
@@ -56,6 +57,7 @@ class HomePage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const OfflineBadge(compact: true),
+        actions: const [PowerToggle(), SizedBox(width: 4)],
         leading: IconButton(
           tooltip: 'Cambiar de perfil',
           icon: const Icon(Icons.swap_horiz_rounded),
@@ -73,6 +75,7 @@ class HomePage extends ConsumerWidget {
                 child: ListView(
                   padding: const EdgeInsets.all(24),
                   children: [
+                    const PowerSuggestion(),
                     Row(
                       children: [
                         AvatarView(avatar: child.avatar, radius: 30),

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
+import '../../power/application/power_mode.dart';
 
 /// Si el padre quiere ver a Toco en el chat. Se puede apagar en teléfonos
 /// lentos o que se calientan: sin mascota el chat funciona igual.
@@ -21,5 +22,6 @@ final mascotEnabledProvider =
 
 /// Si Toco se mueve. Las pruebas lo apagan: una animación que nunca termina
 /// colgaría `pumpAndSettle`. Aun encendido, se respeta "quitar animaciones" de
-/// Android (`MediaQuery.disableAnimations`).
-final mascotAnimateProvider = Provider<bool>((ref) => true);
+/// Android (`MediaQuery.disableAnimations`) y el modo Bateria / Apagon, que la
+/// deja quieta para gastar menos.
+final mascotAnimateProvider = Provider<bool>((ref) => !ref.watch(batterySaverProvider));
