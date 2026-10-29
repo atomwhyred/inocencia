@@ -5,20 +5,24 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/storage/app_database.dart';
+import '../domain/reminder_settings.dart';
 import 'notifier.dart';
 import 'reminder_scheduler.dart';
 import 'reminder_settings_store.dart';
 import 'reminder_texts.dart';
 
-const _notificationId = 7001;
+/// Id de la notificacion del aviso de prueba (distinto de los de los avisos reales).
+const testNotificationId = 7000;
 
 /// Muestra el aviso (con el nombre de un nino al azar, si hay perfiles) y
 /// guarda el resultado para que el padre lo vea en Zona de padres > Avisos.
-/// [force]: aviso de prueba (ignora si esta activado).
+/// [force]: aviso de prueba (ignora si esta activado). [notificationId] es el
+/// del aviso que suena (`Reminder.alarmId`); la prueba usa uno propio.
 Future<String> runReminder(
   ReminderSettingsStore store,
   AppDatabase db, {
   bool force = false,
+  int notificationId = testNotificationId,
   Random? random,
 }) async {
   String status;
@@ -29,7 +33,7 @@ Future<String> runReminder(
       childName: names.isEmpty ? null : names[r.nextInt(names.length)],
       random: r,
     );
-    await ReminderNotifier().show(id: _notificationId, title: text.title, body: text.body);
+    await ReminderNotifier().show(id: notificationId, title: text.title, body: text.body);
     status = force ? 'Aviso de prueba enviado' : 'Aviso enviado';
   } catch (e) {
     status = 'Error: $e';
@@ -38,23 +42,24 @@ Future<String> runReminder(
   return status;
 }
 
-/// Punto de entrada de la alarma. Corre sin interfaz: abre su propia base de
-/// datos, programa el siguiente aviso y notifica.
+/// Punto de entrada de la alarma [id] (el `alarmId` de un aviso). Corre sin
+/// interfaz: carga solo SU aviso, programa el siguiente y notifica. Si el aviso se
+/// borro o apago desde que se programo la alarma, no hace nada y la cadena acaba.
 @pragma('vm:entry-point')
 Future<void> reminderAlarmCallback(int id, Map<String, dynamic> params) async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
   final store = ReminderSettingsStore(await SharedPreferences.getInstance());
   await store.reload();
-  final settings = store.load();
-  if (!settings.enabled) return;
+  final reminder = reminderToRun(store.load(), id);
+  if (reminder == null) return;
   try {
     // Primero la siguiente: asi la cadena no se rompe si falla el aviso.
-    await AlarmReminderScheduler().schedule(settings);
+    await AlarmReminderScheduler().schedule(reminder);
   } catch (_) {}
   final db = AppDatabase();
   try {
-    await runReminder(store, db);
+    await runReminder(store, db, notificationId: reminder.alarmId);
   } finally {
     await db.close();
   }

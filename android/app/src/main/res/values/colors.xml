@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fondo del icono adaptativo: el primaryContainer del tema, para que Toco (azul) resalte. -->
+    <color name="ic_launcher_background">#DCE4FF</color>
+    <!-- Fondo del splash de Android: el mismo que usa la app (blanco en modo claro). -->
+    <color name="splash_background">#FFFFFF</color>
+</resources>

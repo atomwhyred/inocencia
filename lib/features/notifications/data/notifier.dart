@@ -39,6 +39,10 @@ class ReminderNotifier {
   /// Abre los ajustes de Android para conceder las alarmas exactas.
   Future<void> requestExact() async => _android?.requestExactAlarmsPermission();
 
+  /// Si Android deja a la app mostrar notificaciones (en Android 13+ hay que
+  /// concederlo). `true` si no se puede saber.
+  Future<bool> notificationsAllowed() async => await _android?.areNotificationsEnabled() ?? true;
+
   /// Android 13+ exige pedir permiso. Devuelve si quedo concedido.
   Future<bool> requestPermission() async {
     await _init();

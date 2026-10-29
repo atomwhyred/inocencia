@@ -4,31 +4,33 @@ import '../domain/reminder_settings.dart';
 import 'notifier.dart';
 import 'reminder_runner.dart';
 
-/// Programa el proximo aviso diario.
+/// Programa el proximo aviso diario de cada aviso.
 abstract class ReminderScheduler {
-  Future<void> schedule(ReminderSettings settings, {DateTime? now});
-  Future<void> cancel();
+  /// Programa [reminder] (o cancela su alarma si esta desactivado).
+  Future<void> schedule(Reminder reminder, {DateTime? now});
+
+  /// Cancela la alarma del aviso [reminderId].
+  Future<void> cancel(int reminderId);
 }
 
 /// Alarma de Android (AlarmManager) en vez de WorkManager: WorkManager es
 /// inexacto y en reposo (Doze) puede retrasar un aviso muchos minutos. Cada
 /// ejecucion programa la siguiente (ver [reminderAlarmCallback]);
-/// `rescheduleOnReboot` la recupera tras reiniciar el telefono.
+/// `rescheduleOnReboot` la recupera tras reiniciar el telefono. Cada aviso tiene
+/// su propia alarma (`Reminder.alarmId`).
 class AlarmReminderScheduler implements ReminderScheduler {
-  static const alarmId = 7001;
-
   @override
-  Future<void> schedule(ReminderSettings settings, {DateTime? now}) async {
-    if (!settings.enabled) return cancel();
+  Future<void> schedule(Reminder reminder, {DateTime? now}) async {
+    if (!reminder.enabled) return cancel(reminder.id);
     final next = nextDailyRun(
-      minutesOfDay: settings.minutesOfDay,
+      minutesOfDay: reminder.minutesOfDay,
       now: now ?? DateTime.now(),
     );
     // Sin permiso de alarmas exactas Android sigue avisando, con algo de margen.
     final exact = await ReminderNotifier().canScheduleExact();
     await AndroidAlarmManager.oneShotAt(
       next,
-      alarmId,
+      reminder.alarmId,
       reminderAlarmCallback,
       exact: exact,
       allowWhileIdle: true,
@@ -38,7 +40,7 @@ class AlarmReminderScheduler implements ReminderScheduler {
   }
 
   @override
-  Future<void> cancel() async {
-    await AndroidAlarmManager.cancel(alarmId);
+  Future<void> cancel(int reminderId) async {
+    await AndroidAlarmManager.cancel(Reminder.alarmBase + reminderId);
   }
 }

@@ -83,6 +83,8 @@ flutter:
   # Capas de Toco, la mascota (se regeneran con tools/mascot/build_layers.py).
   assets:
     - assets/mascot/
+    - assets/splash/
+    - assets/frases/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

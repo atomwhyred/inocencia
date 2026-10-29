@@ -9,6 +9,7 @@ import 'core/di/providers.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_controller.dart';
+import 'core/widgets/splash_gate.dart';
 import 'features/auth/application/session.dart';
 import 'features/notifications/application/reminder_controller.dart';
 
@@ -65,6 +66,8 @@ class _InocenciaAppState extends ConsumerState<InocenciaApp>
       darkTheme: AppTheme.dark(),
       themeMode: ref.watch(themeModeProvider),
       routerConfig: ref.watch(routerProvider),
+      // Bienvenida con Toco y una frase al azar, encima de la app mientras carga.
+      builder: (context, child) => SplashGate(child: child ?? const SizedBox.shrink()),
       locale: const Locale('es'),
       supportedLocales: const [Locale('es')],
       localizationsDelegates: const [

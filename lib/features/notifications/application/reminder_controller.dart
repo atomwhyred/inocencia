@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
+import '../data/notifier.dart';
 import '../data/reminder_scheduler.dart';
 import '../data/reminder_settings_store.dart';
 import '../domain/reminder_settings.dart';
@@ -9,29 +10,64 @@ final reminderSettingsStoreProvider = Provider<ReminderSettingsStore>(
   (ref) => ReminderSettingsStore(ref.watch(sharedPreferencesProvider)),
 );
 
+/// Permisos y notificaciones de Android. Se sobrescribe en las pruebas: el
+/// plugin solo existe en Android.
+final reminderNotifierProvider = Provider<ReminderNotifier>((ref) => ReminderNotifier());
+
 /// Se sobrescribe en las pruebas (la alarma solo existe en Android).
 final reminderSchedulerProvider =
     Provider<ReminderScheduler>((ref) => AlarmReminderScheduler());
 
-/// Ajustes del aviso diario. Cada cambio se guarda y reprograma la alarma.
+/// Los avisos del padre. Cada cambio se guarda y reprograma la alarma de ese aviso.
 class ReminderController extends Notifier<ReminderSettings> {
   @override
   ReminderSettings build() => ref.watch(reminderSettingsStoreProvider).load();
 
-  Future<void> setEnabled(bool enabled) => _apply(state.copyWith(enabled: enabled));
+  ReminderScheduler get _scheduler => ref.read(reminderSchedulerProvider);
+  ReminderSettingsStore get _store => ref.read(reminderSettingsStoreProvider);
 
-  Future<void> setMinutes(int minutesOfDay) =>
-      _apply(state.copyWith(minutesOfDay: minutesOfDay));
+  Future<void> setEnabled(int id, bool enabled) => _change(id, (r) => r.copyWith(enabled: enabled));
 
-  Future<void> _apply(ReminderSettings next) async {
-    await ref.read(reminderSettingsStoreProvider).save(next);
+  Future<void> setMinutes(int id, int minutesOfDay) =>
+      _change(id, (r) => r.copyWith(minutesOfDay: minutesOfDay));
+
+  Future<void> _change(int id, Reminder Function(Reminder) edit) async {
+    final current = state.byId(id);
+    if (current == null) return;
+    final changed = edit(current);
+    final next = state.replace(changed);
+    await _store.save(next);
     state = next;
-    await ref.read(reminderSchedulerProvider).schedule(next);
+    await _scheduler.schedule(changed);
   }
 
-  /// Reprograma la alarma con los ajustes guardados (se llama al arrancar).
-  Future<void> reschedule() =>
-      ref.read(reminderSchedulerProvider).schedule(state);
+  /// Anade un aviso activo a [minutesOfDay]. `null` si ya hay el maximo.
+  Future<Reminder?> add(int minutesOfDay) async {
+    if (!state.canAdd) return null;
+    final reminder = Reminder(id: state.nextId(_store.lastId), minutesOfDay: minutesOfDay);
+    final next = state.added(reminder);
+    await _store.save(next);
+    state = next;
+    await _scheduler.schedule(reminder);
+    return reminder;
+  }
+
+  /// Borra el aviso y cancela su alarma.
+  Future<void> remove(int id) async {
+    if (state.byId(id) == null) return;
+    final next = state.without(id);
+    await _store.save(next);
+    state = next;
+    await _scheduler.cancel(id);
+  }
+
+  /// Reprograma las alarmas con los avisos guardados (se llama al arrancar):
+  /// programa los activos y cancela los apagados.
+  Future<void> reschedule() async {
+    for (final r in state.reminders) {
+      await _scheduler.schedule(r);
+    }
+  }
 }
 
 final reminderControllerProvider =
