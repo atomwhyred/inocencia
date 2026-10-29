@@ -57,3 +57,4 @@ app.*.map.json
 /native/llama/src/
 /libros.zip
 /ninito_cubano_letra.txt
+/models/
