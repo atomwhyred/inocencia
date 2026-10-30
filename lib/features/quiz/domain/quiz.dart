@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:equatable/equatable.dart';
 
+import '../../../core/utils/plain_text.dart';
+
 /// Una pregunta de opcion multiple con una sola respuesta correcta.
 class QuizQuestion extends Equatable {
   const QuizQuestion({required this.text, required this.options, required this.correct});
@@ -35,31 +37,12 @@ class QuizQuestion extends Equatable {
 class QuizGrounding {
   const QuizGrounding._();
 
-  static String _plain(String s) {
-    const from = 'áéíóúüñÁÉÍÓÚÜÑ';
-    const to = 'aeiouunaeiouun';
-    final buf = StringBuffer();
-    for (final r in s.toLowerCase().runes) {
-      final c = String.fromCharCode(r);
-      final i = from.indexOf(c);
-      buf.write(i >= 0 ? to[i] : c);
-    }
-    return buf
-        .toString()
-        .replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
-        .replaceAll(RegExp(r' +'), ' ')
-        .trim();
-  }
-
-  /// Preguntas que dependen de algo que el nino no tiene delante.
-  static final _needsBook = RegExp(r'\b(pagina|recuadro|ejercicio|imagen|dibujo|figura|texto)\b');
-
   static bool isGrounded(QuizQuestion q, String bookText) {
-    if (_needsBook.hasMatch(_plain(q.text))) return false;
-    final options = q.options.map(_plain).toList();
+    if (dependsOnBookLayout(q.text)) return false;
+    final options = q.options.map(plainText).toList();
     if (options.toSet().length != options.length || options.any((o) => o.isEmpty)) return false;
     final answer = options[q.correct];
     // Con palabras sueltas se busca como palabra completa ("sol" no esta en "solo").
-    return ' ${_plain(bookText)} '.contains(' $answer ');
+    return ' ${plainText(bookText)} '.contains(' $answer ');
   }
 }

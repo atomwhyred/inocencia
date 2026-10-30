@@ -2183,6 +2183,570 @@ class ChildCountersCompanion extends UpdateCompanion<ChildCounterRow> {
   }
 }
 
+class $FlashcardsTable extends Flashcards
+    with TableInfo<$FlashcardsTable, FlashcardRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FlashcardsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _childIdMeta = const VerificationMeta(
+    'childId',
+  );
+  @override
+  late final GeneratedColumn<int> childId = GeneratedColumn<int>(
+    'child_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES child_profiles (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _frontMeta = const VerificationMeta('front');
+  @override
+  late final GeneratedColumn<String> front = GeneratedColumn<String>(
+    'front',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _backMeta = const VerificationMeta('back');
+  @override
+  late final GeneratedColumn<String> back = GeneratedColumn<String>(
+    'back',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _timesKnownMeta = const VerificationMeta(
+    'timesKnown',
+  );
+  @override
+  late final GeneratedColumn<int> timesKnown = GeneratedColumn<int>(
+    'times_known',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _timesReviewedMeta = const VerificationMeta(
+    'timesReviewed',
+  );
+  @override
+  late final GeneratedColumn<int> timesReviewed = GeneratedColumn<int>(
+    'times_reviewed',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastReviewedAtMeta = const VerificationMeta(
+    'lastReviewedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastReviewedAt =
+      GeneratedColumn<DateTime>(
+        'last_reviewed_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    childId,
+    front,
+    back,
+    source,
+    createdAt,
+    timesKnown,
+    timesReviewed,
+    lastReviewedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'flashcards';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FlashcardRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('child_id')) {
+      context.handle(
+        _childIdMeta,
+        childId.isAcceptableOrUnknown(data['child_id']!, _childIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_childIdMeta);
+    }
+    if (data.containsKey('front')) {
+      context.handle(
+        _frontMeta,
+        front.isAcceptableOrUnknown(data['front']!, _frontMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_frontMeta);
+    }
+    if (data.containsKey('back')) {
+      context.handle(
+        _backMeta,
+        back.isAcceptableOrUnknown(data['back']!, _backMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_backMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('times_known')) {
+      context.handle(
+        _timesKnownMeta,
+        timesKnown.isAcceptableOrUnknown(data['times_known']!, _timesKnownMeta),
+      );
+    }
+    if (data.containsKey('times_reviewed')) {
+      context.handle(
+        _timesReviewedMeta,
+        timesReviewed.isAcceptableOrUnknown(
+          data['times_reviewed']!,
+          _timesReviewedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_reviewed_at')) {
+      context.handle(
+        _lastReviewedAtMeta,
+        lastReviewedAt.isAcceptableOrUnknown(
+          data['last_reviewed_at']!,
+          _lastReviewedAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {childId, front},
+  ];
+  @override
+  FlashcardRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FlashcardRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      childId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}child_id'],
+      )!,
+      front: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}front'],
+      )!,
+      back: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}back'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      timesKnown: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}times_known'],
+      )!,
+      timesReviewed: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}times_reviewed'],
+      )!,
+      lastReviewedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_reviewed_at'],
+      ),
+    );
+  }
+
+  @override
+  $FlashcardsTable createAlias(String alias) {
+    return $FlashcardsTable(attachedDatabase, alias);
+  }
+}
+
+class FlashcardRow extends DataClass implements Insertable<FlashcardRow> {
+  final int id;
+  final int childId;
+  final String front;
+  final String back;
+
+  /// Libro y pagina de donde sale (`Español · 2do_lengua · pág. 138`).
+  final String? source;
+  final DateTime createdAt;
+  final int timesKnown;
+  final int timesReviewed;
+  final DateTime? lastReviewedAt;
+  const FlashcardRow({
+    required this.id,
+    required this.childId,
+    required this.front,
+    required this.back,
+    this.source,
+    required this.createdAt,
+    required this.timesKnown,
+    required this.timesReviewed,
+    this.lastReviewedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['child_id'] = Variable<int>(childId);
+    map['front'] = Variable<String>(front);
+    map['back'] = Variable<String>(back);
+    if (!nullToAbsent || source != null) {
+      map['source'] = Variable<String>(source);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['times_known'] = Variable<int>(timesKnown);
+    map['times_reviewed'] = Variable<int>(timesReviewed);
+    if (!nullToAbsent || lastReviewedAt != null) {
+      map['last_reviewed_at'] = Variable<DateTime>(lastReviewedAt);
+    }
+    return map;
+  }
+
+  FlashcardsCompanion toCompanion(bool nullToAbsent) {
+    return FlashcardsCompanion(
+      id: Value(id),
+      childId: Value(childId),
+      front: Value(front),
+      back: Value(back),
+      source: source == null && nullToAbsent
+          ? const Value.absent()
+          : Value(source),
+      createdAt: Value(createdAt),
+      timesKnown: Value(timesKnown),
+      timesReviewed: Value(timesReviewed),
+      lastReviewedAt: lastReviewedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastReviewedAt),
+    );
+  }
+
+  factory FlashcardRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FlashcardRow(
+      id: serializer.fromJson<int>(json['id']),
+      childId: serializer.fromJson<int>(json['childId']),
+      front: serializer.fromJson<String>(json['front']),
+      back: serializer.fromJson<String>(json['back']),
+      source: serializer.fromJson<String?>(json['source']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      timesKnown: serializer.fromJson<int>(json['timesKnown']),
+      timesReviewed: serializer.fromJson<int>(json['timesReviewed']),
+      lastReviewedAt: serializer.fromJson<DateTime?>(json['lastReviewedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'childId': serializer.toJson<int>(childId),
+      'front': serializer.toJson<String>(front),
+      'back': serializer.toJson<String>(back),
+      'source': serializer.toJson<String?>(source),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'timesKnown': serializer.toJson<int>(timesKnown),
+      'timesReviewed': serializer.toJson<int>(timesReviewed),
+      'lastReviewedAt': serializer.toJson<DateTime?>(lastReviewedAt),
+    };
+  }
+
+  FlashcardRow copyWith({
+    int? id,
+    int? childId,
+    String? front,
+    String? back,
+    Value<String?> source = const Value.absent(),
+    DateTime? createdAt,
+    int? timesKnown,
+    int? timesReviewed,
+    Value<DateTime?> lastReviewedAt = const Value.absent(),
+  }) => FlashcardRow(
+    id: id ?? this.id,
+    childId: childId ?? this.childId,
+    front: front ?? this.front,
+    back: back ?? this.back,
+    source: source.present ? source.value : this.source,
+    createdAt: createdAt ?? this.createdAt,
+    timesKnown: timesKnown ?? this.timesKnown,
+    timesReviewed: timesReviewed ?? this.timesReviewed,
+    lastReviewedAt: lastReviewedAt.present
+        ? lastReviewedAt.value
+        : this.lastReviewedAt,
+  );
+  FlashcardRow copyWithCompanion(FlashcardsCompanion data) {
+    return FlashcardRow(
+      id: data.id.present ? data.id.value : this.id,
+      childId: data.childId.present ? data.childId.value : this.childId,
+      front: data.front.present ? data.front.value : this.front,
+      back: data.back.present ? data.back.value : this.back,
+      source: data.source.present ? data.source.value : this.source,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      timesKnown: data.timesKnown.present
+          ? data.timesKnown.value
+          : this.timesKnown,
+      timesReviewed: data.timesReviewed.present
+          ? data.timesReviewed.value
+          : this.timesReviewed,
+      lastReviewedAt: data.lastReviewedAt.present
+          ? data.lastReviewedAt.value
+          : this.lastReviewedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FlashcardRow(')
+          ..write('id: $id, ')
+          ..write('childId: $childId, ')
+          ..write('front: $front, ')
+          ..write('back: $back, ')
+          ..write('source: $source, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('timesKnown: $timesKnown, ')
+          ..write('timesReviewed: $timesReviewed, ')
+          ..write('lastReviewedAt: $lastReviewedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    childId,
+    front,
+    back,
+    source,
+    createdAt,
+    timesKnown,
+    timesReviewed,
+    lastReviewedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FlashcardRow &&
+          other.id == this.id &&
+          other.childId == this.childId &&
+          other.front == this.front &&
+          other.back == this.back &&
+          other.source == this.source &&
+          other.createdAt == this.createdAt &&
+          other.timesKnown == this.timesKnown &&
+          other.timesReviewed == this.timesReviewed &&
+          other.lastReviewedAt == this.lastReviewedAt);
+}
+
+class FlashcardsCompanion extends UpdateCompanion<FlashcardRow> {
+  final Value<int> id;
+  final Value<int> childId;
+  final Value<String> front;
+  final Value<String> back;
+  final Value<String?> source;
+  final Value<DateTime> createdAt;
+  final Value<int> timesKnown;
+  final Value<int> timesReviewed;
+  final Value<DateTime?> lastReviewedAt;
+  const FlashcardsCompanion({
+    this.id = const Value.absent(),
+    this.childId = const Value.absent(),
+    this.front = const Value.absent(),
+    this.back = const Value.absent(),
+    this.source = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.timesKnown = const Value.absent(),
+    this.timesReviewed = const Value.absent(),
+    this.lastReviewedAt = const Value.absent(),
+  });
+  FlashcardsCompanion.insert({
+    this.id = const Value.absent(),
+    required int childId,
+    required String front,
+    required String back,
+    this.source = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.timesKnown = const Value.absent(),
+    this.timesReviewed = const Value.absent(),
+    this.lastReviewedAt = const Value.absent(),
+  }) : childId = Value(childId),
+       front = Value(front),
+       back = Value(back);
+  static Insertable<FlashcardRow> custom({
+    Expression<int>? id,
+    Expression<int>? childId,
+    Expression<String>? front,
+    Expression<String>? back,
+    Expression<String>? source,
+    Expression<DateTime>? createdAt,
+    Expression<int>? timesKnown,
+    Expression<int>? timesReviewed,
+    Expression<DateTime>? lastReviewedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (childId != null) 'child_id': childId,
+      if (front != null) 'front': front,
+      if (back != null) 'back': back,
+      if (source != null) 'source': source,
+      if (createdAt != null) 'created_at': createdAt,
+      if (timesKnown != null) 'times_known': timesKnown,
+      if (timesReviewed != null) 'times_reviewed': timesReviewed,
+      if (lastReviewedAt != null) 'last_reviewed_at': lastReviewedAt,
+    });
+  }
+
+  FlashcardsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? childId,
+    Value<String>? front,
+    Value<String>? back,
+    Value<String?>? source,
+    Value<DateTime>? createdAt,
+    Value<int>? timesKnown,
+    Value<int>? timesReviewed,
+    Value<DateTime?>? lastReviewedAt,
+  }) {
+    return FlashcardsCompanion(
+      id: id ?? this.id,
+      childId: childId ?? this.childId,
+      front: front ?? this.front,
+      back: back ?? this.back,
+      source: source ?? this.source,
+      createdAt: createdAt ?? this.createdAt,
+      timesKnown: timesKnown ?? this.timesKnown,
+      timesReviewed: timesReviewed ?? this.timesReviewed,
+      lastReviewedAt: lastReviewedAt ?? this.lastReviewedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (childId.present) {
+      map['child_id'] = Variable<int>(childId.value);
+    }
+    if (front.present) {
+      map['front'] = Variable<String>(front.value);
+    }
+    if (back.present) {
+      map['back'] = Variable<String>(back.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (timesKnown.present) {
+      map['times_known'] = Variable<int>(timesKnown.value);
+    }
+    if (timesReviewed.present) {
+      map['times_reviewed'] = Variable<int>(timesReviewed.value);
+    }
+    if (lastReviewedAt.present) {
+      map['last_reviewed_at'] = Variable<DateTime>(lastReviewedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FlashcardsCompanion(')
+          ..write('id: $id, ')
+          ..write('childId: $childId, ')
+          ..write('front: $front, ')
+          ..write('back: $back, ')
+          ..write('source: $source, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('timesKnown: $timesKnown, ')
+          ..write('timesReviewed: $timesReviewed, ')
+          ..write('lastReviewedAt: $lastReviewedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2194,6 +2758,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $AchievementsTable achievements = $AchievementsTable(this);
   late final $ChildCountersTable childCounters = $ChildCountersTable(this);
+  late final $FlashcardsTable flashcards = $FlashcardsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2205,6 +2770,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     readingProgress,
     achievements,
     childCounters,
+    flashcards,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -2235,6 +2801,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('child_counters', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'child_profiles',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('flashcards', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -2526,6 +3099,24 @@ final class $$ChildProfilesTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$FlashcardsTable, List<FlashcardRow>>
+  _flashcardsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.flashcards,
+    aliasName: 'child_profiles__id__flashcards__child_id',
+  );
+
+  $$FlashcardsTableProcessedTableManager get flashcardsRefs {
+    final manager = $$FlashcardsTableTableManager(
+      $_db,
+      $_db.flashcards,
+    ).filter((f) => f.childId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_flashcardsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ChildProfilesTableFilterComposer
@@ -2668,6 +3259,31 @@ class $$ChildProfilesTableFilterComposer
           }) => $$ChildCountersTableFilterComposer(
             $db: $db,
             $table: $db.childCounters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> flashcardsRefs(
+    Expression<bool> Function($$FlashcardsTableFilterComposer f) f,
+  ) {
+    final $$FlashcardsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.flashcards,
+      getReferencedColumn: (t) => t.childId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FlashcardsTableFilterComposer(
+            $db: $db,
+            $table: $db.flashcards,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -2862,6 +3478,31 @@ class $$ChildProfilesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> flashcardsRefs<T extends Object>(
+    Expression<T> Function($$FlashcardsTableAnnotationComposer a) f,
+  ) {
+    final $$FlashcardsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.flashcards,
+      getReferencedColumn: (t) => t.childId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FlashcardsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.flashcards,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ChildProfilesTableTableManager
@@ -2882,6 +3523,7 @@ class $$ChildProfilesTableTableManager
             bool readingProgressRefs,
             bool achievementsRefs,
             bool childCountersRefs,
+            bool flashcardsRefs,
           })
         > {
   $$ChildProfilesTableTableManager(_$AppDatabase db, $ChildProfilesTable table)
@@ -2949,6 +3591,7 @@ class $$ChildProfilesTableTableManager
                 readingProgressRefs = false,
                 achievementsRefs = false,
                 childCountersRefs = false,
+                flashcardsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -2957,6 +3600,7 @@ class $$ChildProfilesTableTableManager
                     if (readingProgressRefs) db.readingProgress,
                     if (achievementsRefs) db.achievements,
                     if (childCountersRefs) db.childCounters,
+                    if (flashcardsRefs) db.flashcards,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -3041,6 +3685,26 @@ class $$ChildProfilesTableTableManager
                           referencedColumn: 'child_id',
                           typedResults: items,
                         ),
+                      if (flashcardsRefs)
+                        await $_getPrefetchedDataByColumns<
+                          ChildProfileRow,
+                          $ChildProfilesTable,
+                          FlashcardRow,
+                          $FlashcardsTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ChildProfilesTableReferences
+                              ._flashcardsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ChildProfilesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).flashcardsRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'child_id',
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -3066,6 +3730,7 @@ typedef $$ChildProfilesTableProcessedTableManager =
         bool readingProgressRefs,
         bool achievementsRefs,
         bool childCountersRefs,
+        bool flashcardsRefs,
       })
     >;
 typedef $$TutorMessagesTableCreateCompanionBuilder =
@@ -4306,6 +4971,395 @@ typedef $$ChildCountersTableProcessedTableManager =
       ChildCounterRow,
       PrefetchHooks Function({bool childId})
     >;
+typedef $$FlashcardsTableCreateCompanionBuilder = FlashcardsCompanion Function({
+  Value<int> id,
+  required int childId,
+  required String front,
+  required String back,
+  Value<String?> source,
+  Value<DateTime> createdAt,
+  Value<int> timesKnown,
+  Value<int> timesReviewed,
+  Value<DateTime?> lastReviewedAt,
+});
+typedef $$FlashcardsTableUpdateCompanionBuilder = FlashcardsCompanion Function({
+  Value<int> id,
+  Value<int> childId,
+  Value<String> front,
+  Value<String> back,
+  Value<String?> source,
+  Value<DateTime> createdAt,
+  Value<int> timesKnown,
+  Value<int> timesReviewed,
+  Value<DateTime?> lastReviewedAt,
+});
+
+final class $$FlashcardsTableReferences
+    extends BaseReferences<_$AppDatabase, $FlashcardsTable, FlashcardRow> {
+  $$FlashcardsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ChildProfilesTable _childIdTable(_$AppDatabase db) =>
+      db.childProfiles.createAlias('flashcards__child_id__child_profiles__id');
+
+  $$ChildProfilesTableProcessedTableManager get childId {
+    final $_column = $_itemColumn<int>('child_id')!;
+
+    final manager = $$ChildProfilesTableTableManager(
+      $_db,
+      $_db.childProfiles,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_childIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$FlashcardsTableFilterComposer
+    extends Composer<_$AppDatabase, $FlashcardsTable> {
+  $$FlashcardsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get front => $composableBuilder(
+    column: $table.front,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get back => $composableBuilder(
+    column: $table.back,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get timesKnown => $composableBuilder(
+    column: $table.timesKnown,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get timesReviewed => $composableBuilder(
+    column: $table.timesReviewed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastReviewedAt => $composableBuilder(
+    column: $table.lastReviewedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ChildProfilesTableFilterComposer get childId {
+    final $$ChildProfilesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.childId,
+      referencedTable: $db.childProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChildProfilesTableFilterComposer(
+            $db: $db,
+            $table: $db.childProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$FlashcardsTableOrderingComposer
+    extends Composer<_$AppDatabase, $FlashcardsTable> {
+  $$FlashcardsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get front => $composableBuilder(
+    column: $table.front,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get back => $composableBuilder(
+    column: $table.back,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get timesKnown => $composableBuilder(
+    column: $table.timesKnown,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get timesReviewed => $composableBuilder(
+    column: $table.timesReviewed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastReviewedAt => $composableBuilder(
+    column: $table.lastReviewedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ChildProfilesTableOrderingComposer get childId {
+    final $$ChildProfilesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.childId,
+      referencedTable: $db.childProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChildProfilesTableOrderingComposer(
+            $db: $db,
+            $table: $db.childProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$FlashcardsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FlashcardsTable> {
+  $$FlashcardsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get front =>
+      $composableBuilder(column: $table.front, builder: (column) => column);
+
+  GeneratedColumn<String> get back =>
+      $composableBuilder(column: $table.back, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get timesKnown => $composableBuilder(
+    column: $table.timesKnown,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get timesReviewed => $composableBuilder(
+    column: $table.timesReviewed,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastReviewedAt => $composableBuilder(
+    column: $table.lastReviewedAt,
+    builder: (column) => column,
+  );
+
+  $$ChildProfilesTableAnnotationComposer get childId {
+    final $$ChildProfilesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.childId,
+      referencedTable: $db.childProfiles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChildProfilesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.childProfiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$FlashcardsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FlashcardsTable,
+          FlashcardRow,
+          $$FlashcardsTableFilterComposer,
+          $$FlashcardsTableOrderingComposer,
+          $$FlashcardsTableAnnotationComposer,
+          $$FlashcardsTableCreateCompanionBuilder,
+          $$FlashcardsTableUpdateCompanionBuilder,
+          (FlashcardRow, $$FlashcardsTableReferences),
+          FlashcardRow,
+          PrefetchHooks Function({bool childId})
+        > {
+  $$FlashcardsTableTableManager(_$AppDatabase db, $FlashcardsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FlashcardsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FlashcardsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FlashcardsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> childId = const Value.absent(),
+                Value<String> front = const Value.absent(),
+                Value<String> back = const Value.absent(),
+                Value<String?> source = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> timesKnown = const Value.absent(),
+                Value<int> timesReviewed = const Value.absent(),
+                Value<DateTime?> lastReviewedAt = const Value.absent(),
+              }) => FlashcardsCompanion(
+                id: id,
+                childId: childId,
+                front: front,
+                back: back,
+                source: source,
+                createdAt: createdAt,
+                timesKnown: timesKnown,
+                timesReviewed: timesReviewed,
+                lastReviewedAt: lastReviewedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int childId,
+                required String front,
+                required String back,
+                Value<String?> source = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> timesKnown = const Value.absent(),
+                Value<int> timesReviewed = const Value.absent(),
+                Value<DateTime?> lastReviewedAt = const Value.absent(),
+              }) => FlashcardsCompanion.insert(
+                id: id,
+                childId: childId,
+                front: front,
+                back: back,
+                source: source,
+                createdAt: createdAt,
+                timesKnown: timesKnown,
+                timesReviewed: timesReviewed,
+                lastReviewedAt: lastReviewedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$FlashcardsTable, FlashcardRow>(table),
+                  $$FlashcardsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({childId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (childId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.childId,
+                        referencedTable: $$FlashcardsTableReferences
+                            ._childIdTable(db),
+                        referencedColumn: $$FlashcardsTableReferences
+                            ._childIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$FlashcardsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FlashcardsTable,
+      FlashcardRow,
+      $$FlashcardsTableFilterComposer,
+      $$FlashcardsTableOrderingComposer,
+      $$FlashcardsTableAnnotationComposer,
+      $$FlashcardsTableCreateCompanionBuilder,
+      $$FlashcardsTableUpdateCompanionBuilder,
+      (FlashcardRow, $$FlashcardsTableReferences),
+      FlashcardRow,
+      PrefetchHooks Function({bool childId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4322,4 +5376,6 @@ class $AppDatabaseManager {
       $$AchievementsTableTableManager(_db, _db.achievements);
   $$ChildCountersTableTableManager get childCounters =>
       $$ChildCountersTableTableManager(_db, _db.childCounters);
+  $$FlashcardsTableTableManager get flashcards =>
+      $$FlashcardsTableTableManager(_db, _db.flashcards);
 }

@@ -101,14 +101,45 @@ class ChildCounters extends Table {
       ];
 }
 
+/// Tarjetas de memoria (flashcards) de cada nino: pregunta al frente, respuesta
+/// al reverso, y lo que lleva de repaso.
+@DataClassName('FlashcardRow')
+class Flashcards extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get childId =>
+      integer().references(ChildProfiles, #id, onDelete: KeyAction.cascade)();
+  TextColumn get front => text()();
+  TextColumn get back => text()();
+
+  /// Libro y pagina de donde sale (`Español · 2do_lengua · pág. 138`).
+  TextColumn get source => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  IntColumn get timesKnown => integer().withDefault(const Constant(0))();
+  IntColumn get timesReviewed => integer().withDefault(const Constant(0))();
+  DateTimeColumn get lastReviewedAt => dateTime().nullable()();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+        {childId, front},
+      ];
+}
+
 @DriftDatabase(
-  tables: [Guardians, ChildProfiles, TutorMessages, ReadingProgress, Achievements, ChildCounters],
+  tables: [
+    Guardians,
+    ChildProfiles,
+    TutorMessages,
+    ReadingProgress,
+    Achievements,
+    ChildCounters,
+    Flashcards,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openOnDevice());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -120,6 +151,9 @@ class AppDatabase extends _$AppDatabase {
           if (from < 3) {
             await m.createTable(achievements);
             await m.createTable(childCounters);
+          }
+          if (from < 4) {
+            await m.createTable(flashcards);
           }
         },
         // SQLite no aplica las claves foraneas (ni su borrado en cascada) si no
