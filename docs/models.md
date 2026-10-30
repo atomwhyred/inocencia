@@ -9,7 +9,7 @@ vincula en **Zona de padres → Archivos**. La pestaña muestra el modelo recome
 |---|---|---|---|---|
 | Qwen2.5-1.5B-Instruct | `qwen2.5-1.5b-instruct-q4_k_m.gguf` | 1,12 GB | cualquiera ≥ 3 GB | ~26 s por respuesta en un Pixel 6. Se equivoca más: llegó a confundir respiración y fotosíntesis. |
 | Qwen2.5-3B-Instruct | `qwen2.5-3b-instruct-q4_k_m.gguf` | 2,10 GB | ≥ 7 GB (8 GB anunciados) | ~27 s al primer token y ~32 s en total (hasta ~40 s en turnos de seguimiento). Fiel al libro en las pruebas. |
-| Qwen2.5-7B-Instruct | `qwen2.5-7b-instruct-q4_k_m.gguf` | 4,68 GB | ≥ 10 GB informados por Android (12 GB anunciados) | **Sin medir.** No cabe con margen en un teléfono de 8 GB, así que no se ha probado en el Pixel 6. Es de esperar ~2,3× la latencia del 3B en una CPU parecida; una CPU más reciente (i8mm) lo compensa en parte. |
+| Qwen2.5-7B-Instruct | `qwen2.5-7b-instruct-q4_k_m.gguf` | 4,68 GB | ≥ 10 GB informados por Android (12 GB anunciados) | **No recomendado.** En un Xiaomi 17T Pro (Dimensity 9500, 12 GB) tardaba de 1 a 3 minutos por respuesta (una persona lo vinculó siguiendo la recomendación antigua). Que quepa en la RAM no significa que vaya rápido. La app ya no lo recomienda y avisa si está vinculado. |
 
 Descarga: Hugging Face, repositorios `Qwen/Qwen2.5-1.5B-Instruct-GGUF`, `Qwen/Qwen2.5-3B-Instruct-GGUF` y, para el
 de 7B, `bartowski/Qwen2.5-7B-Instruct-GGUF` (archivo único `Qwen2.5-7B-Instruct-Q4_K_M.gguf`, 4.683.074.240 bytes;
@@ -61,3 +61,14 @@ Los PDF originales se copian a `libros/` junto al modelo y se detectan solos: ve
 `build/knowledge.db` se genera con `tools/knowledge_builder/build_knowledge_db.py` desde `libros/`
 (ver `docs/knowledge_db_schema.md`). Se copia a la misma carpeta que el modelo.
 Los PDF se nombran `<grado>_<...>.pdf` (`6to_matematica.pdf`, `6to_ct_ciencias.pdf`: `ct` = cuaderno de trabajo).
+
+## Mediciones por diagnóstico (Zona de padres → Archivos → Diagnóstico del tutor)
+
+| Dispositivo | Modelo | Hilos | Primera pieza | Generación |
+|---|---|---|---|---|
+| Xiaomi Pad 5 (Snapdragon 860, 6 GB) | 3B | 4 de 8 | 24 s | 130 piezas en 42 s (**7,1 piezas/s**) |
+| Xiaomi 17T Pro (Dimensity 9500, 12 GB) | 7B | 4 de 8 | sin medir | sin medir (la respuesta tardaba 1-3 min) |
+
+En el 17T Pro la app cargó la variante de CPU correcta (`MATMUL_INT8`, `SVE`, `SME`, `DOTPROD`) y usa los 4 núcleos
+rápidos: la lentitud es del tamaño del modelo, no de la configuración. En la Pad 5 el cuello de botella es el tiempo
+hasta la primera pieza (procesar el prompt), no la generación.

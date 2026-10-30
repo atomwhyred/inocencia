@@ -15,6 +15,7 @@ class TutorDiagnosticsNotifier extends Notifier<TutorDiagnostics> {
     required int pieces,
     required int totalSeconds,
     required double piecesPerSecond,
+    int? promptChars,
   }) {
     if (state.isEmpty) return;
     state = state.withAnswer(
@@ -22,6 +23,7 @@ class TutorDiagnosticsNotifier extends Notifier<TutorDiagnostics> {
       pieces: pieces,
       totalSeconds: totalSeconds,
       piecesPerSecond: piecesPerSecond,
+      promptChars: promptChars,
     );
   }
 }

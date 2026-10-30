@@ -30,6 +30,7 @@ class LlamaTutorEngine implements TutorEngine {
     required int pieces,
     required int totalSeconds,
     required double piecesPerSecond,
+    int? promptChars,
   })?
   onAnswered;
   LlamaWorker? _worker;
@@ -159,6 +160,7 @@ class LlamaTutorEngine implements TutorEngine {
     );
     late final StreamController<String> out;
     StreamSubscription<String>? sub;
+    final promptChars = turns.fold<int>(0, (n, t) => n + t.content.length);
     final clock = Stopwatch()..start();
     Duration? firstPiece;
     var pieces = 0;
@@ -172,6 +174,7 @@ class LlamaTutorEngine implements TutorEngine {
         pieces: pieces,
         totalSeconds: total.inSeconds,
         piecesPerSecond: rate.toDouble(),
+        promptChars: promptChars,
       );
       debugPrint(
         '[tutor] primera pieza ${firstPiece?.inSeconds} s, $pieces piezas en '

@@ -26,7 +26,8 @@ class ModelOption {
 ///    fallos de fidelidad (llego a confundir respiracion con fotosintesis).
 ///  - Qwen2.5-3B: respuestas fieles al libro, algo mas lento (~32 s, hasta ~40 s
 ///    en turnos de seguimiento). Ver docs/models.md.
-///  - Qwen2.5-7B: para telefonos de 12 GB. **Aun sin medir** en un telefono real.
+///  - Qwen2.5-7B: opcional y **no se recomienda**: en un Xiaomi 17T Pro (12 GB) tardaba
+///    de 1 a 3 minutos por respuesta. Cabe en 12 GB, pero RAM no es velocidad.
 class ModelRecommendation {
   const ModelRecommendation._();
 
@@ -48,8 +49,9 @@ class ModelRecommendation {
     name: 'Qwen2.5-7B',
     fileName: 'qwen2.5-7b-instruct-q4_k_m.gguf',
     sizeBytes: 4683074240,
-    summary: 'El más capaz con los libros, pero el más lento: pensado para teléfonos de 12 GB '
-        '(aún sin medir).',
+    summary:
+        'Opcional: el más capaz, pero el más lento. Puede tardar minutos por respuesta '
+        'aunque el teléfono tenga 12 GB de RAM.',
   );
 
   /// De menor a mayor.
@@ -59,18 +61,14 @@ class ModelRecommendation {
   /// recomendar el modelo grande: 2,1 GB de modelo + contexto + el sistema.
   static const largeMinRamBytes = 7 * 1024 * 1024 * 1024;
 
-  /// Un telefono de 12 GB informa ~11 GiB; uno de 10 GB, ~9,4 GiB. El de 7B
-  /// ocupa 4,7 GB + contexto: con 10 GB queda poco margen, asi que no se
-  /// recomienda ahi.
-  static const xlargeMinRamBytes = 10 * 1024 * 1024 * 1024;
-
   /// Por debajo de esto ni el modelo pequeno va holgado.
   static const lowRamBytes = 3 * 1024 * 1024 * 1024;
 
-  static ModelOption forRam(int totalRamBytes) {
-    if (totalRamBytes >= xlargeMinRamBytes) return xlarge;
-    return totalRamBytes >= largeMinRamBytes ? large : small;
-  }
+  /// Modelo recomendado. El de 7B nunca: la RAM decide si cabe, no si va rapido.
+  static ModelOption forRam(int totalRamBytes) => totalRamBytes >= largeMinRamBytes ? large : small;
+
+  /// `true` si [model] tarda minutos por respuesta en la mayoria de telefonos.
+  static bool isSlow(ModelOption model) => model == xlarge;
 
   /// Opcion mas ligera que [model] (la mas rapida si va justo de memoria); para
   /// el mas pequeno, el siguiente.

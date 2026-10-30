@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inocencia/core/di/providers.dart';
 import 'package:inocencia/features/external_data/presentation/files_section.dart';
 import 'package:inocencia/features/tutor/application/tutor_diagnostics_provider.dart';
 import 'package:inocencia/features/tutor/domain/tutor_diagnostics.dart';
@@ -51,9 +52,46 @@ void main() {
     });
   });
 
+  group('valoracion', () {
+    TutorDiagnostics answered(String model, {int first = 10, double rate = 8}) =>
+        TutorDiagnostics(model: model).withAnswer(
+          firstPieceSeconds: first,
+          pieces: 80,
+          totalSeconds: 30,
+          piecesPerSecond: rate,
+          promptChars: 2900,
+        );
+
+    test('el 7B avisa de que es muy lento', () {
+      expect(answered('qwen2.5-7b-instruct-q4_k_m.gguf').verdict(), contains('7B es muy lento'));
+    });
+
+    test('generar despacio sugiere un modelo menor; tardar en empezar se explica', () {
+      expect(
+        answered('qwen2.5-3b-instruct-q4_k_m.gguf', rate: 2).verdict(),
+        contains('menos de 3 piezas/s'),
+      );
+      expect(
+        answered('qwen2.5-3b-instruct-q4_k_m.gguf', first: 40).verdict(),
+        contains('tarda en empezar'),
+      );
+      expect(answered('qwen2.5-3b-instruct-q4_k_m.gguf').verdict(), 'Velocidad normal.');
+    });
+
+    test('el informe lleva la RAM y el tamano del prompt', () {
+      final r = answered('qwen2.5-3b-instruct-q4_k_m.gguf')
+          .toReport(ramBytes: 12 * 1024 * 1024 * 1024);
+      expect(r, contains('RAM del dispositivo: 12.0 GB'));
+      expect(r, contains('prompt de 2900 caracteres'));
+      expect(r, contains('Valoracion: Velocidad normal.'));
+    });
+  });
+
   group('tarjeta de diagnostico', () {
     Future<ProviderContainer> show(WidgetTester tester) async {
-      final c = ProviderContainer();
+      final c = ProviderContainer(
+        overrides: [deviceRamProvider.overrideWith((ref) async => 12 * 1024 * 1024 * 1024)],
+      );
       addTearDown(c.dispose);
       await tester.pumpWidget(
         UncontrolledProviderScope(

@@ -190,6 +190,8 @@ class DiagnosticsCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final d = ref.watch(tutorDiagnosticsProvider);
+    final ram = ref.watch(deviceRamProvider).value;
+    final report = d.toReport(ramBytes: ram);
     final theme = Theme.of(context);
     return Card(
       child: Padding(
@@ -212,13 +214,13 @@ class DiagnosticsCard extends ConsumerWidget {
               )
             else ...[
               SelectableText(
-                d.toReport(),
+                report,
                 style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
               ),
               const SizedBox(height: 8),
               FilledButton.tonalIcon(
                 onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: d.toReport()));
+                  await Clipboard.setData(ClipboardData(text: report));
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Diagnóstico copiado')),
@@ -306,6 +308,12 @@ class ModelAdviceCard extends StatelessWidget {
                           : 'Tienes vinculado ${linked.name}.',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
+                    if (ModelRecommendation.isSlow(linked))
+                      Text(
+                        'Aviso: ${linked.name} es muy lento (puede tardar minutos por respuesta). '
+                        'Si el tutor va despacio, vincula ${recommended.name}.',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                   ],
                 ],
               ),

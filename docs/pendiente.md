@@ -53,6 +53,11 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   llama.cpp** (en el Pixel 6: `NEON | ARM_FMA | FP16_VA | DOTPROD | LLAMAFILE | REPACK`), modelo usado, hilos,
   frecuencias de cada núcleo y piezas/s. Falta ejecutarlo en el Xiaomi: si faltan `DOTPROD`/`MATMUL_INT8` se cargó la
   variante base; si el modelo es el 3B o el 7B, es esperable; si va a pocas piezas/s con todo bien, es calor o HyperOS.
+- **Causa encontrada (30-oct):** el diagnóstico del 17T Pro mostró que usaba el modelo de **7B**, que la app recomendaba
+  a partir de 10 GB de RAM. Ya no se recomienda (solo 3B ≥ 7 GB, 1.5B por debajo) y avisa si está vinculado. Falta que la
+  persona repita con el 3B o el 1.5B y envíe el diagnóstico con una respuesta.
+- [ ] **Reducir el tiempo hasta la primera pieza** (24 s en la Pad 5 con el 3B): probar `maxContextChars` 1500 → 1000 y
+  menos historial, midiendo con el diagnóstico y comparando la fidelidad con preguntas reales. Sin aplicar todavía.
 - Los hilos ahora salen de los núcleos rápidos (`lib/features/tutor/domain/cpu_threads.dart`), no de «núcleos/2».
 
 ## Seguridad (revisión del 29-oct, pendiente de aplicar antes de publicar)

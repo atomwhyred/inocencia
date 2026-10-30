@@ -17,15 +17,27 @@ void main() {
       expect(ModelRecommendation.forRam(2 * _gb), ModelRecommendation.small);
     });
 
-    test('un movil de 12 GB (Android informa ~11 GB) recibe el de 7B; uno de 10 GB, el de 3B', () {
-      expect(ModelRecommendation.forRam((11.2 * _gb).round()), ModelRecommendation.xlarge);
+    test('un movil de 12 GB recibe el de 3B: el de 7B no se recomienda nunca (es muy lento)', () {
+      expect(ModelRecommendation.forRam((11.2 * _gb).round()), ModelRecommendation.large);
       expect(ModelRecommendation.forRam((9.4 * _gb).round()), ModelRecommendation.large);
+      expect(ModelRecommendation.forRam(64 * _gb), isNot(ModelRecommendation.xlarge));
+      expect(ModelRecommendation.isSlow(ModelRecommendation.xlarge), isTrue);
+      expect(ModelRecommendation.isSlow(ModelRecommendation.large), isFalse);
     });
 
     test('la alternativa es siempre el modelo mas ligero', () {
-      expect(ModelRecommendation.alternativeTo(ModelRecommendation.xlarge), ModelRecommendation.large);
-      expect(ModelRecommendation.alternativeTo(ModelRecommendation.large), ModelRecommendation.small);
-      expect(ModelRecommendation.alternativeTo(ModelRecommendation.small), ModelRecommendation.large);
+      expect(
+        ModelRecommendation.alternativeTo(ModelRecommendation.xlarge),
+        ModelRecommendation.large,
+      );
+      expect(
+        ModelRecommendation.alternativeTo(ModelRecommendation.large),
+        ModelRecommendation.small,
+      );
+      expect(
+        ModelRecommendation.alternativeTo(ModelRecommendation.small),
+        ModelRecommendation.large,
+      );
     });
 
     test('el archivo del 7B coincide con el del catalogo y con su tamano real', () {
@@ -54,11 +66,15 @@ void main() {
 
   group('ModelAdviceCard', () {
     Future<void> pump(WidgetTester t, int ram, {String? linked}) => t.pumpWidget(
-          MaterialApp(
-            theme: AppTheme.light(),
-            home: Scaffold(body: SingleChildScrollView(child: ModelAdviceCard(ramBytes: ram, linkedPath: linked))),
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ModelAdviceCard(ramBytes: ram, linkedPath: linked),
           ),
-        );
+        ),
+      ),
+    );
 
     testWidgets('movil de 8 GB: recomienda Qwen2.5-3B y ofrece el 1.5B', (t) async {
       await pump(t, 8 * _gb);
@@ -68,10 +84,16 @@ void main() {
       expect(find.textContaining('poca memoria'), findsNothing);
     });
 
-    testWidgets('movil de 12 GB: recomienda Qwen2.5-7B y ofrece el 3B', (t) async {
+    testWidgets('movil de 12 GB: recomienda Qwen2.5-3B, no el 7B', (t) async {
       await pump(t, (11.2 * _gb).round());
-      expect(find.textContaining('Qwen2.5-7B (4,7 GB)'), findsOneWidget);
-      expect(find.textContaining('Alternativa: Qwen2.5-3B'), findsOneWidget);
+      expect(find.textContaining('Qwen2.5-3B (2,1 GB)'), findsOneWidget);
+      expect(find.textContaining('Qwen2.5-7B'), findsNothing);
+    });
+
+    testWidgets('si el vinculado es el 7B, avisa de que es muy lento', (t) async {
+      await pump(t, (11.2 * _gb).round(), linked: '/x/qwen2.5-7b-instruct-q4_k_m.gguf');
+      expect(find.textContaining('es muy lento'), findsOneWidget);
+      expect(find.textContaining('vincula Qwen2.5-3B'), findsOneWidget);
     });
 
     testWidgets('movil de 2 GB: avisa de poca memoria', (t) async {
