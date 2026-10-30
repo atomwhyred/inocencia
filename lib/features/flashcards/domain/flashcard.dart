@@ -67,7 +67,13 @@ class FlashcardGrounding {
     final words = plainText(back).split(' ').where((w) => w.length >= 4).toSet();
     // Una respuesta corta ("el sol") se busca entera.
     if (words.isEmpty) return book.contains(' ${plainText(back)} ');
-    final found = words.where((w) => book.contains(' $w ')).length;
+    // Se compara la raiz de cada palabra: "nombres" encuentra "nombre" y
+    // "mayuscula", "mayusculas".
+    final bookStems = plainText(bookText).split(' ').map(_stem).toSet();
+    final found = words.where((w) => bookStems.contains(_stem(w))).length;
     return found / words.length >= minShare;
   }
+
+  /// Raiz aproximada: las primeras 5 letras (plurales y generos comparten raiz).
+  static String _stem(String word) => word.length <= 5 ? word : word.substring(0, 5);
 }

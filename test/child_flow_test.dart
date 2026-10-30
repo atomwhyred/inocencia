@@ -330,6 +330,7 @@ void main() {
     await settle(tester, 300);
 
     expect(find.text('Mis medallas'), findsOneWidget);
+    expect(find.text('Mis tarjetas'), findsOneWidget);
     expect(find.text('1 medalla · 4 estrellas'), findsOneWidget);
 
     await tester.tap(find.text('Mis medallas'));

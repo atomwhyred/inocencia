@@ -128,6 +128,16 @@ r - Lo que hacemos.''';
       );
     });
 
+    test('acepta plurales y generos distintos del libro (nombres / nombre)', () {
+      expect(
+        FlashcardGrounding.isGrounded(
+          card('¿Qué son los sustantivos?', 'Son nombres de personas.'),
+          book,
+        ),
+        isTrue,
+      );
+    });
+
     test('rechaza respuestas inventadas', () {
       expect(
         FlashcardGrounding.isGrounded(

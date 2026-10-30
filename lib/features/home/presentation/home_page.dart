@@ -8,6 +8,7 @@ import '../../../core/utils/school_grade_calculator.dart';
 import '../../../core/widgets/offline_badge.dart';
 import '../../achievements/application/achievement_service.dart';
 import '../../auth/application/active_child.dart';
+import '../../flashcards/application/flashcard_providers.dart';
 import '../../auth/application/session.dart';
 import '../../power/presentation/power_toggle.dart';
 import '../../profiles/presentation/avatar_view.dart';
@@ -26,6 +27,11 @@ class HomePage extends ConsumerWidget {
         ? 'Tus estrellas y medallas'
         : '${progress.earned.length} ${progress.earned.length == 1 ? 'medalla' : 'medallas'} · '
               '${progress.stars} ${progress.stars == 1 ? 'estrella' : 'estrellas'}';
+
+    final deckSize = ref.watch(flashcardDeckProvider).value?.length;
+    final flashcardsSubtitle = deckSize == null || deckSize == 0
+        ? 'Repasa lo que aprendes'
+        : '$deckSize ${deckSize == 1 ? 'tarjeta' : 'tarjetas'}';
 
     final cards = [
       _HomeCard(
@@ -51,6 +57,14 @@ class HomePage extends ConsumerWidget {
         color: Theme.of(context).colorScheme.secondaryContainer,
         onColor: Theme.of(context).colorScheme.onSecondaryContainer,
         onTap: () => context.push('/medals'),
+      ),
+      _HomeCard(
+        icon: Icons.style_rounded,
+        title: 'Mis tarjetas',
+        subtitle: flashcardsSubtitle,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        onColor: Theme.of(context).colorScheme.onSurface,
+        onTap: () => context.push('/flashcards'),
       ),
     ];
 
@@ -112,7 +126,16 @@ class HomePage extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      cards[2],
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(child: cards[2]),
+                            const SizedBox(width: 20),
+                            Expanded(child: cards[3]),
+                          ],
+                        ),
+                      ),
                     ] else ...[
                       for (final card in cards) ...[card, const SizedBox(height: 16)],
                     ],

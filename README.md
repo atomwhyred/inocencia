@@ -61,6 +61,7 @@ Decisiones de diseño:
 | **Mis libros** | Lector de los PDF originales (imágenes, tablas, ejercicios). Recuerda la página de cada niño en cada libro. |
 | **Lectura en voz alta** | Un botón con altavoz en cada respuesta la lee (reproducir, pausar, parar) con la voz del dispositivo. Solo suena un mensaje a la vez. |
 | **Quiz** | Tres preguntas de opción múltiple sobre el último tema, generadas por el modelo local a partir del texto del libro (se descartan las que no se apoyan en él). |
+| **Mis tarjetas** (flashcards) | Tarjetas de memoria de doble cara: pregunta al frente y respuesta al reverso al pulsar. El botón «Crear tarjetas» bajo una respuesta del tutor pide al modelo local 3-4 tarjetas del tema (solo se guardan las apoyadas en el texto del libro). Repaso con «La sabía» / «A repasar» (las falladas vuelven al final, hasta dos veces); se guarda cuántas veces la sabía. Por niño y sin internet. |
 | **Mis medallas** | Siete medallas fijas (primer tema, primer quiz, 5 y 20 aciertos, quiz perfecto, sesión de estudio completada, tres días seguidos) y una estrella por acierto. Se guardan en SQLite. |
 | **Pomodoro infantil** | Estudio + descanso: 15+5 min de 1.º a 3.º y 20+5 min de 4.º a 6.º. En el descanso el chat se bloquea, Toco queda en el centro con la cuenta atrás y solo se vuelve con su mensaje. |
 | **Modo batería / apagón** | Tema negro puro, Toco y animaciones quietos y tutor ligero (2 hilos de CPU, respuestas más cortas). Se activa a mano con el icono de batería; por debajo del 20 % sin cargador la app lo *sugiere*, nunca lo activa sola. |
@@ -106,6 +107,7 @@ Piezas importantes:
   mejor que soporte el teléfono, así que el mismo APK es seguro en un Cortex-A53 y rápido en un Tensor reciente.
 - **Caché del prefijo.** El mensaje de sistema se procesa una sola vez por sesión y grado, y cada turno reutiliza
   ese estado (ahorra 5-10 s por turno). Ver mediciones en [docs/models.md](docs/models.md).
+- **Flashcards.** Misma estrategia que el quiz: texto plano (`T1:`/`R:`), parser tolerante, filtro de fidelidad por raíz de palabra contra el libro, tarjetas guardadas según llegan en SQLite (tabla `flashcards`, esquema v4). El generador es una interfaz (`FlashcardGenerator`) para poder cambiar de motor.
 - **Quiz sin JSON.** Un modelo de 3B falla con JSON, así que el quiz usa texto plano (`P1:`, `A) B) C)`,
   `RESPUESTA:`) con un parser tolerante, se barajan las opciones y se comprueba que la respuesta correcta salga
   del texto del libro.

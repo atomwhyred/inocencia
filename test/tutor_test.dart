@@ -1370,6 +1370,15 @@ RESPUESTA: C
         expect(questionButton, findsOneWidget);
       });
 
+      testWidgets('la ultima respuesta con libro ofrece crear tarjetas; una sola vez', (tester) async {
+        await openPage(tester);
+        expect(find.text('Crear tarjetas'), findsNothing, reason: 'aun no hay respuesta');
+        await send(tester, '¿Qué es un adjetivo?');
+        expect(find.text('Crear tarjetas'), findsOneWidget);
+        await send(tester, '¿Y el verbo?');
+        expect(find.text('Crear tarjetas'), findsOneWidget, reason: 'solo en la ultima respuesta');
+      });
+
       testWidgets('sin nombre ni grado, y Toco cabe en la barra (50 dp)', (tester) async {
         await openPage(tester);
         expect(find.text('¡Hola, Leo!'), findsNothing);

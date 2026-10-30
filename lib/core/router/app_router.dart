@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/achievements/presentation/medals_page.dart';
+import '../../features/flashcards/presentation/flashcards_page.dart';
+import '../../features/flashcards/presentation/study_page.dart';
 import '../../features/admin/presentation/admin_page.dart';
 import '../../features/auth/application/session.dart';
 import '../../features/auth/presentation/child_pin_page.dart';
@@ -41,6 +43,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Lo del nino (inicio, tutor y libros) exige haber elegido perfil.
       final childOnly = loc == '/home' || loc == '/tutor' ||
           loc == '/medals' ||
+          loc.startsWith('/flashcards') ||
           loc.startsWith('/books');
       if (childOnly && session.activeChildId == null) return '/';
       return null;
@@ -61,6 +64,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/home', builder: (_, _) => const HomePage()),
       GoRoute(path: '/tutor', builder: (_, _) => const TutorPage()),
       GoRoute(path: '/medals', builder: (_, _) => const MedalsPage()),
+      GoRoute(
+        path: '/flashcards',
+        // Desde el chat llega el grado (`extra`): se crean tarjetas del tema actual.
+        builder: (_, state) => FlashcardsPage(generateForGrade: state.extra as int?),
+        routes: [GoRoute(path: 'study', builder: (_, _) => const StudyPage())],
+      ),
       GoRoute(
         path: '/books',
         builder: (_, _) => const BooksPage(),

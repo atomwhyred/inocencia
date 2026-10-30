@@ -219,7 +219,7 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
                         text: _cheer!,
                         onDone: () => setState(() => _cheer = null),
                       ),
-                    Expanded(child: _body(context, tutor, mascotOn: mascotOn)),
+                    Expanded(child: _body(context, tutor, mascotOn: mascotOn, grade: grade)),
                     if (ready && _replyingTo != null && !tutor.generating)
                       _ReplyBanner(
                         question: _replyingTo!,
@@ -243,7 +243,12 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
     );
   }
 
-  Widget _body(BuildContext context, TutorState tutor, {required bool mascotOn}) {
+  Widget _body(
+    BuildContext context,
+    TutorState tutor, {
+    required bool mascotOn,
+    required int grade,
+  }) {
     switch (tutor.status) {
       case TutorStatus.idle:
       case TutorStatus.loading:
@@ -314,7 +319,19 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Bubble(index: i, message: message, mascotOn: mascotOn),
+                _Bubble(
+                  index: i,
+                  message: message,
+                  mascotOn: mascotOn,
+                  // Solo la ultima respuesta con libro, y con el modelo libre.
+                  onFlashcards:
+                      isLast && !tutor.generating && message.sources.isNotEmpty && !message.fromUser
+                      ? () {
+                          ref.read(speechProvider.notifier).stop();
+                          context.push('/flashcards', extra: grade);
+                        }
+                      : null,
+                ),
                 if (question != null)
                   _QuestionButton(
                     question: question,
@@ -330,7 +347,12 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.index, required this.message, required this.mascotOn});
+  const _Bubble({
+    required this.index,
+    required this.message,
+    required this.mascotOn,
+    this.onFlashcards,
+  });
 
   /// Posicion en la conversacion: identifica el mensaje para la voz.
   final int index;
@@ -338,6 +360,9 @@ class _Bubble extends StatelessWidget {
 
   /// Con Toco encendido, su pose "pensando" ya avisa de que el tutor trabaja.
   final bool mascotOn;
+
+  /// Crea tarjetas de memoria con el tema de esta respuesta (`null`: no se ofrece).
+  final VoidCallback? onFlashcards;
 
   @override
   Widget build(BuildContext context) {
@@ -373,9 +398,17 @@ class _Bubble extends StatelessWidget {
               for (final source in message.sources) _SourceChip(source: source),
             ],
             if (!mine && !message.streaming && message.text.isNotEmpty)
-              Align(
-                alignment: Alignment.centerRight,
-                child: SpeakButton(messageId: index, text: message.text),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (onFlashcards != null)
+                    TextButton.icon(
+                      onPressed: onFlashcards,
+                      icon: const Icon(Icons.style_rounded),
+                      label: const Text('Crear tarjetas'),
+                    ),
+                  SpeakButton(messageId: index, text: message.text),
+                ],
               ),
           ],
         ),

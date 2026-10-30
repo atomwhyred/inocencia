@@ -46,6 +46,14 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   usar el perfilador de Flutter DevTools si el teléfono va justo. El interruptor de Apariencia la apaga.
 - [ ] Página del PDF frente a la impresa: el tutor y el lector cuentan páginas del PDF (ver [libros.md](libros.md)).
 
+## Flashcards (30-oct)
+- [x] ~~Fase 1: tarjetas offline~~: «Mis tarjetas», repaso «La sabía/A repasar», «Crear tarjetas» desde el chat con el modelo local.
+  Probado en el Pixel 6 con el 3B (generar, estudiar, guardar repasos; migración de la base v3→v4 sobre datos reales).
+- [ ] **Calidad de las tarjetas con el 3B.** De 4 que escribe, se conservan 1-2 (el filtro descarta las no apoyadas en el libro).
+  Las que pasan a veces son correctas pero incompletas («Es un nombre de persona»). Revisar con un adulto; mejorar con el 7B o
+  con plantillas a partir del texto. En el registro `[tarjetas]` se ve lo que escribe el modelo y lo descartado.
+- Pendiente de futuras fases: repetición espaciada, medallas por tarjetas (ya se guardan los contadores), editar tarjetas a mano.
+
 ## Rendimiento en el Xiaomi 17T Pro (Dimensity 9500, 12 GB)
 - [ ] **Respuestas de 1-3 min con el 1.5B, sin explicar. Esperando el diagnóstico de la persona en Brasil**
   (Zona de padres → Archivos → Diagnóstico del tutor → Copiar). Un chip así debería ir más rápido que el Pixel 6. La app ya

@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import '../../knowledge/domain/knowledge_chunk.dart';
 import '../../tutor/domain/tutor_engine.dart';
 import '../../tutor/domain/tutor_source.dart';
@@ -34,15 +36,24 @@ class LlamaFlashcardGenerator implements FlashcardGenerator {
         final ready = FlashcardParser.parse(buf.toString(), complete: false);
         for (final card in ready) {
           if (emitted >= FlashcardPrompt.cards) break;
-          if (!seen.add(card.front) || !FlashcardGrounding.isGrounded(card, bookText)) continue;
+          if (!seen.add(card.front)) continue;
+          if (!FlashcardGrounding.isGrounded(card, bookText)) {
+            debugPrint('[tarjetas] descartada: ${card.front} -> ${card.back}');
+            continue;
+          }
           emitted++;
           yield card.withSource(source);
         }
         if (emitted >= FlashcardPrompt.cards) return;
       }
+      debugPrint('[tarjetas] texto del modelo:\n$buf');
       for (final card in FlashcardParser.parse(buf.toString())) {
         if (emitted >= FlashcardPrompt.cards) break;
-        if (!seen.add(card.front) || !FlashcardGrounding.isGrounded(card, bookText)) continue;
+        if (!seen.add(card.front)) continue;
+        if (!FlashcardGrounding.isGrounded(card, bookText)) {
+          debugPrint('[tarjetas] descartada: ${card.front} -> ${card.back}');
+          continue;
+        }
         emitted++;
         yield card.withSource(source);
       }
