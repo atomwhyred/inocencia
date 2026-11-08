@@ -7,12 +7,16 @@ class ModelOption {
     required this.fileName,
     required this.sizeBytes,
     required this.summary,
+    this.otherFileNames = const [],
   });
 
   final String name;
 
-  /// Nombre del archivo Q4_K_M en Hugging Face.
+  /// Nombre del archivo recomendado en Hugging Face.
   final String fileName;
+
+  /// Otras cuantizaciones del mismo modelo que la app tambien reconoce.
+  final List<String> otherFileNames;
   final int sizeBytes;
 
   /// Que ofrece y que cuesta, en una frase para el padre.
@@ -24,8 +28,10 @@ class ModelOption {
 /// Solo figuran modelos probados con el tutor:
 ///  - Qwen2.5-1.5B: algo mas rapido (~26 s por respuesta en un Pixel 6) pero con
 ///    fallos de fidelidad (llego a confundir respiracion con fotosintesis).
-///  - Qwen2.5-3B: respuestas fieles al libro, algo mas lento (~32 s, hasta ~40 s
-///    en turnos de seguimiento). Ver docs/models.md.
+///  - Qwen2.5-3B: respuestas fieles al libro. Se recomienda en Q4_0: en un Pixel 6
+///    empieza a responder en ~9-12 s frente a ~17-25 s del Q4_K_M (llama.cpp
+///    reempaqueta Q4_0 para dotprod), con calidad parecida en 8 preguntas de 4.º.
+///    El Q4_K_M se sigue reconociendo. Ver docs/models.md.
 ///  - Qwen2.5-7B: opcional y **no se recomienda**: en un Xiaomi 17T Pro (12 GB) tardaba
 ///    de 1 a 3 minutos por respuesta. Cabe en 12 GB, pero RAM no es velocidad.
 class ModelRecommendation {
@@ -40,9 +46,10 @@ class ModelRecommendation {
 
   static const large = ModelOption(
     name: 'Qwen2.5-3B',
-    fileName: 'qwen2.5-3b-instruct-q4_k_m.gguf',
-    sizeBytes: 2104932768,
-    summary: 'Más fiel a los libros, pero tarda algo más en responder.',
+    fileName: 'qwen2.5-3b-instruct-q4_0.gguf',
+    otherFileNames: ['qwen2.5-3b-instruct-q4_k_m.gguf'],
+    sizeBytes: 1997879712,
+    summary: 'Más fiel a los libros. Empieza a responder en unos 10 segundos.',
   );
 
   static const xlarge = ModelOption(
@@ -84,7 +91,7 @@ class ModelRecommendation {
     if (path == null) return null;
     final name = p.basename(path).toLowerCase();
     for (final m in all) {
-      if (name == m.fileName) return m;
+      if (name == m.fileName || m.otherFileNames.contains(name)) return m;
     }
     return null;
   }

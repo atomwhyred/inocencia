@@ -29,4 +29,30 @@ void main() {
       expect(CpuThreads.choose(const [], coreCount: 2), 2);
     });
   });
+
+  group('CpuThreads.chooseBatch', () {
+    test('Dimensity 9500 (Xiaomi 17T Pro) procesa el prompt con los 8 nucleos', () {
+      const freqs = [2700000, 2700000, 2700000, 2700000, 3500000, 3500000, 3500000, 4210000];
+      expect(CpuThreads.chooseBatch(freqs, coreCount: 8), 8);
+    });
+
+    test('Snapdragon 860 (Xiaomi Pad 5) deja fuera los 4 pequenos', () {
+      const freqs = [1786000, 1786000, 1786000, 1786000, 2419000, 2419000, 2419000, 2957000];
+      expect(CpuThreads.choose(freqs, coreCount: 8), 4);
+      expect(CpuThreads.chooseBatch(freqs, coreCount: 8), 4);
+    });
+
+    test('Pixel 6 sigue con 4 y nunca baja de los hilos de generacion', () {
+      const freqs = [1803000, 1803000, 1803000, 1803000, 2253000, 2253000, 2802000, 2802000];
+      expect(CpuThreads.chooseBatch(freqs, coreCount: 8), 4);
+      expect(CpuThreads.chooseBatch(const [3000000, 1000000, 1000000], coreCount: 3), 2);
+    });
+
+    test('tope de 8 y, sin datos, los mismos que al generar', () {
+      expect(CpuThreads.chooseBatch(List.filled(12, 3000000), coreCount: 12), 8);
+      // 6 grandes por igual: generar se queda en 6, el prompt tambien puede usarlos todos.
+      expect(CpuThreads.chooseBatch(List.filled(6, 3000000), coreCount: 6), 6);
+      expect(CpuThreads.chooseBatch(const [], coreCount: 8), 4);
+    });
+  });
 }

@@ -68,6 +68,35 @@ Los PDF se nombran `<grado>_<...>.pdf` (`6to_matematica.pdf`, `6to_ct_ciencias.p
 |---|---|---|---|---|
 | Xiaomi Pad 5 (Snapdragon 860, 6 GB) | 3B | 4 de 8 | 24 s | 130 piezas en 42 s (**7,1 piezas/s**) |
 | Xiaomi 17T Pro (Dimensity 9500, 12 GB) | 7B | 4 de 8 | sin medir | sin medir (la respuesta tardaba 1-3 min) |
+| Pixel 6 (Tensor, 8 GB), 8-nov, libro a 1100 caracteres | 3B | 4 de 8 | 22 / 26 / 28 s (602 / 540 / 566 tokens, ~20-27 tokens/s) | 6,5-7,9 piezas/s |
+
+### Q4_K_M frente a Q4_0 (3B, Pixel 6, 8-nov)
+
+`qwen2.5-3b-instruct-q4_0.gguf` (1,998 GB, repo oficial `Qwen/Qwen2.5-3B-Instruct-GGUF`, SHA-256
+`670d82d0…e9816a`). Mismas 3 preguntas desde una conversación vacía, prompts casi iguales (≈500 / 390 / 490 tokens):
+
+| | Primera pieza (turnos 1/2/3) | Prompt | Generación |
+|---|---|---|---|
+| Q4_K_M | 20 / 17 / 23 s | ~21-25 tokens/s | 6,8-7,4 piezas/s |
+| Q4_0 | 9 / 7 / 11 s | ~45-56 tokens/s | 7,9-8,9 piezas/s |
+
+Q4_0 procesa el prompt **unas 2,2 veces más rápido**: llama.cpp reempaqueta Q4_0 para dotprod (`REPACK`) y
+Q4_K no en chips sin i8mm. Repetido en 4 tandas alternas (K_M, 0, K_M, 0): Q4_K_M 19-25 s y Q4_0 8-11 s.
+
+**Calidad (8 preguntas de 4.º, conversación nueva, 8-nov):** parecida. Los dos aciertan multiplicación,
+plural de "lápiz" (lápices), raíces, verbo, sustantivo propio y adjetivo; "suma con llevadas" no está en los
+libros de 4.º. Q4_K_M: fracción mejor explicada. Q4_0: fracción confusa ("dividida por otro número") y una
+pregunta avanzada ("la distributiva"). **Los dos** siguen citando lo que el niño no ve ("la tabla", "el
+ejercicio", "el texto") aunque el prompt lo prohíbe. Desde el 8-nov la app **recomienda el 3B en Q4_0**
+(`qwen2.5-3b-instruct-q4_0.gguf`); el Q4_K_M se sigue reconociendo como el mismo modelo.
+
+Flash attention (`ContextParams.flashAttention = enabled`) no cambió nada en el Pixel 6 (11-12 s / 9 s frente
+a 12 s / 8 s): queda desactivado.
+
+Hasta el 8-nov el diagnóstico casi nunca anotaba la respuesta: el tutor la corta tras la primera pregunta del
+modelo y el stream se cancelaba sin llegar a `onDone`. Ahora se anota también al cortar, guarda los tokens del
+prompt y su velocidad, y sobrevive a cerrar la app. Desde la misma fecha el prompt usa más hilos que la generación
+en chips con núcleos medianos fuertes (≥ 2,2 GHz): 8 en el Dimensity 9500; 4 en la Pad 5 y el Pixel 6.
 
 En el 17T Pro la app cargó la variante de CPU correcta (`MATMUL_INT8`, `SVE`, `SME`, `DOTPROD`) y usa los 4 núcleos
 rápidos: la lentitud es del tamaño del modelo, no de la configuración. En la Pad 5 el cuello de botella es el tiempo

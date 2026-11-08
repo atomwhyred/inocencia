@@ -31,6 +31,7 @@ class LlamaTutorEngine implements TutorEngine {
     required int totalSeconds,
     required double piecesPerSecond,
     int? promptChars,
+    int? promptTokens,
   })?
   onAnswered;
   LlamaWorker? _worker;
@@ -63,6 +64,10 @@ class LlamaTutorEngine implements TutorEngine {
   static int get threads =>
       CpuThreads.choose(_coreFreqsKhz(), coreCount: Platform.numberOfProcessors);
 
+  /// Hilos para procesar el prompt: admite tambien los nucleos medianos si son fuertes.
+  static int get batchThreads =>
+      CpuThreads.chooseBatch(_coreFreqsKhz(), coreCount: Platform.numberOfProcessors);
+
   /// Frecuencia maxima de cada nucleo (kHz); vacia si Android no deja leerla.
   static List<int> _coreFreqsKhz() {
     final freqs = <int>[];
@@ -85,10 +90,11 @@ class LlamaTutorEngine implements TutorEngine {
     // Elige la variante de CPU antes de que el modelo se cargue en su isolate.
     NativeBackends.loadCpuVariant(await nativeLibraryDir?.call());
     final threadCount = lowPower ? lowPowerThreads : threads;
+    final batchThreadCount = lowPower ? lowPowerThreads : batchThreads;
     debugPrint(
       '[tutor] modelo ${modelPath.split('/').last} '
       '(${(File(modelPath).lengthSync() / 1e9).toStringAsFixed(2)} GB), '
-      '$threadCount hilos de ${Platform.numberOfProcessors} nucleos '
+      '$threadCount hilos ($batchThreadCount para el prompt) de ${Platform.numberOfProcessors} nucleos '
       '(frecuencias ${_coreFreqsKhz()}), ahorro: $lowPower',
     );
     onLoaded?.call(
@@ -96,6 +102,7 @@ class LlamaTutorEngine implements TutorEngine {
         model: modelPath.split('/').last,
         modelGb: File(modelPath).lengthSync() / 1e9,
         threads: threadCount,
+        batchThreads: batchThreadCount,
         cores: Platform.numberOfProcessors,
         coreFreqsKhz: _coreFreqsKhz(),
         variants: NativeBackends.variants,
@@ -123,7 +130,7 @@ class LlamaTutorEngine implements TutorEngine {
       ..nBatch = contextTokens
       ..nUbatch = 512
       ..nThreads = threadCount
-      ..nThreadsBatch = threadCount
+      ..nThreadsBatch = batchThreadCount
       ..nPredict = maxAnswerTokens + _prefixReserve;
     // Respuestas fieles al libro: poca aleatoriedad.
     final sampler = SamplerParams()
@@ -164,20 +171,27 @@ class LlamaTutorEngine implements TutorEngine {
     final clock = Stopwatch()..start();
     Duration? firstPiece;
     var pieces = 0;
+    var reported = false;
+    // Se anota al terminar y tambien si se corta: el tutor para tras la primera
+    // pregunta del modelo y entonces el stream se cancela sin llegar a `onDone`.
     void report() {
-      if (pieces == 0) return;
+      if (pieces == 0 || reported) return;
+      reported = true;
       final total = clock.elapsed;
       final rest = total - (firstPiece ?? Duration.zero);
       final rate = rest.inMilliseconds > 0 ? (pieces - 1) * 1000 / rest.inMilliseconds : 0;
+      final promptTokens = worker.promptTokensOf(id);
       onAnswered?.call(
         firstPieceSeconds: firstPiece?.inSeconds ?? 0,
         pieces: pieces,
         totalSeconds: total.inSeconds,
         piecesPerSecond: rate.toDouble(),
         promptChars: promptChars,
+        promptTokens: promptTokens,
       );
       debugPrint(
-        '[tutor] primera pieza ${firstPiece?.inSeconds} s, $pieces piezas en '
+        '[tutor] prompt de $promptTokens tokens, '
+        'primera pieza ${firstPiece?.inSeconds} s, $pieces piezas en '
         '${total.inSeconds} s (${rate.toStringAsFixed(1)} piezas/s tras la primera)',
       );
     }
@@ -204,6 +218,7 @@ class LlamaTutorEngine implements TutorEngine {
         // Para la generacion si seguia en marcha y deja de escuchar.
         worker.stop(id);
         await sub?.cancel();
+        report();
       },
     );
     return out.stream;

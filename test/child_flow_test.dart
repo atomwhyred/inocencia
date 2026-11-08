@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inocencia/features/home/presentation/floating_nav_bar.dart';
 import 'package:inocencia/app.dart';
 import 'package:inocencia/core/di/providers.dart';
 import 'package:inocencia/core/router/app_router.dart';
@@ -209,27 +210,45 @@ void main() {
     await tester.tap(find.text('Leo'));
     await tester.pumpAndSettle();
 
-    expect(find.text('¡Hola, Leo!'), findsOneWidget);
-    expect(find.text('6.º grado'), findsOneWidget);
-    expect(find.text('Mi tutor'), findsOneWidget);
-    expect(find.text('Mis libros'), findsOneWidget);
+    // El perfil va en la barra, a la derecha del todo: solo avatar y nombre.
+    expect(find.descendant(of: find.byType(FloatingNavBar), matching: find.text('Leo')), findsOneWidget);
+    expect(find.text('6.º grado'), findsNothing);
+    expect(find.text('Tutor'), findsOneWidget);
+    expect(find.text('Libros'), findsOneWidget);
+    expect(find.text('¿Qué aprendemos hoy?'), findsOneWidget);
   });
 
-  testWidgets('en una tablet las dos tarjetas van en una fila', (tester) async {
+  testWidgets('la barra inferior flota centrada con los 4 destinos en una fila', (tester) async {
     await boot(tester, size: const Size(1200, 800));
     await tester.tap(find.text('Leo'));
     await tester.pumpAndSettle();
-    final tutor = tester.getTopLeft(find.text('Mi tutor'));
-    final books = tester.getTopLeft(find.text('Mis libros'));
-    expect(books.dy, tutor.dy);
-    expect(books.dx, greaterThan(tutor.dx));
+    final labels = ['Tutor', 'Libros', 'Medallas', 'Tarjetas'];
+    final centers = [for (final l in labels) tester.getCenter(find.text(l))];
+    for (var i = 1; i < centers.length; i++) {
+      expect(centers[i].dy, centers[0].dy);
+      expect(centers[i].dx, greaterThan(centers[i - 1].dx));
+    }
+    expect(centers.first.dy, greaterThan(800 - FloatingNavBar.reservedHeight));
+    final bar = tester.getRect(find.byType(FloatingNavBar).first);
+    final island = tester.getRect(
+      find.descendant(of: find.byType(FloatingNavBar), matching: find.byType(DecoratedBox)).first,
+    );
+    expect(island.width, lessThanOrEqualTo(FloatingNavBar.maxWidth));
+    expect(island.center.dx, closeTo(bar.center.dx, 1));
+    final leo = tester.getCenter(find.descendant(of: find.byType(FloatingNavBar), matching: find.text('Leo')));
+    expect(leo.dx, greaterThan(centers.last.dx), reason: 'el perfil va a la derecha del todo');
+    expect(leo.dy, centers.first.dy);
+
+    await tester.tap(find.text('Leo').last);
+    await tester.pumpAndSettle();
+    expect(find.text('¿Quién va a aprender hoy?'), findsOneWidget, reason: 'tocar el perfil lo cambia');
   });
 
   testWidgets('Mis libros separa los que están en el teléfono de los que faltan', (tester) async {
     await boot(tester);
     await tester.tap(find.text('Leo'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Mis libros'));
+    await tester.tap(find.text('Libros'));
     await tester.pump();
     await settle(tester);
 
@@ -244,7 +263,7 @@ void main() {
     await boot(tester);
     await tester.tap(find.text('Leo'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Mis libros'));
+    await tester.tap(find.text('Libros'));
     await tester.pump();
     await settle(tester);
 
@@ -258,7 +277,7 @@ void main() {
     await boot(tester, withPdf: false);
     await tester.tap(find.text('Leo'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Mis libros'));
+    await tester.tap(find.text('Libros'));
     await tester.pump();
     await settle(tester);
     expect(find.text('Todavía no hay libros en este teléfono.'), findsOneWidget);
@@ -329,11 +348,12 @@ void main() {
     await tester.tap(find.text('Leo'));
     await settle(tester, 300);
 
-    expect(find.text('Mis medallas'), findsOneWidget);
-    expect(find.text('Mis tarjetas'), findsOneWidget);
-    expect(find.text('1 medalla · 4 estrellas'), findsOneWidget);
+    expect(find.text('Medallas'), findsOneWidget);
+    expect(find.text('Tarjetas'), findsOneWidget);
+    expect(find.text('medalla · 4 estrellas'), findsOneWidget);
+    expect(find.bySemanticsLabel('Mis medallas. 1 medalla · 4 estrellas'), findsWidgets);
 
-    await tester.tap(find.text('Mis medallas'));
+    await tester.tap(find.text('Medallas'));
     await settle(tester, 300);
     expect(find.text('4'), findsOneWidget);
     expect(find.text('Primer tema'), findsOneWidget);
@@ -370,7 +390,7 @@ void main() {
     container.read(routerProvider).go('/home');
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    await tester.tap(find.text('Mi tutor'));
+    await tester.tap(find.text('Tutor'));
     await tester.pump(const Duration(milliseconds: 400));
     await settle(tester, 900);
 

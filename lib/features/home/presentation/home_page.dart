@@ -3,17 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/responsive/max_content_width.dart';
-import '../../../core/responsive/window_size_class.dart';
-import '../../../core/utils/school_grade_calculator.dart';
 import '../../../core/widgets/offline_badge.dart';
 import '../../achievements/application/achievement_service.dart';
 import '../../auth/application/active_child.dart';
 import '../../flashcards/application/flashcard_providers.dart';
+import '../../mascot/domain/mascot_mood.dart';
+import '../../mascot/presentation/mascot_view.dart';
 import '../../auth/application/session.dart';
 import '../../power/presentation/power_toggle.dart';
 import '../../profiles/presentation/avatar_view.dart';
+import 'floating_nav_bar.dart';
 
-/// Inicio del nino: de aqui va a hablar con su tutor o a leer sus libros.
+/// Inicio del nino: Toco le da la bienvenida, un resumen de su progreso y una barra
+/// flotante abajo para ir al tutor, los libros, las medallas o las tarjetas, con su
+/// perfil (avatar y nombre) a la derecha del todo.
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
@@ -21,7 +24,6 @@ class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final child = ref.watch(activeChildProvider);
     final grade = ref.watch(activeGradeProvider);
-    final wide = !WindowSizeClass.of(context).isCompact;
     final progress = ref.watch(childProgressProvider).value;
     final medalsSubtitle = progress == null
         ? 'Tus estrellas y medallas'
@@ -33,42 +35,53 @@ class HomePage extends ConsumerWidget {
         ? 'Repasa lo que aprendes'
         : '$deckSize ${deckSize == 1 ? 'tarjeta' : 'tarjetas'}';
 
-    final cards = [
-      _HomeCard(
+    final scheme = Theme.of(context).colorScheme;
+    // En el tema claro los "container" son pastel y se pierden sobre la barra:
+    // ahi se usan los colores solidos de la bandera.
+    final light = Theme.of(context).brightness == Brightness.light;
+    final navItems = [
+      FloatingNavItem(
         icon: Icons.chat_bubble_rounded,
-        title: 'Mi tutor',
-        subtitle: 'Pregúntale lo que no entiendas',
-        color: Theme.of(context).colorScheme.primaryContainer,
-        onColor: Theme.of(context).colorScheme.onPrimaryContainer,
+        label: 'Tutor',
+        semanticLabel: 'Mi tutor. Pregúntale lo que no entiendas',
+        primary: true,
         onTap: () => context.push('/tutor'),
       ),
-      _HomeCard(
+      FloatingNavItem(
         icon: Icons.menu_book_rounded,
-        title: 'Mis libros',
-        subtitle: 'Lee tus libros y cuadernos',
-        color: Theme.of(context).colorScheme.tertiaryContainer,
-        onColor: Theme.of(context).colorScheme.onTertiaryContainer,
+        label: 'Libros',
+        semanticLabel: 'Mis libros. Lee tus libros y cuadernos',
+        // Blanco en tema oscuro y oscuro en el claro: contrasta con la barra.
+        color: scheme.inverseSurface,
+        onColor: scheme.onInverseSurface,
         onTap: () => context.push('/books'),
       ),
-      _HomeCard(
+      FloatingNavItem(
         icon: Icons.emoji_events_rounded,
-        title: 'Mis medallas',
-        subtitle: medalsSubtitle,
-        color: Theme.of(context).colorScheme.secondaryContainer,
-        onColor: Theme.of(context).colorScheme.onSecondaryContainer,
+        label: 'Medallas',
+        semanticLabel: 'Mis medallas. $medalsSubtitle',
+        color: light ? scheme.secondary : scheme.secondaryContainer,
+        onColor: light ? scheme.onSecondary : scheme.onSecondaryContainer,
         onTap: () => context.push('/medals'),
       ),
-      _HomeCard(
+      FloatingNavItem(
         icon: Icons.style_rounded,
-        title: 'Mis tarjetas',
-        subtitle: flashcardsSubtitle,
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        onColor: Theme.of(context).colorScheme.onSurface,
+        label: 'Tarjetas',
+        semanticLabel: 'Mis tarjetas. $flashcardsSubtitle',
+        color: light ? scheme.tertiary : scheme.primaryContainer,
+        onColor: light ? scheme.onTertiary : scheme.onPrimaryContainer,
         onTap: () => context.push('/flashcards'),
       ),
     ];
 
+    // Hueco bajo el contenido para que la barra flotante no lo tape.
+    final bottomGap =
+        FloatingNavBar.reservedHeight +
+        MediaQuery.paddingOf(context).bottom +
+        8;
+
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
         title: const OfflineBadge(compact: true),
         actions: const [PowerToggle(), SizedBox(width: 4)],
@@ -81,65 +94,95 @@ class HomePage extends ConsumerWidget {
           },
         ),
       ),
+      bottomNavigationBar: child == null || grade == null
+          ? null
+          : FloatingNavBar(
+              items: navItems,
+              trailing: _ProfileButton(
+                avatar: child.avatar,
+                name: child.name,
+                onTap: () {
+                  ref.read(sessionProvider.notifier).clearChild();
+                  context.go('/');
+                },
+              ),
+            ),
       body: SafeArea(
+        bottom: false,
         child: child == null || grade == null
             ? const Center(child: CircularProgressIndicator())
             : MaxContentWidth(
-                maxWidth: 900,
-                child: ListView(
-                  padding: const EdgeInsets.all(24),
-                  children: [
-                    const PowerSuggestion(),
-                    Row(
-                      children: [
-                        AvatarView(avatar: child.avatar, radius: 30),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '¡Hola, ${child.name}!',
-                                style: Theme.of(context).textTheme.headlineSmall,
-                              ),
-                              Text(
-                                SchoolGradeCalculator.label(grade),
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ],
-                          ),
+                maxWidth: 600,
+                // Llena el alto: Toco en el centro y el resumen justo encima de la
+                // barra. En pantallas bajas se desplaza.
+                child: LayoutBuilder(
+                  builder: (context, box) => SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(24, 16, 24, bottomGap),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: (box.maxHeight - 16 - bottomGap).clamp(
+                          0,
+                          double.infinity,
                         ),
-                      ],
+                      ),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const PowerSuggestion(),
+                            const Spacer(),
+                            const SizedBox(height: 16),
+                            _Greeting(onTap: () => context.push('/tutor')),
+                            const SizedBox(height: 16),
+                            const Spacer(),
+                            IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    child: _SummaryTile(
+                                      icon: Icons.emoji_events_rounded,
+                                      value: progress == null
+                                          ? '–'
+                                          : '${progress.earned.length}',
+                                      caption: progress == null
+                                          ? 'Medallas'
+                                          : '${progress.earned.length == 1 ? 'medalla' : 'medallas'} · '
+                                                '${progress.stars} ${progress.stars == 1 ? 'estrella' : 'estrellas'}',
+                                      color: scheme.secondaryContainer,
+                                      onColor: scheme.onSecondaryContainer,
+                                      semanticLabel:
+                                          'Mis medallas. $medalsSubtitle',
+                                      onTap: () => context.push('/medals'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _SummaryTile(
+                                      icon: Icons.style_rounded,
+                                      value: deckSize == null
+                                          ? '–'
+                                          : '$deckSize',
+                                      caption: deckSize == 0 || deckSize == null
+                                          ? 'tarjetas: créalas desde el tutor'
+                                          : deckSize == 1
+                                          ? 'tarjeta para repasar'
+                                          : 'tarjetas para repasar',
+                                      color: scheme.primaryContainer,
+                                      onColor: scheme.onPrimaryContainer,
+                                      semanticLabel:
+                                          'Mis tarjetas. $flashcardsSubtitle',
+                                      onTap: () => context.push('/flashcards'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 28),
-                    Text('¿Qué quieres hacer hoy?', style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(height: 16),
-                    if (wide) ...[
-                      IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(child: cards[0]),
-                            const SizedBox(width: 20),
-                            Expanded(child: cards[1]),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(child: cards[2]),
-                            const SizedBox(width: 20),
-                            Expanded(child: cards[3]),
-                          ],
-                        ),
-                      ),
-                    ] else ...[
-                      for (final card in cards) ...[card, const SizedBox(height: 16)],
-                    ],
-                  ],
+                  ),
                 ),
               ),
       ),
@@ -147,60 +190,167 @@ class HomePage extends ConsumerWidget {
   }
 }
 
-class _HomeCard extends StatelessWidget {
-  const _HomeCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.onColor,
-    required this.onTap,
-  });
+/// Toco grande con un globo de bienvenida. Tocarlo abre el tutor.
+class _Greeting extends StatelessWidget {
+  const _Greeting({required this.onTap});
 
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color color;
-  final Color onColor;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Text(
+            '¿Qué aprendemos hoy?',
+            textAlign: TextAlign.center,
+            style: text.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ),
+        // Pico del globo, apuntando a Toco.
+        CustomPaint(
+          size: const Size(24, 12),
+          painter: _BubbleTail(scheme.surfaceContainerHigh),
+        ),
+        const SizedBox(height: 4),
+        MascotView(
+          mood: const MascotMood(MascotActivity.idle),
+          height: 220,
+          onTap: onTap,
+        ),
+      ],
+    );
+  }
+}
+
+class _BubbleTail extends CustomPainter {
+  const _BubbleTail(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..close();
+    canvas.drawPath(path, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_BubbleTail old) => old.color != color;
+}
+
+/// Resumen pequeño (medallas o tarjetas) que abre su pantalla.
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({
+    required this.icon,
+    required this.value,
+    required this.caption,
+    required this.color,
+    required this.onColor,
+    required this.semanticLabel,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String value;
+  final String caption;
+  final Color color;
+  final Color onColor;
+  final String semanticLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
     return Semantics(
       button: true,
-      label: '$title. $subtitle',
+      label: semanticLabel,
       child: ExcludeSemantics(
         child: Card(
           color: color,
+          margin: EdgeInsets.zero,
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Row(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(icon, size: 48, color: onColor),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(color: onColor, fontWeight: FontWeight.w700),
+                  Row(
+                    children: [
+                      Icon(icon, color: onColor, size: 28),
+                      const SizedBox(width: 8),
+                      Text(
+                        value,
+                        style: text.headlineMedium?.copyWith(
+                          color: onColor,
+                          fontWeight: FontWeight.w800,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: onColor),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  Icon(Icons.chevron_right_rounded, color: onColor),
+                  const SizedBox(height: 4),
+                  Text(
+                    caption,
+                    style: text.bodyMedium?.copyWith(color: onColor),
+                  ),
                 ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// El nino en la barra: su avatar y su nombre. Tocarlo vuelve a elegir perfil.
+class _ProfileButton extends StatelessWidget {
+  const _ProfileButton({required this.avatar, required this.name, required this.onTap});
+
+  final String avatar;
+  final String name;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      label: '$name. Cambiar de perfil',
+      child: ExcludeSemantics(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 64),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(height: 52, child: Center(child: AvatarView(avatar: avatar, radius: 22))),
+                const SizedBox(height: 4),
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: scheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

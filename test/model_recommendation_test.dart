@@ -49,6 +49,19 @@ void main() {
       );
     });
 
+    test('el 3B se recomienda en Q4_0 y el Q4_K_M de antes se sigue reconociendo', () {
+      expect(ModelRecommendation.large.fileName, 'qwen2.5-3b-instruct-q4_0.gguf');
+      expect(ModelRecommendation.large.sizeBytes, 1997879712);
+      expect(
+        ModelRecommendation.identify('/x/qwen2.5-3b-instruct-q4_0.gguf'),
+        ModelRecommendation.large,
+      );
+      expect(
+        ModelRecommendation.identify('/x/qwen2.5-3b-instruct-q4_k_m.gguf'),
+        ModelRecommendation.large,
+      );
+    });
+
     test('avisa de poca memoria por debajo de 3 GB', () {
       expect(ModelRecommendation.isLowRam(2 * _gb), isTrue);
       expect(ModelRecommendation.isLowRam(4 * _gb), isFalse);
@@ -79,14 +92,14 @@ void main() {
     testWidgets('movil de 8 GB: recomienda Qwen2.5-3B y ofrece el 1.5B', (t) async {
       await pump(t, 8 * _gb);
       expect(find.textContaining('8,0 GB'), findsOneWidget);
-      expect(find.textContaining('Qwen2.5-3B (2,1 GB)'), findsOneWidget);
+      expect(find.textContaining('Qwen2.5-3B (2,0 GB)'), findsOneWidget);
       expect(find.textContaining('Alternativa: Qwen2.5-1.5B'), findsOneWidget);
       expect(find.textContaining('poca memoria'), findsNothing);
     });
 
     testWidgets('movil de 12 GB: recomienda Qwen2.5-3B, no el 7B', (t) async {
       await pump(t, (11.2 * _gb).round());
-      expect(find.textContaining('Qwen2.5-3B (2,1 GB)'), findsOneWidget);
+      expect(find.textContaining('Qwen2.5-3B (2,0 GB)'), findsOneWidget);
       expect(find.textContaining('Qwen2.5-7B'), findsNothing);
     });
 

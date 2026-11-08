@@ -39,6 +39,9 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 - [ ] **Copia de seguridad o exportación del historial** (opcional, no se pidió).
 
 ## Pulido
+- [x] ~~Inicio del niño con barra inferior flotante~~ (8-nov): Toco con "¿Qué aprendemos hoy?" en el centro, resumen de
+  medallas y tarjetas y barra centrada (Tutor, Libros, Medallas, Tarjetas y, a la derecha, el perfil del niño con su
+  avatar y nombre, que al tocarlo cambia de perfil). Revisado en oscuro, claro y modo batería.
 - [ ] **Pulido visual del chat** (burbujas, animaciones), Fase 3.
 - [ ] **Ampliar las frases de aprobación de Toco** (`verdictOf` en
   `lib/features/mascot/domain/mascot_mood.dart`) viendo respuestas reales del modelo.
@@ -64,8 +67,16 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 - **Causa encontrada (30-oct):** el diagnóstico del 17T Pro mostró que usaba el modelo de **7B**, que la app recomendaba
   a partir de 10 GB de RAM. Ya no se recomienda (solo 3B ≥ 7 GB, 1.5B por debajo) y avisa si está vinculado. Falta que la
   persona repita con el 3B o el 1.5B y envíe el diagnóstico con una respuesta.
-- [ ] **Reducir el tiempo hasta la primera pieza** (24 s en la Pad 5 con el 3B): probar `maxContextChars` 1500 → 1000 y
-  menos historial, midiendo con el diagnóstico y comparando la fidelidad con preguntas reales. Sin aplicar todavía.
+- [x] ~~Reducir el tiempo hasta la primera pieza~~ (8-nov): `maxContextChars` 1500 → 1100. Pixel 6 con el 3B: primera
+  pieza 22/26/28 s en 3 turnos (antes ~30/30/33 s). Respuestas aún apoyadas en el libro.
+- [x] ~~Diagnóstico sin respuesta~~ (8-nov): se anota aunque se corte la respuesta, con tokens y tokens/s del prompt, y se guarda.
+- [ ] **Medir en la Pad 5 y el 17T Pro con el APK nuevo** (el 17T Pro usa ahora 8 hilos para el prompt).
+- [x] ~~3B en Q4_0~~ (8-nov): ~2× más rápido y calidad parecida; ahora es el recomendado (ver [models.md](models.md)).
+- [x] ~~Flash attention~~ (8-nov): sin efecto en el Pixel 6, desactivado. Queda KleidiAI (`-DGGML_CPU_KLEIDIAI=ON`) para el 17T Pro.
+- [x] ~~"Dame un ejemplo…" se tomaba como respuesta~~ (8-nov): `dame`, `muestrame`, `enseñame`, `puedes`, `necesito` en `_nonAnswerStarts`.
+- [x] ~~El tutor cita lo que el niño no ve~~ (8-nov): el prompt no bastaba; `TutorPrompt.hideUnseen` quita "en la tabla",
+  "del ejercicio", "en el poema", "en el ejemplo", "al ver el dibujo", páginas... (respeta "tabla de multiplicar" y "tu libro").
+- [ ] Medir Q4_0 en la Pad 5 y el 17T Pro.
 - Los hilos ahora salen de los núcleos rápidos (`lib/features/tutor/domain/cpu_threads.dart`), no de «núcleos/2».
 
 ## Seguridad (revisión del 29-oct, pendiente de aplicar antes de publicar)
@@ -87,5 +98,8 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 
 ## Recordatorios de desarrollo
 - `flutter test` necesita `clang` en el PC (pdfrx compila PDFium); el visor PDF real solo se prueba en el móvil.
+- Compilar Android necesita un JDK completo con `javac` (en Fedora 44: `java-25-openjdk-devel`; la 21 ya no está).
+  Si Gradle sigue sin verlo, `android/gradlew --stop`.
+- `build/knowledge.db` se borra con `flutter clean`: hay copia en `models/knowledge.db`.
 - Los tests que pintan el chat deben sobrescribir `mascotAnimateProvider` (a `false`) y `mascotAtlasProvider`.
 - Probar siempre en el dispositivo físico por USB (`adb devices` antes).

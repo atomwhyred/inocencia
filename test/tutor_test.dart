@@ -230,6 +230,12 @@ void main() {
       expect(s, contains('libro de texto'));
     });
 
+    test('pide no citar lo que el niño no ve (poemas, tablas, páginas)', () {
+      final s = TutorPrompt.system(4);
+      expect(s, contains('El niño no ve el libro'));
+      expect(s, contains('"la tabla"'));
+    });
+
     test('la pregunta lleva pegado el recordatorio de brevedad', () {
       final turns = TutorPrompt.build(grade: 5, chunks: const [_chunk], history: const [], question: 'q');
       expect(turns.last.content, endsWith('termina con una pregunta que lo haga pensar.'));
@@ -249,6 +255,47 @@ void main() {
       expect(turns.last.content, contains('Pregunta del niño: ¿Qué es un adjetivo?'));
     });
 
+    group('hideUnseen', () {
+      test('quita lo que el niño no ve, con frases reales del modelo', () {
+        expect(
+          TutorPrompt.hideUnseen(
+            'Un sustantivo propio es el nombre de una persona. ¿Qué ejemplos encuentras en la tabla del texto?',
+          ),
+          'Un sustantivo propio es el nombre de una persona. ¿Qué ejemplos encuentras?',
+        );
+        expect(
+          TutorPrompt.hideUnseen('¿Qué oración del ejercicio te ayuda a entender mejor qué es un verbo?'),
+          '¿Qué oración te ayuda a entender mejor qué es un verbo?',
+        );
+        expect(
+          TutorPrompt.hideUnseen('¿Qué palabras en el poema podrían ser sustantivos propios?'),
+          '¿Qué palabras podrían ser sustantivos propios?',
+        );
+        expect(
+          TutorPrompt.hideUnseen('En el poema, hay cinco sustantivos propios. ¿Cuáles ves?'),
+          'Hay cinco sustantivos propios. ¿Cuáles ves?',
+        );
+        expect(TutorPrompt.hideUnseen('¿Qué observas al ver la tabla?'), '¿Qué observas?');
+        expect(
+          TutorPrompt.hideUnseen('¿Qué adjetivos describen a los sustantivos en el ejemplo?'),
+          '¿Qué adjetivos describen a los sustantivos?',
+        );
+        expect(
+          TutorPrompt.hideUnseen('Mira el recuadro de la página 138. ¿Qué ves en los dibujos?'),
+          'Mira el recuadro. ¿Qué ves?',
+        );
+      });
+
+      test('respeta la tabla de multiplicar, tu libro y lo que no menciona nada', () {
+        const a = '¿Qué observas en la tabla de multiplicar del 3?';
+        expect(TutorPrompt.hideUnseen(a), a);
+        const b = 'Búscalo en tu libro. ¿Qué es un verbo?';
+        expect(TutorPrompt.hideUnseen(b), b);
+        const c = 'Una fracción es una parte de un todo, por ejemplo 1/2. ¿Qué parte es la mitad?';
+        expect(TutorPrompt.hideUnseen(c), c);
+      });
+    });
+
     group('isAnswer', () {
       const asked = [ChatTurn('user', '¿Qué es un adjetivo?'), ChatTurn('assistant', 'Dice cómo es algo. ¿Cuál es el adjetivo de "casa grande"?')];
 
@@ -265,6 +312,10 @@ void main() {
         expect(TutorPrompt.isAnswer(asked, 'por qué'), isFalse);
         expect(TutorPrompt.isAnswer(asked, 'Explícame otra vez'), isFalse);
         expect(TutorPrompt.isAnswer(asked, 'no entiendo'), isFalse);
+        // Pedir algo no es contestar (antes salia "Casi, ¡muy bien!").
+        expect(TutorPrompt.isAnswer(asked, 'Dame un ejemplo de adjetivo'), isFalse);
+        expect(TutorPrompt.isAnswer(asked, 'Enséñame otra vez'), isFalse);
+        expect(TutorPrompt.isAnswer(asked, 'puedes repetirlo'), isFalse);
         expect(TutorPrompt.isAnswer(asked, 'y el plural'), isFalse);
         expect(TutorPrompt.isAnswer(asked, 'Entonces los verbos'), isFalse);
       });

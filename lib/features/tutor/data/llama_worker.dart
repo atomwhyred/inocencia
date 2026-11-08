@@ -42,6 +42,10 @@ class LlamaWorker {
   final ReceivePort _fromWorker;
 
   final _streams = <int, StreamController<String>>{};
+
+  /// Tokens que el modelo proceso antes de la primera pieza de cada generacion
+  /// (el sufijo, mas el prefijo si hubo que construirlo). Para el diagnostico.
+  final _promptTokens = <int, int>{};
   Completer<void>? _loading;
   Completer<void>? _disposed;
   int _nextId = 0;
@@ -86,6 +90,9 @@ class LlamaWorker {
     return (id, controller.stream);
   }
 
+  /// Tokens del prompt de la generacion [id] (se consulta una vez, al terminar).
+  int? promptTokensOf(int id) => _promptTokens.remove(id);
+
   /// Pide parar la generacion [id]; el worker la comprueba entre token y token.
   void stop(int id) => _toWorker.send(['stop', id]);
 
@@ -110,6 +117,8 @@ class LlamaWorker {
       case 'piece':
         final c = _streams[m[1] as int];
         if (c != null && !c.isClosed) c.add(m[2] as String);
+      case 'prompt':
+        _promptTokens[m[1] as int] = m[2] as int;
       case 'done':
         final c = _streams.remove(m[1] as int);
         if (c == null || c.isClosed) return;
@@ -175,12 +184,24 @@ class _Worker {
       return;
     }
     final clock = Stopwatch()..start();
+    var promptTokens = 0;
+    // Contar es solo tokenizar (milisegundos); da la velocidad real del prompt.
+    int count(String text) {
+      try {
+        return llama.tokenize(text, false).length;
+      } catch (_) {
+        return 0;
+      }
+    }
+
     try {
+      promptTokens = count(suffix);
       if (system.isEmpty) {
         llama.clear();
         llama.setPrompt(suffix);
       } else {
         void buildPrefix() {
+          promptTokens += count(system);
           llama.clear();
           llama.setPrompt(system);
           llama.getNextWithStatus(); // decodifica el prompt; el token muestreado no entra en la cache
@@ -209,6 +230,8 @@ class _Worker {
         llama.setPrompt(suffix);
       }
 
+      // Antes de la primera pieza: si la respuesta se corta, el dato ya esta.
+      _out.send(['prompt', id, promptTokens]);
       var pieces = 0;
       while (true) {
         final (piece, done, limit) = llama.getNextWithStatus();

@@ -23,6 +23,10 @@ Hay dos maneras, y valen las dos a la vez:
    Fuera de la carpeta de la app, Android 11+ pide el permiso **"Acceso a todos los archivos"** (la misma
    pantalla tiene el botón "Conceder permiso").
 
+- **Copiar por USB con `adb`:** una carpeta creada con `adb shell mkdir` (o `adb push` de una carpeta) queda
+  con dueño `shell` y permisos `rwxrws---`, y la app no puede listarla ("Todavía no hay libros en este
+  teléfono" aunque los PDF estén). Darle lectura: `adb shell chmod 775 /sdcard/Android/data/com.inocencia.app/files/libros`.
+  Copiando desde el explorador de archivos del PC (MTP) no pasa.
 - La carpeta vinculada se lee con sus subcarpetas (3 niveles). Si el mismo libro está en varios sitios, gana
   la carpeta vinculada, luego `libros/` de la app y por último la carpeta de la app.
 - El nombre del PDF sin `.pdf` es el identificador del libro y se compara sin distinguir mayúsculas

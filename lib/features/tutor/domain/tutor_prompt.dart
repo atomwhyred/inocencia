@@ -22,9 +22,10 @@ class TutorPrompt {
   /// Turnos previos que se conservan para entender "¿y el plural?".
   static const maxHistoryTurns = 4;
   static const maxHistoryChars = 300;
-  /// ~1500 caracteres ≈ 450 tokens de libro. El primer token de un modelo de 3B
-  /// tarda ~1 s por cada ~20 tokens de prompt: es el presupuesto de latencia.
-  static const maxContextChars = 1500;
+  /// ~1100 caracteres ≈ 330 tokens de libro. El primer token de un modelo de 3B
+  /// tarda ~1 s por cada ~20 tokens de prompt: es el presupuesto de latencia
+  /// (con 1500 la Xiaomi Pad 5 tardaba 24 s en empezar).
+  static const maxContextChars = 1100;
 
   /// Tutor hibrido: rigor con la teoria del libro cubano del grado, pero sin
   /// soltar la respuesta de golpe. Un paso + una pregunta. Corto a proposito:
@@ -34,6 +35,7 @@ Eres inocencIA, un tutor virtual paciente y cariñoso para niños cubanos de ${S
 Reglas:
 - Español sencillo y frases cortas.
 - Usa SOLO los TEXTOS DEL LIBRO, casi con sus palabras. No inventes y no repitas sus ejercicios.
+- El niño no ve el libro: no hables de "el poema", "la tabla", "el dibujo" ni de páginas; copia las palabras que necesites.
 - Da UN solo paso o idea (2 o 3 frases completas) y termina con UNA pregunta tuya que lo haga pensar el siguiente paso (nunca "¿entiendes?"). Nunca des toda la respuesta de golpe; ante un ejercicio, no lo resuelvas: pide el primer paso.
 - Si el niño contesta, dile si va bien o corrígelo con suavidad, y avanza un paso.
 - Si el libro no lo explica, dilo y sugiere preguntar al maestro.
@@ -85,6 +87,56 @@ Reglas:
     return q.length < 3 ? null : q;
   }
 
+  /// Cosas del libro que el nino no tiene delante en el chat. "La tabla de
+  /// multiplicar" si es contenido y se respeta; "tu libro" y "tu libreta" tambien.
+  static const _unseenNouns =
+      r'(?:tablas?(?!\s+de\s+multiplicar)|poemas?|textos?|ejercicios?|ejemplos?|lecturas?|dibujos?|'
+      r'imagen|im[aá]genes|ilustraci[oó]n(?:es)?|recuadros?|cuadros?|esquemas?|'
+      r'p[aá]ginas?(?:\s+\d+)?)';
+
+  /// "en la tabla del texto", "en el poema", "de los ejercicios"...
+  static final _unseenRef = RegExp(
+    r'\s*\b(?:en|de|dentro\s+de|sobre)\s+(?:el|la|los|las|este|esta|ese|esa|estos|estas)\s+' +
+        _unseenNouns +
+        r'(?:\s+(?:del|de\s+la)\s+' +
+        _unseenNouns +
+        r')?\b',
+    caseSensitive: false,
+  );
+
+  /// "del ejercicio", "del texto" (contraccion).
+  static final _unseenDel = RegExp(r'\s*\bdel\s+' + _unseenNouns + r'\b', caseSensitive: false);
+
+  /// "al ver la tabla", "mirando el dibujo".
+  static final _unseenLook = RegExp(
+    r'\s*\b(?:al\s+ver|al\s+mirar|mirando|observando)\s+(?:el|la|los|las)\s+' +
+        _unseenNouns +
+        r'\b',
+    caseSensitive: false,
+  );
+
+  /// Quita de la respuesta del modelo lo que el nino no puede ver ("¿Qué ejemplos
+  /// encuentras en la tabla del texto?" → "¿Qué ejemplos encuentras?"). El modelo
+  /// pequeno lo hace aunque las instrucciones lo prohiben: copia el contexto del libro.
+  static String hideUnseen(String text) {
+    var t = text
+        .replaceAll(_unseenRef, '')
+        .replaceAll(_unseenDel, '')
+        .replaceAll(_unseenLook, '');
+    if (t == text) return text;
+    t = t
+        .replaceAllMapped(RegExp(r' +([?.,;:!])'), (m) => m[1]!)
+        .replaceAllMapped(RegExp(r'([¿¡])\s*,\s*'), (m) => m[1]!)
+        .replaceAllMapped(RegExp(r'(^|[.!?]\s+),\s*'), (m) => m[1]!)
+        .replaceAll(RegExp(r' {2,}'), ' ')
+        .trimLeft();
+    // Mayuscula al principio de frase si se quito lo que la abria ("En el poema, hay..." → "Hay...").
+    return t.replaceAllMapped(
+      RegExp(r'(^|[.!?]\s+|[¿¡])([a-záéíóúñ])'),
+      (m) => '${m[1]}${m[2]!.toUpperCase()}',
+    ).trim();
+  }
+
   static const _maxAnswerWords = 12;
 
   /// Palabras con las que un nino pregunta, pide algo o encadena otra duda
@@ -93,6 +145,7 @@ Reglas:
     'que', 'como', 'por', 'cual', 'cuales', 'cuando', 'donde', 'quien', 'quienes',
     'cuanto', 'cuantos', 'cuanta', 'cuantas', 'para', 'explica', 'explicame',
     'dime', 'ayudame', 'repite', 'cuentame', 'otra', 'otro', 'quiero',
+    'dame', 'muestrame', 'ensename', 'enseñame', 'puedes', 'necesito',
     'y', 'entonces', 'pero',
   };
 

@@ -7,6 +7,7 @@ class TutorDiagnostics extends Equatable {
     this.model,
     this.modelGb,
     this.threads,
+    this.batchThreads,
     this.cores,
     this.coreFreqsKhz = const [],
     this.variants = const [],
@@ -17,11 +18,58 @@ class TutorDiagnostics extends Equatable {
     this.totalSeconds,
     this.piecesPerSecond,
     this.promptChars,
+    this.promptTokens,
   });
+
+  /// Lee lo guardado por [toJson]; con datos ilegibles, un diagnostico vacio.
+  factory TutorDiagnostics.fromJson(Map<String, Object?> j) {
+    try {
+      return TutorDiagnostics(
+        model: j['model'] as String?,
+        modelGb: (j['modelGb'] as num?)?.toDouble(),
+        threads: j['threads'] as int?,
+        batchThreads: j['batchThreads'] as int?,
+        cores: j['cores'] as int?,
+        coreFreqsKhz: [for (final f in (j['coreFreqsKhz'] as List?) ?? const []) f as int],
+        variants: [for (final v in (j['variants'] as List?) ?? const []) v as String],
+        cpuFeatures: j['cpuFeatures'] as String?,
+        batterySaver: j['batterySaver'] as bool? ?? false,
+        firstPieceSeconds: j['firstPieceSeconds'] as int?,
+        pieces: j['pieces'] as int?,
+        totalSeconds: j['totalSeconds'] as int?,
+        piecesPerSecond: (j['piecesPerSecond'] as num?)?.toDouble(),
+        promptChars: j['promptChars'] as int?,
+        promptTokens: j['promptTokens'] as int?,
+      );
+    } catch (_) {
+      return const TutorDiagnostics();
+    }
+  }
+
+  Map<String, Object?> toJson() => {
+    'model': model,
+    'modelGb': modelGb,
+    'threads': threads,
+    'batchThreads': batchThreads,
+    'cores': cores,
+    'coreFreqsKhz': coreFreqsKhz,
+    'variants': variants,
+    'cpuFeatures': cpuFeatures,
+    'batterySaver': batterySaver,
+    'firstPieceSeconds': firstPieceSeconds,
+    'pieces': pieces,
+    'totalSeconds': totalSeconds,
+    'piecesPerSecond': piecesPerSecond,
+    'promptChars': promptChars,
+    'promptTokens': promptTokens,
+  };
 
   final String? model;
   final double? modelGb;
+  /// Hilos al generar y al procesar el prompt (pueden ser mas en chips con nucleos
+  /// medianos fuertes).
   final int? threads;
+  final int? batchThreads;
   final int? cores;
   final List<int> coreFreqsKhz;
 
@@ -41,6 +89,16 @@ class TutorDiagnostics extends Equatable {
   /// Caracteres del prompt de la ultima respuesta (instrucciones + libro + historial).
   final int? promptChars;
 
+  /// Tokens procesados antes de la primera pieza.
+  final int? promptTokens;
+
+  /// Tokens del prompt por segundo (aproximado: incluye el muestreo de la primera pieza).
+  double? get promptTokensPerSecond {
+    final t = promptTokens, s = firstPieceSeconds;
+    if (t == null || t <= 0 || s == null) return null;
+    return t / (s < 1 ? 1 : s);
+  }
+
   bool get isEmpty => model == null;
 
   TutorDiagnostics withAnswer({
@@ -49,10 +107,12 @@ class TutorDiagnostics extends Equatable {
     required int totalSeconds,
     required double piecesPerSecond,
     int? promptChars,
+    int? promptTokens,
   }) => TutorDiagnostics(
     model: model,
     modelGb: modelGb,
     threads: threads,
+    batchThreads: batchThreads,
     cores: cores,
     coreFreqsKhz: coreFreqsKhz,
     variants: variants,
@@ -63,6 +123,7 @@ class TutorDiagnostics extends Equatable {
     totalSeconds: totalSeconds,
     piecesPerSecond: piecesPerSecond,
     promptChars: promptChars,
+    promptTokens: promptTokens,
   );
 
   /// Valoracion en lenguaje claro: que esperar y que hacer.
@@ -94,7 +155,8 @@ class TutorDiagnostics extends Equatable {
       'Modelo: ${model ?? '-'}${modelGb == null ? '' : ' (${modelGb!.toStringAsFixed(2)} GB)'}',
       if (ramBytes != null)
         'RAM del dispositivo: ${(ramBytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB',
-      'Hilos: ${threads ?? '-'} de ${cores ?? '-'} nucleos',
+      'Hilos: ${threads ?? '-'} de ${cores ?? '-'} nucleos'
+          '${batchThreads == null || batchThreads == threads ? '' : ' ($batchThreads para el prompt)'}',
       'Frecuencia maxima por nucleo (MHz): ${mhz.isEmpty ? 'no disponible' : mhz.join(', ')}',
       'Modo bateria: ${batterySaver ? 'si' : 'no'}',
       'CPU segun llama.cpp: ${cpuFeatures ?? 'no disponible'}',
@@ -104,7 +166,9 @@ class TutorDiagnostics extends Equatable {
       lines.add(
         'Ultima respuesta: primera pieza a los $firstPieceSeconds s, $pieces piezas en '
         '$totalSeconds s (${piecesPerSecond!.toStringAsFixed(1)} piezas/s)'
-        '${promptChars == null ? '' : ', prompt de $promptChars caracteres'}',
+        '${promptChars == null ? '' : ', prompt de $promptChars caracteres'}'
+        '${promptTokensPerSecond == null ? '' : ' ($promptTokens tokens, '
+            '${promptTokensPerSecond!.toStringAsFixed(1)} tokens/s)'}',
       );
     } else {
       lines.add('Ultima respuesta: aun no hay ninguna');
@@ -129,5 +193,6 @@ class TutorDiagnostics extends Equatable {
     totalSeconds,
     piecesPerSecond,
     promptChars,
+    promptTokens,
   ];
 }

@@ -347,11 +347,11 @@ class TutorController extends Notifier<TutorState> {
           report('pregunta cerrada');
           _sub?.cancel();
           _sub = null;
-          _finish(buf.toString().substring(0, cut).trim());
+          _finish(TutorPrompt.hideUnseen(buf.toString().substring(0, cut).trim()));
           if (!done.isCompleted) done.complete();
           return;
         }
-        _setLast(text: buf.toString());
+        _setLast(text: TutorPrompt.hideUnseen(buf.toString()));
       },
       onError: (Object e) {
         report('error ($e)');
@@ -363,7 +363,7 @@ class TutorController extends Notifier<TutorState> {
       },
       onDone: () {
         report('fin');
-        final text = buf.toString().trim();
+        final text = TutorPrompt.hideUnseen(buf.toString().trim());
         _finish(
           text.isEmpty ? TutorPrompt.emptyAnswerText : text,
           save: text.isNotEmpty,

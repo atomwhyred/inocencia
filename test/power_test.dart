@@ -146,6 +146,8 @@ void main() {
           batteryInfoProvider.overrideWithValue(FakeBattery(battery)),
           batteryPollProvider.overrideWithValue(null),
           mascotAtlasProvider.overrideWith((ref) async => null),
+          // Toco sale en el inicio: animado, `pumpAndSettle` no terminaria nunca.
+          mascotAnimateProvider.overrideWithValue(false),
         ],
       );
       addTearDown(() async {
