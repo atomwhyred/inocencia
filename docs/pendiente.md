@@ -38,6 +38,14 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   tiene unos 3 GB de espacio de direcciones: lo realista es el modelo de 1.5B.
 - [ ] **Copia de seguridad o exportación del historial** (opcional, no se pidió).
 
+## Juego (8-nov)
+- [x] ~~Carrera de tocororos / Entre todos~~: en un teléfono y entre teléfonos (Wi-Fi o punto de acceso), cada niño con
+  preguntas de su grado. Ver [juego.md](juego.md).
+- [ ] **Generar el banco completo** (≈7 h para 50 por grado en el PC) y revisar `build/game_questions.csv`.
+- [ ] Probar la partida en red con dos teléfonos de verdad (Pixel 6 + Pad 5) y el descubrimiento de salas por UDP
+  en un punto de acceso (en el PC solo se probó con `adb forward`).
+- [ ] Banco en inglés: el 3B escribía preguntas sin sentido; habría que hacerlas a mano o con otro método.
+
 ## Pulido
 - [x] ~~Inicio del niño con barra inferior flotante~~ (8-nov): Toco con "¿Qué aprendemos hoy?" en el centro, resumen de
   medallas y tarjetas y barra centrada (Tutor, Libros, Medallas, Tarjetas y, a la derecha, el perfil del niño con su

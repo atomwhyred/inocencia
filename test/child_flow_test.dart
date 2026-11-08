@@ -222,7 +222,7 @@ void main() {
     await boot(tester, size: const Size(1200, 800));
     await tester.tap(find.text('Leo'));
     await tester.pumpAndSettle();
-    final labels = ['Tutor', 'Libros', 'Medallas', 'Tarjetas'];
+    final labels = ['Tutor', 'Libros', 'Jugar', 'Tarjetas'];
     final centers = [for (final l in labels) tester.getCenter(find.text(l))];
     for (var i = 1; i < centers.length; i++) {
       expect(centers[i].dy, centers[0].dy);
@@ -348,12 +348,12 @@ void main() {
     await tester.tap(find.text('Leo'));
     await settle(tester, 300);
 
-    expect(find.text('Medallas'), findsOneWidget);
+    expect(find.text('Jugar'), findsOneWidget, reason: 'las medallas salen del resumen; la barra lleva Jugar');
     expect(find.text('Tarjetas'), findsOneWidget);
     expect(find.text('medalla · 4 estrellas'), findsOneWidget);
     expect(find.bySemanticsLabel('Mis medallas. 1 medalla · 4 estrellas'), findsWidgets);
 
-    await tester.tap(find.text('Medallas'));
+    await tester.tap(find.text('medalla · 4 estrellas'));
     await settle(tester, 300);
     expect(find.text('4'), findsOneWidget);
     expect(find.text('Primer tema'), findsOneWidget);

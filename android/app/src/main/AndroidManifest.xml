@@ -6,6 +6,12 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <!-- Solo para el explorador de rutas opcional en Android 11+ (el modelo y la base pesan GB). -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+    <!-- Juego entre teléfonos por Wi-Fi local o punto de acceso. Android exige INTERNET para
+         cualquier socket, también los de la red de casa: la app nunca se conecta a internet.
+         El MulticastLock deja recibir los avisos de las salas (difusión UDP). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
 
     <application
         android:label="inocencIA"

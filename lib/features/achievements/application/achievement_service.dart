@@ -78,6 +78,13 @@ class AchievementService {
         if (total > 0 && correct == total) await _award(childId, Medals.perfectQuiz, fresh);
       });
 
+  /// El nino termino una partida del juego y gano [stars] estrellas.
+  Future<void> gameFinished(int childId, {required int stars}) => _record((fresh) async {
+    final right = await _repo.addToCounter(childId, Counters.correct, stars);
+    if (right >= 5) await _award(childId, Medals.correct5, fresh);
+    if (right >= 20) await _award(childId, Medals.correct20, fresh);
+  });
+
   /// Estudio un bloque entero del Pomodoro y llego al descanso.
   Future<void> studySessionDone(int childId) =>
       _record((fresh) => _award(childId, Medals.sessionDone, fresh));

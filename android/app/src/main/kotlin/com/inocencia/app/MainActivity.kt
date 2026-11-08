@@ -7,5 +7,6 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         StorageBridge.register(flutterEngine, this)
+        LanBridge.register(flutterEngine, this)
     }
 }

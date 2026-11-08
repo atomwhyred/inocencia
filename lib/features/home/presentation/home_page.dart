@@ -56,13 +56,14 @@ class HomePage extends ConsumerWidget {
         onColor: scheme.onInverseSurface,
         onTap: () => context.push('/books'),
       ),
+      // Las medallas se abren desde la tarjeta roja del resumen.
       FloatingNavItem(
-        icon: Icons.emoji_events_rounded,
-        label: 'Medallas',
-        semanticLabel: 'Mis medallas. $medalsSubtitle',
+        icon: Icons.sports_esports_rounded,
+        label: 'Jugar',
+        semanticLabel: 'Jugar con otros niños',
         color: light ? scheme.secondary : scheme.secondaryContainer,
         onColor: light ? scheme.onSecondary : scheme.onSecondaryContainer,
-        onTap: () => context.push('/medals'),
+        onTap: () => context.push('/game'),
       ),
       FloatingNavItem(
         icon: Icons.style_rounded,

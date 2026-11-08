@@ -11,7 +11,13 @@ import '../../features/auth/presentation/child_pin_page.dart';
 import '../../features/auth/presentation/parent_pin_page.dart';
 import '../../features/auth/presentation/profile_select_page.dart';
 import '../../features/external_data/presentation/path_browser_page.dart';
+import '../../features/game/domain/game_rules.dart';
+import '../../features/game/presentation/game_menu_page.dart';
+import '../../features/game/presentation/lan_game_page.dart';
+import '../../features/game/presentation/local_game_page.dart';
+import '../../features/game/presentation/local_setup_page.dart';
 import '../../features/home/presentation/home_page.dart';
+import '../../features/profiles/domain/child_profile.dart';
 import '../../features/library/presentation/books_page.dart';
 import '../../features/library/presentation/reader_page.dart';
 import '../../features/profiles/presentation/profile_edit_page.dart';
@@ -44,6 +50,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final childOnly = loc == '/home' || loc == '/tutor' ||
           loc == '/medals' ||
           loc.startsWith('/flashcards') ||
+          loc.startsWith('/game') ||
           loc.startsWith('/books');
       if (childOnly && session.activeChildId == null) return '/';
       return null;
@@ -64,6 +71,29 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/home', builder: (_, _) => const HomePage()),
       GoRoute(path: '/tutor', builder: (_, _) => const TutorPage()),
       GoRoute(path: '/medals', builder: (_, _) => const MedalsPage()),
+      GoRoute(
+        path: '/game',
+        builder: (_, _) => const GameMenuPage(),
+        routes: [
+          GoRoute(
+            path: 'local',
+            builder: (_, state) => LocalSetupPage(mode: state.extra as GameMode? ?? GameMode.race),
+            routes: [
+              GoRoute(
+                path: 'play',
+                builder: (_, state) {
+                  final (mode, kids) = state.extra! as (GameMode, List<ChildProfile>);
+                  return LocalGamePage(mode: mode, kids: kids);
+                },
+              ),
+            ],
+          ),
+          GoRoute(
+            path: 'lan',
+            builder: (_, state) => LanGamePage(mode: state.extra as GameMode? ?? GameMode.race),
+          ),
+        ],
+      ),
       GoRoute(
         path: '/flashcards',
         // Desde el chat llega el grado (`extra`): se crean tarjetas del tema actual.

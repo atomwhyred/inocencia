@@ -54,12 +54,29 @@ al perfil de un niño mayor.
   respuesta dice de qué página del libro sale. El altavoz la lee en voz alta, y el botón de preguntas
   (arriba a la derecha) hace un **quiz** de 3 preguntas.
 - **Mis libros**: lee los PDF y se queda en la página donde lo dejó.
-- **Mis medallas**: logros y estrellas.
+- **Mis medallas**: logros y estrellas (se abren desde la tarjeta roja del inicio).
+- **Jugar**: "Carrera de tocororos" (gana quien llegue antes) o "Entre todos" (cooperativo). Cada niño responde
+  preguntas de **su** grado, así pueden jugar hermanos o amigos de grados distintos. Se juega **en un teléfono**
+  (2-4 niños se lo pasan por turnos) o **con otros teléfonos**: uno crea la sala y los demás se unen, conectados al
+  mismo Wi-Fi o al **punto de acceso** del que crea la sala (no hace falta tener datos ni internet).
+  Las preguntas salen del banco del juego que viene en la base de libros y de las tarjetas de cada niño.
 - **Pomodoro**: tras estudiar, Toco avisa del descanso y el chat se bloquea hasta que acabe.
 - **Icono de batería**: activa el modo apagón (pantalla negra, tutor más ligero). Con menos del 20 % la app lo
   sugiere, pero nunca lo activa sola.
 
+## El permiso de red
+Para jugar entre teléfonos, Android exige que la app declare el permiso **INTERNET**, aunque la conexión sea solo
+dentro de casa o del aula. inocencIA **no se conecta nunca a internet**: solo habla con los teléfonos de la misma
+red Wi-Fi o del mismo punto de acceso, y solo mientras hay una partida abierta.
+
 ## Si algo falla
+- **En "Con otros teléfonos" no aparece la sala**: comprobad que todos están en el mismo Wi-Fi o punto de acceso.
+  Algunas redes no dejan anunciar salas: escribid la dirección que muestra el teléfono que creó la sala.
+- **"No se pudo abrir la sala"** o no se puede entrar: puede que el teléfono tenga apagado el acceso a la red para
+  inocencIA (*Ajustes › Aplicaciones › inocencIA › Datos móviles y Wi-Fi*). Actívalo para jugar entre teléfonos; la
+  app sigue sin conectarse a internet.
+- **"No hay preguntas para jugar"**: la base de libros no trae el banco del juego y el niño tiene menos de 3
+  tarjetas. Crea tarjetas desde el tutor o copia una base de libros con el banco (ver `docs/juego.md`).
 - **El tutor dice "Preparando" mucho rato o no responde**: el modelo es demasiado grande para la RAM. Cambia al
   modelo de 1.5B.
 - **No encuentra el modelo**: comprueba que el archivo está en `Android/data/com.inocencia.app/files/` y pulsa
