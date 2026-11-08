@@ -50,6 +50,28 @@ ORDER BY bm25(chunks_fts)
 LIMIT 5;
 ```
 
+## Tabla opcional del juego (`game_questions`)
+
+La genera `tools/question_bank/build_question_bank.py` (ver [juego.md](juego.md)). Sin ella la base sigue
+siendo válida y el juego usa solo las tarjetas de cada niño. No cambia `schema_version`.
+
+```sql
+CREATE TABLE game_questions (
+  id       INTEGER PRIMARY KEY,
+  grade    INTEGER NOT NULL,
+  subject  TEXT    NOT NULL,
+  book     TEXT,
+  page     INTEGER,
+  question TEXT    NOT NULL,
+  a        TEXT    NOT NULL,
+  b        TEXT    NOT NULL,
+  c        TEXT    NOT NULL,
+  correct  INTEGER NOT NULL CHECK (correct IN (0, 1, 2))   -- 0 = a, 1 = b, 2 = c
+);
+CREATE INDEX game_questions_grade ON game_questions(grade);
+-- meta: ('game_questions', '<número de preguntas>')
+```
+
 ## Validación en la app
 
 Al vincular y en cada arranque se comprueba: existe y se puede leer, es SQLite, tiene `meta`,
