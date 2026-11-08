@@ -41,6 +41,9 @@ class TutorDiagnosticsNotifier extends Notifier<TutorDiagnostics> {
     required double piecesPerSecond,
     int? promptChars,
     int? promptTokens,
+    bool backgrounded = false,
+    int? thermalStart,
+    int? thermalEnd,
   }) {
     if (state.isEmpty) return;
     _set(
@@ -51,6 +54,9 @@ class TutorDiagnosticsNotifier extends Notifier<TutorDiagnostics> {
         piecesPerSecond: piecesPerSecond,
         promptChars: promptChars,
         promptTokens: promptTokens,
+        backgrounded: backgrounded,
+        thermalStart: thermalStart,
+        thermalEnd: thermalEnd,
       ),
     );
   }

@@ -46,6 +46,32 @@ class PlatformInfo {
     }
   }
 
+  /// Estado termico de Android: 0 normal, 1 leve, 2 moderado, 3 grave, 4 critico,
+  /// 5 emergencia, 6 apagado. Null fuera de Android o antes de Android 10.
+  Future<int?> thermalStatus() async {
+    if (!Platform.isAndroid) return null;
+    try {
+      final s = await _channel.invokeMethod<int>('thermalStatus');
+      return s == null || s < 0 ? null : s;
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
+  /// Mantiene la pantalla encendida (durante la prueba de velocidad).
+  Future<void> keepScreenOn(bool on) async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod<void>('keepScreenOn', {'on': on});
+    } on PlatformException {
+      // sin efecto
+    } on MissingPluginException {
+      // sin efecto
+    }
+  }
+
   /// "Acceso a todos los archivos" (Android 11+). True si no hace falta.
   Future<bool> hasAllFilesAccess() async {
     if (!Platform.isAndroid) return true;

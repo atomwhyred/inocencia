@@ -170,7 +170,7 @@ void main() {
     ) async {
       final c = await show(tester);
       expect(find.textContaining('Abre el tutor y haz una pregunta'), findsOneWidget);
-      expect(find.text('Copiar'), findsNothing);
+      expect(find.text('Hacer la prueba'), findsOneWidget);
 
       c.read(tutorDiagnosticsProvider.notifier).loaded(_loaded);
       await tester.pump();
@@ -189,9 +189,11 @@ void main() {
           null,
         ),
       );
+      await tester.ensureVisible(find.text('Copiar'));
       await tester.tap(find.text('Copiar'));
       await tester.pump();
       expect(copied, contains('Hilos: 4 de 8'));
+      expect(copied, contains('Hilos: automaticos'));
       expect(find.text('Diagnóstico copiado'), findsOneWidget);
     });
   });

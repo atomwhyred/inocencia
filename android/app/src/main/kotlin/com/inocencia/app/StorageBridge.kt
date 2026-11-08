@@ -9,8 +9,10 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.PowerManager
 import android.os.StatFs
 import android.provider.Settings
+import android.view.WindowManager
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
@@ -41,9 +43,29 @@ object StorageBridge {
                         val paths = call.argument<List<String>>("paths") ?: emptyList()
                         result.success(shareFiles(activity, paths, call.argument<String>("title")))
                     }
+                    "thermalStatus" -> result.success(thermalStatus(activity))
+                    "keepScreenOn" -> {
+                        val flag = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                        if (call.argument<Boolean>("on") == true) {
+                            activity.window.addFlags(flag)
+                        } else {
+                            activity.window.clearFlags(flag)
+                        }
+                        result.success(null)
+                    }
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    /**
+     * Estado termico de Android (0 normal ... 6 apagado por calor); -1 antes de
+     * Android 10. Explica si un telefono va lento porque se esta frenando por calor.
+     */
+    private fun thermalStatus(context: Context): Int {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return -1
+        val power = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        return power.currentThermalStatus
     }
 
     /** Espacio libre del volumen que contiene [path] (sube hasta una carpeta que exista). */

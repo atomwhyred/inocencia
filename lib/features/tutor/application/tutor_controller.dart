@@ -15,6 +15,7 @@ import '../../knowledge/domain/knowledge_chunk.dart';
 import '../../pomodoro/application/pomodoro.dart';
 import '../../power/application/power_mode.dart';
 import '../data/llama_tutor_engine.dart';
+import 'speed_test_controller.dart';
 import 'tutor_diagnostics_provider.dart';
 import '../domain/tutor_engine.dart';
 import '../domain/tutor_history_repository.dart';
@@ -24,10 +25,14 @@ import '../domain/tutor_source.dart';
 /// Se sobrescriben en las pruebas.
 final tutorEngineProvider = Provider.autoDispose<TutorEngine>((ref) {
   final diagnostics = ref.read(tutorDiagnosticsProvider.notifier);
+  final tuning = ref.read(tutorTuningProvider);
   final engine = LlamaTutorEngine(
     nativeLibraryDir: const PlatformInfo().nativeLibraryDir,
     onLoaded: diagnostics.loaded,
     onAnswered: diagnostics.answered,
+    threadOverride: tuning.threads,
+    cpuCompat: tuning.cpuCompat,
+    thermalStatus: const PlatformInfo().thermalStatus,
   );
   ref.onDispose(engine.dispose);
   return engine;

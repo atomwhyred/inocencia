@@ -79,6 +79,20 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   pieza 22/26/28 s en 3 turnos (antes ~30/30/33 s). Respuestas aún apoyadas en el libro.
 - [x] ~~Diagnóstico sin respuesta~~ (8-nov): se anota aunque se corte la respuesta, con tokens y tokens/s del prompt, y se guarda.
 - [ ] **Medir en la Pad 5 y el 17T Pro con el APK nuevo** (el 17T Pro usa ahora 8 hilos para el prompt).
+- **Diagnóstico del 8-nov con el 3B Q4_0:** primera pieza a los 47 s (568 tokens, 12 tokens/s) y **0,2 piezas/s**
+  (131 piezas en 722 s), unas 40 veces más lento que el Pixel 6. Con el 7B iba mejor, así que no es el modelo.
+  Sospechas: la app en segundo plano mientras respondía (HyperOS la frena), los 8 hilos del prompt (todos los núcleos),
+  calor, o las rutas SVE/SME de la variante `armv9.2`.
+- [x] ~~Herramientas para averiguarlo a distancia~~ (8-nov):
+  - el diagnóstico anota si la app salió de la pantalla y el estado térmico de Android;
+  - el prompt deja siempre 2 núcleos libres (6 en el Dimensity 9500);
+  - **prueba de velocidad** en el diagnóstico (2 pasadas, de 2 a 6 hilos al escribir y 4/6/8 al leer), que guarda la
+    mejor combinación para ese teléfono;
+  - **CPU en modo compatible**, que carga `android_armv8.6_1` (NEON + i8mm, sin SVE/SME) al reiniciar la app.
+  - En el Pixel 6 la prueba dura ~1,5 min. Mide 9,5 / 8,7 / 9,2 / 6,6 / 6,1 tokens/s al escribir (2-6 hilos) y
+    40 / 30 / 34 tokens/s al leer (4/6/8): elige 2 y 4. Como el Pixel no tiene i8mm, el modo compatible cae a `armv8.2_2`.
+- [ ] **Pedir a la persona del 17T Pro la prueba de velocidad**, con y sin modo compatible, y decidir con eso: un valor por
+  defecto para el Dimensity 9500, quitar SVE/SME, o probar KleidiAI.
 - [x] ~~3B en Q4_0~~ (8-nov): ~2× más rápido y calidad parecida; ahora es el recomendado (ver [models.md](models.md)).
 - [x] ~~Flash attention~~ (8-nov): sin efecto en el Pixel 6, desactivado. Queda KleidiAI (`-DGGML_CPU_KLEIDIAI=ON`) para el 17T Pro.
 - [x] ~~"Dame un ejemplo…" se tomaba como respuesta~~ (8-nov): `dame`, `muestrame`, `enseñame`, `puedes`, `necesito` en `_nonAnswerStarts`.

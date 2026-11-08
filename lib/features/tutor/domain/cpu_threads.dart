@@ -20,6 +20,9 @@ class CpuThreads {
   static const batchMinKhz = 2200000;
   static const maxBatchThreads = 8;
 
+  /// Nucleos que el prompt deja libres para el sistema.
+  static const freeCores = 2;
+
   /// Hilos a usar segun la frecuencia maxima de cada nucleo ([maxFreqsKhz], las que
   /// da `cpuinfo_max_freq`). Sin datos validos se usa la mitad de los nucleos
   /// ([coreCount]), que es lo que se hacia antes.
@@ -40,6 +43,10 @@ class CpuThreads {
     if (freqs.isEmpty) return gen;
     final top = freqs.reduce((a, b) => a > b ? a : b);
     final strong = freqs.where((f) => f >= top * fastShare || f >= batchMinKhz).length;
-    return strong.clamp(gen, maxBatchThreads);
+    // Nunca todos los nucleos: si no queda ninguno libre para Android y la interfaz,
+    // basta con que un hilo espere para que esperen todos (el Dimensity 9500 no tiene
+    // nucleos pequenos que hagan de colchon).
+    final cap = (coreCount - freeCores).clamp(gen, maxBatchThreads);
+    return strong.clamp(gen, cap);
   }
 }

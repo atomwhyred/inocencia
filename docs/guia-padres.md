@@ -89,8 +89,11 @@ red Wi-Fi o del mismo punto de acceso, y solo mientras hay una partida abierta.
   *Ajustes › Sistema › Idiomas › Salida de texto a voz › Motor de Google › Instalar datos de voz › Español*.
 - **El teléfono se calienta y el tutor va más lento**: es normal con el modelo mediano; deja descansar el teléfono
   o activa el modo batería.
-- **Respuestas lentas**: un modelo de 3B tarda unos 30-40 segundos por respuesta en un teléfono de gama alta. Si va
-  mucho más lento, abre el tutor, haz una pregunta y entra en **Zona de padres → Archivos → Diagnóstico del tutor**:
-  pulsa **Copiar** y envía ese texto a quien mantiene la app. No lleva nombres ni preguntas.
+- **Respuestas lentas**: un modelo de 3B tarda unos 20-30 segundos por respuesta en un teléfono de gama alta. Mientras
+  responde, **no salgas de la app**: Android frena mucho las apps que no están en pantalla. Si aun así va mucho más
+  lento, entra en **Zona de padres → Archivos → Diagnóstico del tutor** y pulsa **Hacer la prueba** (1-2 minutos, sin
+  salir de la app). La app mide qué configuración va más rápida en ese teléfono y la usa desde entonces (**Volver a
+  automático** la deshace). Si sigue lento, activa **CPU en modo compatible**, cierra la app del todo, vuelve a abrirla
+  y repite la prueba. Pulsa **Copiar** y envía ese texto a quien mantiene la app. No lleva nombres ni preguntas.
 - **Desinstalar la app borra los datos** (perfiles, historial, medallas). Para actualizarla, instala el APK nuevo
   encima, sin desinstalar.

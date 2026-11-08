@@ -68,6 +68,7 @@ Los PDF se nombran `<grado>_<...>.pdf` (`6to_matematica.pdf`, `6to_ct_ciencias.p
 |---|---|---|---|---|
 | Xiaomi Pad 5 (Snapdragon 860, 6 GB) | 3B | 4 de 8 | 24 s | 130 piezas en 42 s (**7,1 piezas/s**) |
 | Xiaomi 17T Pro (Dimensity 9500, 12 GB) | 7B | 4 de 8 | sin medir | sin medir (la respuesta tardaba 1-3 min) |
+| Xiaomi 17T Pro, 8-nov | 3B Q4_0 | 4 de 8 (8 para el prompt) | 47 s (568 tokens, 12 tokens/s) | 131 piezas en 722 s (**0,2 piezas/s**): anómalo, ver [pendiente.md](pendiente.md) |
 | Pixel 6 (Tensor, 8 GB), 8-nov, libro a 1100 caracteres | 3B | 4 de 8 | 22 / 26 / 28 s (602 / 540 / 566 tokens, ~20-27 tokens/s) | 6,5-7,9 piezas/s |
 
 ### Q4_K_M frente a Q4_0 (3B, Pixel 6, 8-nov)
@@ -97,6 +98,12 @@ Hasta el 8-nov el diagnóstico casi nunca anotaba la respuesta: el tutor la cort
 modelo y el stream se cancelaba sin llegar a `onDone`. Ahora se anota también al cortar, guarda los tokens del
 prompt y su velocidad, y sobrevive a cerrar la app. Desde la misma fecha el prompt usa más hilos que la generación
 en chips con núcleos medianos fuertes (≥ 2,2 GHz): 8 en el Dimensity 9500; 4 en la Pad 5 y el Pixel 6.
+
+Desde el 8-nov el prompt deja siempre 2 núcleos libres (en el Dimensity 9500 usa 6, no 8). Además, la **prueba de
+velocidad** (Zona de padres → Archivos → Diagnóstico) mide cada combinación de hilos en el propio teléfono y guarda la
+mejor, y **CPU en modo compatible** evita la variante SVE/SME. Pixel 6, prueba con 2 pasadas: al escribir, 9,5 / 8,7 /
+9,2 / 6,6 / 6,1 tokens/s con 2-6 hilos; al leer, 40,6 / 30,0 / 34,2 tokens/s con 4/6/8 hilos. Con 4 o más hilos para
+escribir no gana nada: la generación está limitada por la memoria.
 
 En el 17T Pro la app cargó la variante de CPU correcta (`MATMUL_INT8`, `SVE`, `SME`, `DOTPROD`) y usa los 4 núcleos
 rápidos: la lentitud es del tamaño del modelo, no de la configuración. En la Pad 5 el cuello de botella es el tiempo

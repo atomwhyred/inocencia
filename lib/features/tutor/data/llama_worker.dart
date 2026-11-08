@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 
+import '../domain/speed_test.dart';
 import '../domain/tutor_engine.dart';
 
 /// Lo necesario para cargar el modelo dentro del isolate.
@@ -42,6 +43,7 @@ class LlamaWorker {
   final ReceivePort _fromWorker;
 
   final _streams = <int, StreamController<String>>{};
+  final _benches = <int, StreamController<SpeedSample>>{};
 
   /// Tokens que el modelo proceso antes de la primera pieza de cada generacion
   /// (el sufijo, mas el prefijo si hubo que construirlo). Para el diagnostico.
@@ -90,6 +92,17 @@ class LlamaWorker {
     return (id, controller.stream);
   }
 
+  /// Prueba de velocidad: cambia los hilos sin recargar el modelo y mide cada
+  /// combinacion de [plan]. Al escribir se usan [promptThreads] para leer; al leer,
+  /// los hilos de escribir mas rapidos. Cancelar con [stop] usando el id devuelto.
+  (int, Stream<SpeedSample>) bench(SpeedPlan plan, {required int promptThreads}) {
+    final id = _nextId++;
+    final controller = StreamController<SpeedSample>();
+    _benches[id] = controller;
+    _toWorker.send(['bench', id, plan.generation, plan.prompt, promptThreads]);
+    return (id, controller.stream);
+  }
+
   /// Tokens del prompt de la generacion [id] (se consulta una vez, al terminar).
   int? promptTokensOf(int id) => _promptTokens.remove(id);
 
@@ -102,10 +115,11 @@ class LlamaWorker {
     await done.future.timeout(const Duration(seconds: 10), onTimeout: () {});
     _fromWorker.close();
     _isolate.kill(priority: Isolate.immediate);
-    for (final c in _streams.values) {
+    for (final c in [..._streams.values, ..._benches.values]) {
       if (!c.isClosed) c.close();
     }
     _streams.clear();
+    _benches.clear();
   }
 
   void _onMessage(List<Object?> m) {
@@ -119,6 +133,14 @@ class LlamaWorker {
         if (c != null && !c.isClosed) c.add(m[2] as String);
       case 'prompt':
         _promptTokens[m[1] as int] = m[2] as int;
+      case 'sample':
+        final c = _benches[m[1] as int];
+        if (c != null && !c.isClosed) c.add(m[2] as SpeedSample);
+      case 'benchDone':
+        final c = _benches.remove(m[1] as int);
+        if (c == null || c.isClosed) return;
+        if (m[2] != null) c.addError(TutorEngineException('${m[2]}'));
+        c.close();
       case 'done':
         final c = _streams.remove(m[1] as int);
         if (c == null || c.isClosed) return;
@@ -155,6 +177,8 @@ class _Worker {
         _load(m[1] as WorkerLoad);
       case 'gen':
         _generate(m[1] as int, m[2] as String, m[3] as String, m[4] as int);
+      case 'bench':
+        _bench(m[1] as int, (m[2] as List).cast<int>(), (m[3] as List).cast<int>(), m[4] as int);
       case 'stop':
         _stopId = m[1] as int;
       case 'dispose':
@@ -162,7 +186,13 @@ class _Worker {
     }
   }
 
+  /// Hilos con los que se cargo el modelo (se restauran tras la prueba).
+  int _threads = 4;
+  int _batchThreads = 4;
+
   void _load(WorkerLoad c) {
+    _threads = c.context.nThreads;
+    _batchThreads = c.context.nThreadsBatch;
     try {
       _llama = Llama(
         c.path,
@@ -247,6 +277,105 @@ class _Worker {
       _out.send(['done', id, true, null]);
     } catch (e) {
       _out.send(['done', id, false, '$e']);
+    }
+  }
+
+  /// Texto fijo para la prueba: ~150 tokens en espanol, como un trozo de libro.
+  static const _benchText =
+      '<|im_start|>user\nLas plantas fabrican su alimento con la luz del sol, el agua que '
+      'toman por las raices y el aire que entra por las hojas. Este proceso se llama '
+      'fotosintesis y ocurre sobre todo en las hojas verdes, gracias a la clorofila. Los '
+      'animales no pueden fabricar su alimento: unos comen plantas, otros comen a otros '
+      'animales y algunos comen de todo. Por eso decimos que las plantas son productoras y '
+      'los animales, consumidores. Cuando una planta o un animal muere, los hongos y las '
+      'bacterias lo descomponen y devuelven al suelo lo que las plantas necesitan.'
+      '<|im_end|>\n<|im_start|>assistant\n';
+
+  /// Peticion que obliga a escribir mucho (no termina enseguida).
+  static const _benchWrite =
+      '<|im_start|>user\nEscribe los numeros del 1 al 200 separados por comas.<|im_end|>\n'
+      '<|im_start|>assistant\n';
+
+  static const _benchTokens = 48;
+
+  /// Tope por combinacion al escribir: las malas no eternizan la prueba.
+  static const _benchCapMs = 15000;
+
+  Future<void> _bench(int id, List<int> gen, List<int> prompt, int promptThreads) async {
+    final llama = _llama;
+    if (llama == null) {
+      _out.send(['benchDone', id, 'El modelo no esta cargado.']);
+      return;
+    }
+    void threads(int n, int nBatch) => Llama.lib.llama_set_n_threads(llama.context, n, nBatch);
+    bool stopped() => _stopId == id;
+    try {
+      // Calentamiento sin medir: la primera decodificacion tras cargar va mas lenta.
+      threads(_threads, _batchThreads);
+      llama.clear();
+      llama.setPrompt(_benchWrite);
+      for (var i = 0; i < 4; i++) {
+        llama.getNextWithStatus();
+      }
+      await Future<void>.delayed(Duration.zero);
+
+      SpeedSample? fastest;
+      for (final n in [...gen, ...gen.reversed]) {
+        if (stopped()) break;
+        threads(n, promptThreads);
+        llama.clear();
+        llama.setPrompt(_benchWrite);
+        llama.getNextWithStatus(); // lee la peticion (no cuenta)
+        final clock = Stopwatch()..start();
+        var tokens = 0;
+        while (tokens < _benchTokens && clock.elapsedMilliseconds < _benchCapMs) {
+          final (_, done, limit) = llama.getNextWithStatus();
+          tokens++;
+          if (done || limit) break;
+        }
+        final s = SpeedSample(
+          kind: SpeedKind.generation,
+          threads: n,
+          tokens: tokens,
+          millis: clock.elapsedMilliseconds,
+        );
+        if (fastest == null || s.tokensPerSecond > fastest.tokensPerSecond) fastest = s;
+        _out.send(['sample', id, s]);
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      final genThreads = fastest?.threads ?? _threads;
+      for (final n in [...prompt, ...prompt.reversed]) {
+        if (stopped()) break;
+        threads(genThreads, n);
+        llama.clear();
+        llama.setPrompt(_benchText);
+        final tokens = llama.tokenize(_benchText, false).length;
+        final clock = Stopwatch()..start();
+        llama.getNextWithStatus(); // decodifica el texto entero de una vez
+        _out.send([
+          'sample',
+          id,
+          SpeedSample(
+            kind: SpeedKind.prompt,
+            threads: n,
+            tokens: tokens,
+            millis: clock.elapsedMilliseconds,
+          ),
+        ]);
+        await Future<void>.delayed(Duration.zero);
+      }
+      _out.send(['benchDone', id, null]);
+    } catch (e) {
+      _out.send(['benchDone', id, '$e']);
+    } finally {
+      // La cache ya no tiene el prefijo del tutor y los hilos vuelven a los de la carga.
+      _prefix = null;
+      _prefixKey = null;
+      try {
+        threads(_threads, _batchThreads);
+        llama.clear();
+      } catch (_) {}
     }
   }
 

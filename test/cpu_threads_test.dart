@@ -31,9 +31,9 @@ void main() {
   });
 
   group('CpuThreads.chooseBatch', () {
-    test('Dimensity 9500 (Xiaomi 17T Pro) procesa el prompt con los 8 nucleos', () {
+    test('Dimensity 9500 (Xiaomi 17T Pro) procesa el prompt con 6: deja 2 nucleos libres', () {
       const freqs = [2700000, 2700000, 2700000, 2700000, 3500000, 3500000, 3500000, 4210000];
-      expect(CpuThreads.chooseBatch(freqs, coreCount: 8), 8);
+      expect(CpuThreads.chooseBatch(freqs, coreCount: 8), 6);
     });
 
     test('Snapdragon 860 (Xiaomi Pad 5) deja fuera los 4 pequenos', () {
@@ -50,8 +50,9 @@ void main() {
 
     test('tope de 8 y, sin datos, los mismos que al generar', () {
       expect(CpuThreads.chooseBatch(List.filled(12, 3000000), coreCount: 12), 8);
-      // 6 grandes por igual: generar se queda en 6, el prompt tambien puede usarlos todos.
+      // 6 grandes por igual: generar se queda en 6 y el prompt nunca baja de ahi.
       expect(CpuThreads.chooseBatch(List.filled(6, 3000000), coreCount: 6), 6);
+      expect(CpuThreads.chooseBatch(List.filled(10, 3000000), coreCount: 10), 8);
       expect(CpuThreads.chooseBatch(const [], coreCount: 8), 4);
     });
   });

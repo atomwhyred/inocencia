@@ -9,6 +9,7 @@ import '../../../core/utils/format_bytes.dart';
 import '../../../core/utils/school_grade_calculator.dart';
 import '../../library/application/library_providers.dart';
 import '../../library/domain/library_book.dart';
+import '../../tutor/application/speed_test_controller.dart';
 import '../../tutor/application/tutor_diagnostics_provider.dart';
 import '../domain/file_exporter.dart';
 import '../domain/linked_file_status.dart';
@@ -191,7 +192,17 @@ class DiagnosticsCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final d = ref.watch(tutorDiagnosticsProvider);
     final ram = ref.watch(deviceRamProvider).value;
-    final report = d.toReport(ramBytes: ram);
+    final speed = ref.watch(speedTestProvider);
+    final tuning = ref.watch(tutorTuningProvider);
+    final report = [
+      d.toReport(ramBytes: ram),
+      if (speed.result != null) speed.result!.toReport(),
+      'Hilos: ${tuning.threads == null ? 'automaticos' : '${tuning.threads!.generation} al escribir, '
+          '${tuning.threads!.prompt} al leer (de la prueba)'}',
+      if (tuning.cpuCompat || ref.watch(cpuCompatActiveProvider))
+        'CPU en modo compatible: ${tuning.cpuCompat ? 'activado' : 'desactivado'}'
+            '${tuning.cpuCompat == ref.watch(cpuCompatActiveProvider) ? '' : ' (falta reiniciar la app)'}',
+    ].join('\n');
     final theme = Theme.of(context);
     return Card(
       child: Padding(
@@ -212,28 +223,108 @@ class DiagnosticsCard extends ConsumerWidget {
                 'Abre el tutor y haz una pregunta: aquí aparecerán los datos de velocidad '
                 'para copiarlos si el tutor va muy lento.',
               )
-            else ...[
+            else
               SelectableText(
-                report,
+                d.toReport(ramBytes: ram),
                 style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
               ),
-              const SizedBox(height: 8),
-              FilledButton.tonalIcon(
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: report));
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Diagnóstico copiado')),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.copy_rounded),
-                label: const Text('Copiar'),
-              ),
-            ],
+            const SizedBox(height: 16),
+            const SpeedTestSection(),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: report));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Diagnóstico copiado')),
+                  );
+                }
+              },
+              icon: const Icon(Icons.copy_rounded),
+              label: const Text('Copiar'),
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Prueba de velocidad: busca los hilos mas rapidos de este telefono, y la
+/// opcion de CPU compatible por si las instrucciones nuevas (SVE/SME) van peor.
+class SpeedTestSection extends ConsumerWidget {
+  const SpeedTestSection({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final view = ref.watch(speedTestProvider);
+    final tuning = ref.watch(tutorTuningProvider);
+    final compatActive = ref.watch(cpuCompatActiveProvider);
+    final controller = ref.read(speedTestProvider.notifier);
+    final theme = Theme.of(context);
+    final mono = theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Prueba de velocidad', style: theme.textTheme.titleSmall),
+        const SizedBox(height: 4),
+        const Text(
+          'Mide qué configuración va más rápida en este teléfono (1 o 2 minutos) y la usa a partir '
+          'de ahora. No salgas de la app mientras dura.',
+        ),
+        const SizedBox(height: 8),
+        if (view.busy) ...[
+          LinearProgressIndicator(
+            backgroundColor: theme.colorScheme.surfaceContainerHighest,
+            value: view.phase == SpeedPhase.loading || view.steps == 0
+                ? null
+                : view.samples.length / view.steps,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            view.phase == SpeedPhase.loading
+                ? 'Cargando el modelo…'
+                : 'Midiendo ${view.samples.length + 1} de ${view.steps}…',
+          ),
+        ],
+        if (view.phase == SpeedPhase.failed && view.message != null)
+          Text(view.message!, style: TextStyle(color: theme.colorScheme.error)),
+        if (view.result != null && !view.busy) ...[
+          const SizedBox(height: 4),
+          SelectableText(view.result!.toReport(), style: mono),
+        ],
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            FilledButton.icon(
+              onPressed: view.busy ? null : controller.run,
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: Text(view.result == null ? 'Hacer la prueba' : 'Repetir la prueba'),
+            ),
+            if (tuning.threads != null && !view.busy)
+              TextButton(
+                onPressed: controller.reset,
+                child: const Text('Volver a automático'),
+              ),
+          ],
+        ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          value: tuning.cpuCompat,
+          onChanged: view.busy
+              ? null
+              : (v) => ref.read(tutorTuningProvider.notifier).setCpuCompat(v),
+          title: const Text('CPU en modo compatible'),
+          subtitle: Text(
+            tuning.cpuCompat == compatActive
+                ? 'Solo si la prueba sale lenta: usa instrucciones más antiguas de la CPU. '
+                      'Se aplica al cerrar y volver a abrir la app.'
+                : 'Cierra la app del todo y vuelve a abrirla para aplicarlo; luego repite la prueba.',
+          ),
+        ),
+      ],
     );
   }
 }

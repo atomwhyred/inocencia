@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 
 import '../domain/cpu_threads.dart';
+import '../domain/speed_test.dart';
 import '../domain/tutor_diagnostics.dart';
 import '../domain/tutor_engine.dart';
 import 'llama_worker.dart';
@@ -15,12 +17,29 @@ import '../domain/tutor_prompt.dart';
 /// isolate propio ([LlamaWorker]): la interfaz nunca se bloquea mientras genera.
 ///
 /// Solo CPU (`nGpuLayers = 0`): es lo mas estable en moviles de gama baja.
-class LlamaTutorEngine implements TutorEngine {
+class LlamaTutorEngine implements TutorEngine, SpeedTester {
   /// [nativeLibraryDir] resuelve la carpeta de las `.so` de la app, donde estan
   /// las variantes de CPU de llama.cpp.
-  LlamaTutorEngine({this.nativeLibraryDir, this.onLoaded, this.onAnswered});
+  LlamaTutorEngine({
+    this.nativeLibraryDir,
+    this.onLoaded,
+    this.onAnswered,
+    this.threadOverride,
+    this.cpuCompat = false,
+    this.thermalStatus,
+  });
 
   final Future<String?> Function()? nativeLibraryDir;
+
+  /// Hilos elegidos con la prueba de velocidad (sustituyen a los automaticos,
+  /// salvo en modo ahorro).
+  final ThreadOverride? threadOverride;
+
+  /// CPU en modo compatible: variante sin SVE/SME (se aplica al arrancar la app).
+  final bool cpuCompat;
+
+  /// Estado termico de Android, para el diagnostico.
+  final Future<int?> Function()? thermalStatus;
 
   /// Avisan del estado del modelo al cargarlo y de la velocidad de cada respuesta
   /// (alimentan el diagnostico de la zona de padres).
@@ -32,6 +51,9 @@ class LlamaTutorEngine implements TutorEngine {
     required double piecesPerSecond,
     int? promptChars,
     int? promptTokens,
+    bool backgrounded,
+    int? thermalStart,
+    int? thermalEnd,
   })?
   onAnswered;
   LlamaWorker? _worker;
@@ -88,9 +110,10 @@ class LlamaTutorEngine implements TutorEngine {
       throw const TutorEngineException('No se encuentra el archivo del modelo.');
     }
     // Elige la variante de CPU antes de que el modelo se cargue en su isolate.
-    NativeBackends.loadCpuVariant(await nativeLibraryDir?.call());
-    final threadCount = lowPower ? lowPowerThreads : threads;
-    final batchThreadCount = lowPower ? lowPowerThreads : batchThreads;
+    NativeBackends.loadCpuVariant(await nativeLibraryDir?.call(), compat: cpuCompat);
+    final tuned = lowPower ? null : threadOverride;
+    final threadCount = lowPower ? lowPowerThreads : (tuned?.generation ?? threads);
+    final batchThreadCount = lowPower ? lowPowerThreads : (tuned?.prompt ?? batchThreads);
     debugPrint(
       '[tutor] modelo ${modelPath.split('/').last} '
       '(${(File(modelPath).lengthSync() / 1e9).toStringAsFixed(2)} GB), '
@@ -103,6 +126,8 @@ class LlamaTutorEngine implements TutorEngine {
         modelGb: File(modelPath).lengthSync() / 1e9,
         threads: threadCount,
         batchThreads: batchThreadCount,
+        threadsTuned: tuned != null,
+        cpuCompat: NativeBackends.compat,
         cores: Platform.numberOfProcessors,
         coreFreqsKhz: _coreFreqsKhz(),
         variants: NativeBackends.variants,
@@ -172,23 +197,49 @@ class LlamaTutorEngine implements TutorEngine {
     Duration? firstPiece;
     var pieces = 0;
     var reported = false;
+    // HyperOS y otras capas frenan o congelan las apps de fondo: una respuesta
+    // medida con la app fuera de la pantalla no dice nada de la velocidad real.
+    var backgrounded = false;
+    AppLifecycleListener? lifecycle;
+    try {
+      lifecycle = AppLifecycleListener(
+        onStateChange: (s) {
+          if (s == AppLifecycleState.paused || s == AppLifecycleState.hidden) backgrounded = true;
+        },
+      );
+    } catch (_) {}
+    int? thermalStart;
+    thermalStatus?.call().then((t) => thermalStart = t, onError: (_) {});
     // Se anota al terminar y tambien si se corta: el tutor para tras la primera
     // pregunta del modelo y entonces el stream se cancela sin llegar a `onDone`.
     void report() {
+      lifecycle?.dispose();
+      lifecycle = null;
       if (pieces == 0 || reported) return;
       reported = true;
       final total = clock.elapsed;
       final rest = total - (firstPiece ?? Duration.zero);
       final rate = rest.inMilliseconds > 0 ? (pieces - 1) * 1000 / rest.inMilliseconds : 0;
       final promptTokens = worker.promptTokensOf(id);
-      onAnswered?.call(
+      final wasBackgrounded = backgrounded;
+      final start = thermalStart;
+      void send(int? thermalEnd) => onAnswered?.call(
         firstPieceSeconds: firstPiece?.inSeconds ?? 0,
         pieces: pieces,
         totalSeconds: total.inSeconds,
         piecesPerSecond: rate.toDouble(),
         promptChars: promptChars,
         promptTokens: promptTokens,
+        backgrounded: wasBackgrounded,
+        thermalStart: start,
+        thermalEnd: thermalEnd,
       );
+      final thermal = thermalStatus;
+      if (thermal == null) {
+        send(null);
+      } else {
+        thermal().then(send, onError: (_) => send(null));
+      }
       debugPrint(
         '[tutor] prompt de $promptTokens tokens, '
         'primera pieza ${firstPiece?.inSeconds} s, $pieces piezas en '
@@ -219,6 +270,31 @@ class LlamaTutorEngine implements TutorEngine {
         worker.stop(id);
         await sub?.cancel();
         report();
+      },
+    );
+    return out.stream;
+  }
+
+  /// Prueba de velocidad sobre el modelo ya cargado (ver [LlamaWorker.bench]).
+  /// Cancelar la suscripcion la detiene tras la medida en curso.
+  @override
+  Stream<SpeedSample> speedTest(SpeedPlan plan) {
+    final worker = _worker;
+    if (worker == null) {
+      return Stream.error(const TutorEngineException('El modelo no esta cargado.'));
+    }
+    final (id, stream) = worker.bench(plan, promptThreads: batchThreads);
+    late final StreamController<SpeedSample> out;
+    StreamSubscription<SpeedSample>? sub;
+    out = StreamController<SpeedSample>(
+      onListen: () => sub = stream.listen(
+        out.add,
+        onError: out.addError,
+        onDone: out.close,
+      ),
+      onCancel: () async {
+        worker.stop(id);
+        await sub?.cancel();
       },
     );
     return out.stream;
