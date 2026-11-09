@@ -48,7 +48,9 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 ## Juego (8-nov)
 - [x] ~~Carrera de tocororos / Entre todos~~: en un teléfono y entre teléfonos (Wi-Fi o punto de acceso), cada niño con
   preguntas de su grado. Ver [juego.md](juego.md).
-- [ ] **Generar el banco completo** (≈7 h para 50 por grado en el PC) y revisar `build/game_questions.csv`.
+- [x] ~~Generar el banco completo~~ (9-nov): 300 preguntas (50 por grado, de 1.º a 6.º) con el 3B Q4_0, ~50 s por
+  fragmento, desde una terminal con `./tools/question_bank/generar_banco.sh` (ver [juego.md](juego.md)). CSV revisado,
+  copiado a `models/knowledge.db` y al Pixel 6: la carrera saca preguntas del grado del niño con las opciones barajadas.
 - [ ] Probar la partida en red con dos teléfonos de verdad (Pixel 6 + Pad 5) y el descubrimiento de salas por UDP
   en un punto de acceso (en el PC solo se probó con `adb forward`).
 - [ ] Banco en inglés: el 3B escribía preguntas sin sentido; habría que hacerlas a mano o con otro método.

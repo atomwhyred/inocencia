@@ -42,6 +42,23 @@ python3 tools/question_bank/build_question_bank.py --db build/knowledge.db \
 python3 tools/question_bank/build_question_bank.py --db build/knowledge.db --import-csv build/game_questions.csv
 ```
 
+### Generar sin VS Code abierto (recomendado para las 7 h)
+
+```bash
+cd ~/Escritorio/DeepTutor
+./tools/question_bank/generar_banco.sh          # 50 por grado; o ./generar_banco.sh 80
+tail -f build/banco.log                         # ver el avance (Ctrl+C solo deja de mirar)
+./tools/question_bank/generar_banco.sh estado   # ¿sigue trabajando?
+./tools/question_bank/generar_banco.sh parar    # parar; al relanzarlo sigue donde iba
+```
+
+Trabaja en segundo plano, así que se pueden cerrar VS Code y la terminal. Mientras dura, el PC no se suspende
+(`systemd-inhibit`). Usa todos los núcleos, guarda una copia de `build/knowledge.db` en
+`build/knowledge.db.antes-del-banco` y al terminar escribe en el registro los pasos 3 y 4. Variables opcionales:
+`GRADOS="1 2"`, `HILOS=4`, `MODELO=...`, `DB=...`.
+
+Primera generación completa (9-nov): 300 preguntas, 50 por grado, ~50 s por fragmento con el 3B Q4_0 en el PC.
+
 Filtros (los mismos que el quiz de la app, más algunos propios): la respuesta correcta aparece en el texto del
 libro; nada de páginas, figuras, tablas, poemas ni "el texto"; opciones distintas y cortas; la respuesta no puede
 estar en la pregunta; se prefieren los libros a los cuadernos y se omite Inglés (salían palabras sin sentido).
