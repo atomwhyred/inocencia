@@ -3,6 +3,10 @@
 En **Jugar** los niños repasan jugando, sin internet. **Cada niño responde preguntas de su propio grado**: un niño
 de 2.º puede jugar con uno de 6.º.
 
+Se entra desde el botón **Jugar** de la barra de abajo. Arriba se elige el juego y debajo dónde jugar:
+
+<p align="center"><img src="img/10-jugar.png" alt="Pantalla Jugar: Carrera o Entre todos, en este teléfono o con otros teléfonos" width="260"></p>
+
 ## Dos juegos
 
 - **Carrera**: gana quien llegue antes a la meta. Cada acierto avanza una casilla (dos si la pregunta es de una
@@ -24,9 +28,17 @@ Cada niño en su teléfono (hasta 6). **No hace falta internet ni datos**: basta
 
 1. Uno de los teléfonos activa su **punto de acceso** (o todos se conectan al mismo Wi-Fi de casa o de la escuela).
 2. En ese teléfono: **Jugar → Con otros teléfonos → Crear sala**.
+
+<p align="center"><img src="img/11-con-otros-telefonos.png" alt="Con otros teléfonos: Crear sala o Unirme a una sala" width="240"> <img src="img/12-sala-abierta.png" alt="Sala abierta, con el niño que la creó y las direcciones para entrar a mano" width="240"></p>
 3. En los demás: **Jugar → Con otros teléfonos → Unirme a una sala**. La sala aparece sola. Si no aparece, escribe
    la dirección que se ve en el teléfono que creó la sala.
-4. Cuando estén todos, empieza la partida.
+4. Cuando estén todos, el que creó la sala pulsa **¡Empezar!** y empieza la partida.
+
+<p align="center"><img src="img/13-salas-cercanas.png" alt="Salas cercanas: aparece la sala de Pepe con el botón Entrar" width="240"> <img src="img/14-en-la-sala.png" alt="Ya estás en la sala, esperando a que el anfitrión empiece" width="240"></p>
+
+Ya jugando, cada niño ve **su** pregunta (del libro de su grado) y su tocororo avanza con cada acierto:
+
+<p align="center"><img src="img/15-carrera.png" alt="Carrera de tocororos con una pregunta de opción múltiple" width="260"></p>
 
 Cada teléfono necesita la app con su **base de libros** (`knowledge.db`) y un perfil de niño.
 

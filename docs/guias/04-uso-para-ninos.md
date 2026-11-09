@@ -6,12 +6,16 @@ Al elegir su perfil, el niño ve a **Toco** preguntando "¿Qué aprendemos hoy?"
 **tarjetas**. Abajo está la barra con **Tutor**, **Libros**, **Jugar**, **Tarjetas** y su foto (tocarla cambia de
 perfil).
 
+<p align="center"><img src="img/08-inicio.png" alt="Inicio del niño: Toco, medallas, tarjetas y la barra de Tutor, Libros, Jugar y Tarjetas" width="260"></p>
+
 ## Tutor
 
 1. El niño escribe su pregunta, por ejemplo: *¿Qué es un sustantivo?* o *No entiendo las fracciones*.
 2. El tutor contesta en 2 o 3 frases y **termina con una pregunta**. Esa pregunta aparece como botón: al tocarlo,
    el niño escribe su respuesta.
 3. Debajo de la respuesta se ve **de qué libro y página sale**. Tocándolo se abre el libro en esa página.
+
+<p align="center"><img src="img/09-tutor-respuesta.png" alt="Respuesta del tutor con los libros y páginas de donde sale, y la pregunta como botón" width="260"></p>
 
 Además:
 

@@ -10,6 +10,8 @@ app. Se pueden compartir sueltas.
 5. [Jugar](05-jugar.md): en un teléfono o entre varios, sin internet.
 6. [Problemas y soluciones](06-problemas-y-soluciones.md): qué hacer si algo falla y cómo pedir ayuda.
 
+Las capturas de las guías están en la carpeta [img/](img/).
+
 **Resumen rápido:** instala el `.apk` → copia el modelo `.gguf` y `knowledge.db` a
 `Android/data/com.inocencia.app/files/` y los PDF a `.../files/libros/` → **Zona de padres → Archivos → Detectar**
 → crea el perfil del niño → **Tutor**.

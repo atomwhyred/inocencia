@@ -10,6 +10,12 @@ Con ese PIN entras en la **Zona de padres**: es el **candado** de arriba a la de
 elige el perfil. **Apúntalo en un sitio seguro**: si lo olvidas, no se puede recuperar (habría que borrar los datos
 de la app y empezar de nuevo).
 
+<p align="center"><img src="img/01-bienvenida.png" alt="Pantalla de bienvenida: nombre del padre o la madre y longitud del PIN" width="240"> <img src="img/02-crear-pin.png" alt="Teclado para crear el PIN" width="240"></p>
+
+Después verás la pantalla donde se elige el perfil. El **candado** de arriba a la derecha lleva a la Zona de padres:
+
+<p align="center"><img src="img/03-elegir-perfil.png" alt="Pantalla para elegir perfil, con el candado arriba a la derecha" width="260"></p>
+
 ## 2. Que la app encuentre los archivos
 
 1. Entra en la **Zona de padres** (candado + PIN) → pestaña **Archivos**.
@@ -19,6 +25,11 @@ de la app y empezar de nuevo).
 4. En **Libros para leer (PDF)** pulsa **Detectar**. Si los PDF están en otra carpeta, pulsa **Buscar carpeta**,
    elígela y pulsa **Usar esta carpeta**.
 
+<p align="center"><img src="img/04-archivos-modelo.png" alt="Pestaña Archivos: modelo recomendado y modelo vinculado, con el aviso Listo" width="240"> <img src="img/05-archivos-libros.png" alt="Pestaña Archivos: Libros para leer (PDF), 49 de 49 libros en el teléfono" width="240"></p>
+
+Cuando todo está bien, el modelo y la base muestran **Listo** en verde, y en **Libros para leer** aparece
+"*X de X libros están en este teléfono*" y el grado de cada niño con una marca verde.
+
 ## 3. Crear el perfil de cada niño
 
 **Zona de padres → Perfiles → Nuevo perfil**: nombre, fecha de nacimiento, grado (de 1.º a 6.º) y un avatar.
@@ -27,6 +38,8 @@ de la app y empezar de nuevo).
 - El tutor contesta con los libros **de su grado**.
 - El grado sube solo cada curso.
 - A un niño mayor le puedes poner su propio PIN.
+
+<p align="center"><img src="img/06-nuevo-perfil.png" alt="Formulario de nuevo perfil: avatar, nombre, fecha de nacimiento y grado" width="240"> <img src="img/07-perfil-creado.png" alt="Lista de perfiles con el niño ya creado" width="240"></p>
 
 ## 4. Ajustes recomendados
 
