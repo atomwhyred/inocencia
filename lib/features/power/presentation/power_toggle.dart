@@ -22,16 +22,18 @@ class PowerToggle extends ConsumerWidget {
   }
 }
 
-/// Aviso "te queda poca bateria" con un toque para ahorrar. Mira la bateria al
-/// abrirse y cada minuto (con `batteryPollProvider`).
-class PowerSuggestion extends ConsumerStatefulWidget {
-  const PowerSuggestion({super.key});
+/// Mira la bateria al abrirse y cada minuto (con `batteryPollProvider`) mientras
+/// [child] esta en pantalla. El aviso lo pinta [LowBatteryMessage] donde toque.
+class BatteryWatcher extends ConsumerStatefulWidget {
+  const BatteryWatcher({super.key, required this.child});
+
+  final Widget child;
 
   @override
-  ConsumerState<PowerSuggestion> createState() => _PowerSuggestionState();
+  ConsumerState<BatteryWatcher> createState() => _BatteryWatcherState();
 }
 
-class _PowerSuggestionState extends ConsumerState<PowerSuggestion> {
+class _BatteryWatcherState extends ConsumerState<BatteryWatcher> {
   Timer? _timer;
 
   @override
@@ -52,38 +54,61 @@ class _PowerSuggestionState extends ConsumerState<PowerSuggestion> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (!ref.watch(lowBatterySuggestionProvider)) return const SizedBox.shrink();
-    final scheme = Theme.of(context).colorScheme;
+  Widget build(BuildContext context) => widget.child;
+}
+
+/// Lo que dice Toco con poca bateria: la pregunta y, debajo, los dos botones.
+/// Sin fondo propio: va dentro del globo de Toco (inicio) o de una burbuja del
+/// tutor (chat). Solo se pinta si `lowBatterySuggestionProvider` lo pide.
+class LowBatteryMessage extends ConsumerWidget {
+  const LowBatteryMessage({super.key, this.center = false});
+
+  static const text = 'Queda poca batería. ¿Ahorramos energía?';
+
+  /// Texto y botones centrados (globo del inicio) o a la izquierda (chat).
+  final bool center;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     return Semantics(
       liveRegion: true,
-      child: Card(
-        margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-        color: scheme.tertiaryContainer,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: center ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.battery_alert_rounded, color: scheme.onTertiaryContainer),
-              const SizedBox(width: 12),
-              Expanded(
+              Icon(Icons.battery_alert_rounded, color: theme.colorScheme.tertiary),
+              const SizedBox(width: 8),
+              Flexible(
                 child: Text(
-                  'Queda poca batería. ¿Ahorramos energía?',
-                  style: TextStyle(color: scheme.onTertiaryContainer, fontWeight: FontWeight.w600),
+                  text,
+                  textAlign: center ? TextAlign.center : TextAlign.start,
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                 ),
-              ),
-              TextButton(
-                onPressed: () => ref.read(suggestionDismissedProvider.notifier).dismiss(),
-                child: const Text('No, gracias'),
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(minimumSize: const Size(64, 40)),
-                onPressed: () => ref.read(batterySaverProvider.notifier).set(true),
-                child: const Text('Ahorrar'),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 10),
+          Wrap(
+            alignment: center ? WrapAlignment.center : WrapAlignment.start,
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              OutlinedButton(
+                onPressed: () => ref.read(suggestionDismissedProvider.notifier).dismiss(),
+                child: const Text('No, gracias'),
+              ),
+              FilledButton.icon(
+                onPressed: () => ref.read(batterySaverProvider.notifier).set(true),
+                icon: const Icon(Icons.battery_saver_rounded),
+                label: const Text('Ahorrar'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

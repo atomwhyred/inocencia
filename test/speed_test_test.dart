@@ -112,8 +112,26 @@ void main() {
     });
 
     test('se guarda y se lee en JSON', () {
-      final r = SpeedTestResult(samples: [gen(2, 5), read(4, 30)], cpuCompat: true, thermal: 1);
+      final r = SpeedTestResult(
+        samples: [gen(2, 5), read(4, 30)],
+        cpuCompat: true,
+        thermal: 1,
+        model: 'qwen2.5-3b-instruct-q4_0.gguf',
+      );
       expect(SpeedTestResult.fromJson(r.toJson()), r);
+    });
+
+    test('el informe dice con que modelo se hizo y avisa si ahora es otro', () {
+      final r = SpeedTestResult(
+        samples: [gen(3, 12), read(4, 20)],
+        model: 'qwen2.5-3b-instruct-q4_0.gguf',
+      );
+      expect(r.toReport(), contains('Prueba de velocidad con qwen2.5-3b-instruct-q4_0.gguf'));
+      expect(r.toReport(currentModel: 'qwen2.5-3b-instruct-q4_0.gguf'), isNot(contains('otro modelo')));
+      expect(r.toReport(currentModel: 'qwen2.5-7b-instruct-q4_k_m.gguf'), contains('otro modelo'));
+      // Las pruebas guardadas antes de anotar el modelo se leen igual.
+      final old = SpeedTestResult(samples: [gen(3, 12), read(4, 20)]);
+      expect(SpeedTestResult.fromJson(old.toJson()).model, isNull);
     });
   });
 
@@ -200,6 +218,7 @@ void main() {
       final view = c.read(speedTestProvider);
       expect(view.phase, SpeedPhase.done);
       expect(view.result!.thermal, 0);
+      expect(view.result!.model, 'm.gguf');
       expect(c.read(tutorTuningProvider).threads, const ThreadOverride(generation: 4, prompt: 6));
       expect(tester.disposed, isTrue);
       expect(platform.screenOn, [true, false]);

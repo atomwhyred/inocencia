@@ -1,6 +1,6 @@
 # Lo que falta para terminar inocencIA
 
-Estado a 29-oct-2026. Hecho: base, perfiles, PIN y zona de padres; tutor local con RAG; recordatorios (varios,
+Estado a 29-oct-2026 (actualizado el 9-nov). Hecho: base, perfiles, PIN y zona de padres; tutor local con RAG; recordatorios (varios,
 cada uno con su interruptor); chat con historial por niño; libros PDF con página guardada y carpeta que busca
 el padre; mascota Toco; exportar/compartir offline el modelo, la base y los libros; splash con Toco y una frase
 al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que queda:
@@ -22,7 +22,13 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   una opción sin sentido (se vio "cine" como mayúscula). Se filtran: la respuesta correcta debe salir del texto del
   libro y no se admiten preguntas que dependan de páginas o dibujos. Aun así conviene revisar con un adulto, probar
   con el 7B o generar las preguntas con plantillas a partir del texto del libro. Cada pregunta tarda ~40 s en un 3B.
-- [ ] **Modo batería / apagón: falta ver el aviso con batería baja real.** Verificado en el Pixel 6: el interruptor
+- [x] ~~Aviso de poca batería al lado de los botones~~ (9-nov, feedback del 17T Pro): ahora lo dice Toco, en su globo del
+  inicio o como mensaje del tutor en el chat, con los botones debajo. El inicio ya no se desplaza: Toco crece o encoge con
+  el alto libre (solo en pantallas muy bajas o con letra muy grande vuelve a desplazarse). La etiqueta "Sin internet" se
+  recorta en barras estrechas en vez de desbordarse.
+- [ ] **Modo batería / apagón: falta ver el aviso con batería baja real.** `dumpsys battery set level/status` no sirve:
+  `battery_plus` lee la propiedad del hardware (`BATTERY_PROPERTY_CAPACITY`/`STATUS`), no la difusión que cambia dumpsys.
+  Hay que dejar bajar la batería de verdad, sin cable (o depurar por Wi-Fi con `adb tcpip`). Verificado en el Pixel 6: el interruptor
   del inicio y del chat pone el fondo negro puro, Toco queda quieto y el tutor sigue respondiendo. Falta el aviso
   del 20 % (la simulación con `dumpsys battery` se reinicia sola mientras el USB carga el móvil).
 - [ ] **Probar el modelo de 7B en un móvil de 12 GB.** Está descargado (`models/qwen2.5-7b-instruct-q4_k_m.gguf`)
@@ -31,6 +37,7 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 - [ ] **APK de producción firmado.** Hoy el release se firma con la clave de depuración
   (`android/app/build.gradle.kts`). Hay que crear el keystore y compilar por ABI
   (`flutter build apk --release --split-per-abi`).
+- [x] ~~Guías para compartir en Telegram~~ (9-nov): [guias/](guias/README.md), 6 guías cortas.
 - [x] ~~Manual corto para padres~~ (29-oct): [guia-padres.md](guia-padres.md). Falta revisarlo con un padre real
   (feedback de los amigos) y añadir cómo borrar conversaciones.
 - [ ] **APK de 32 bits (armeabi-v7a) sin probar en un teléfono real.** Se compila (sin llamafile, que no compila en
@@ -91,8 +98,19 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   - **CPU en modo compatible**, que carga `android_armv8.6_1` (NEON + i8mm, sin SVE/SME) al reiniciar la app.
   - En el Pixel 6 la prueba dura ~1,5 min. Mide 9,5 / 8,7 / 9,2 / 6,6 / 6,1 tokens/s al escribir (2-6 hilos) y
     40 / 30 / 34 tokens/s al leer (4/6/8): elige 2 y 4. Como el Pixel no tiene i8mm, el modo compatible cae a `armv8.2_2`.
-- [ ] **Pedir a la persona del 17T Pro la prueba de velocidad**, con y sin modo compatible, y decidir con eso: un valor por
-  defecto para el Dimensity 9500, quitar SVE/SME, o probar KleidiAI.
+- [x] ~~Pedir a la persona del 17T Pro la prueba de velocidad~~ (9-nov): **causa encontrada**. Al escribir, 3 hilos van a
+  9,8-12,7 tokens/s y 4, 5 o 6 hilos a **0,2**; los automáticos eran 4. Ahora, en chips sin núcleos pequeños (todos ≥ 2,2 GHz)
+  se deja un núcleo rápido libre: 3 al escribir y 4 para el prompt (`CpuThreads`). Con la prueba aplicada: 3B Q4_0 37 s
+  hasta la primera pieza y 8,2 piezas/s; 3B Q4_K_M 42 s y 8,1; 7B 104 s y 3,3 ("aceptable, pero mejorable"). Ver
+  [models.md](models.md).
+- [x] ~~La prueba de velocidad no decía con qué modelo se hizo~~ (9-nov): se guarda el modelo y el informe avisa si ahora es otro.
+- [x] ~~La valoración llamaba "muy lento" a todo 7B y "teléfono modesto" al 17T Pro~~ (9-nov): se valora por la velocidad
+  medida y, en chips con SME sin modo compatible, sugiere probarlo.
+- [ ] **Modo compatible en el 17T Pro**: el prompt del Q4_0 va a ~20 tokens/s (el Pixel 6, 45-56) y 4+ hilos se hunden a 0,2.
+  Pedir: activar CPU en modo compatible, cerrar la app, repetir la prueba con el 3B Q4_0 y enviar el diagnóstico. Si mejora,
+  usarlo por defecto en chips con SME; si no, probar KleidiAI.
+- [ ] Pedir al 17T Pro que pruebe el APK nuevo con **Volver a automático**: el diagnóstico debe decir 3 hilos (4 para el prompt).
+- [ ] La respuesta real del 7B va a 3,3 piezas/s y la prueba a ~9,8: contexto más largo o la interfaz compitiendo por los núcleos.
 - [x] ~~3B en Q4_0~~ (8-nov): ~2× más rápido y calidad parecida; ahora es el recomendado (ver [models.md](models.md)).
 - [x] ~~Flash attention~~ (8-nov): sin efecto en el Pixel 6, desactivado. Queda KleidiAI (`-DGGML_CPU_KLEIDIAI=ON`) para el 17T Pro.
 - [x] ~~"Dame un ejemplo…" se tomaba como respuesta~~ (8-nov): `dame`, `muestrame`, `enseñame`, `puedes`, `necesito` en `_nonAnswerStarts`.

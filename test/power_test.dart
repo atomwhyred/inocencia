@@ -54,10 +54,7 @@ void main() {
   group('BatterySaverController y sugerencia', () {
     late ProviderContainer c;
 
-    Future<ProviderContainer> make(
-      BatteryStatus? battery, {
-      Map<String, Object> prefs = const {},
-    }) async {
+    Future<ProviderContainer> make(BatteryStatus? battery, {Map<String, Object> prefs = const {}}) async {
       SharedPreferences.setMockInitialValues(prefs);
       final container = ProviderContainer(
         overrides: [
@@ -120,8 +117,12 @@ void main() {
   group('en la app', () {
     late int leo;
 
-    Future<ProviderContainer> boot(WidgetTester tester, {BatteryStatus? battery}) async {
-      tester.view.physicalSize = const Size(500, 1000);
+    Future<ProviderContainer> boot(
+      WidgetTester tester, {
+      BatteryStatus? battery,
+      Size size = const Size(500, 1000),
+    }) async {
+      tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       SharedPreferences.setMockInitialValues({});
@@ -129,11 +130,7 @@ void main() {
       await db
           .into(db.guardians)
           .insert(
-            GuardiansCompanion.insert(
-              name: 'Ana',
-              pinHash: PinHasher.hashSync('1234', iterations: 10),
-              pinLength: 4,
-            ),
+            GuardiansCompanion.insert(name: 'Ana', pinHash: PinHasher.hashSync('1234', iterations: 10), pinLength: 4),
           );
       leo = await ChildProfileRepositoryImpl(
         db,
@@ -155,9 +152,7 @@ void main() {
         container.dispose();
         await tester.runAsync(db.close);
       });
-      await tester.pumpWidget(
-        UncontrolledProviderScope(container: container, child: const InocenciaApp()),
-      );
+      await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const InocenciaApp()));
       await tester.pumpAndSettle();
       return container;
     }
@@ -195,6 +190,47 @@ void main() {
       expect(c.read(batterySaverProvider), isTrue);
       expect(find.text('Queda poca batería. ¿Ahorramos energía?'), findsNothing);
       expect(background(tester), const Color(0xFF000000));
+    });
+
+    testWidgets('Toco da el aviso en su globo, en lugar del saludo', (tester) async {
+      final c = await boot(tester, battery: const BatteryStatus(level: 12, charging: false));
+      c.read(sessionProvider.notifier).selectChild(leo);
+      c.read(routerProvider).go('/home');
+      await tester.pumpAndSettle();
+      expect(find.text('¿Qué aprendemos hoy?'), findsNothing);
+      // Los botones van debajo del texto, no al lado.
+      final text = tester.getRect(find.text('Queda poca batería. ¿Ahorramos energía?'));
+      expect(tester.getRect(find.text('Ahorrar')).top, greaterThan(text.bottom));
+      expect(tester.getRect(find.text('No, gracias')).top, greaterThan(text.bottom));
+      await tester.tap(find.text('No, gracias'));
+      await tester.pumpAndSettle();
+      expect(find.text('¿Qué aprendemos hoy?'), findsOneWidget);
+    });
+
+    for (final (size, scale) in [
+      (const Size(360, 640), 1.0),
+      (const Size(360, 640), 2.0),
+      (const Size(320, 480), 1.0),
+    ]) {
+      testWidgets('el inicio cabe sin desbordarse en ${size.width.round()}x${size.height.round()} '
+          'con letra x$scale y el aviso', (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final c = await boot(tester, battery: const BatteryStatus(level: 12, charging: false), size: size);
+        c.read(sessionProvider.notifier).selectChild(leo);
+        c.read(routerProvider).go('/home');
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.text('Queda poca batería. ¿Ahorramos energía?'), findsOneWidget);
+      });
+    }
+
+    testWidgets('en una pantalla alta Toco crece y no hace falta desplazarse', (tester) async {
+      final c = await boot(tester);
+      c.read(sessionProvider.notifier).selectChild(leo);
+      c.read(routerProvider).go('/home');
+      await tester.pumpAndSettle();
+      expect(find.byType(SingleChildScrollView), findsNothing);
     });
 
     testWidgets('"No, gracias" quita el aviso sin activar el modo', (tester) async {

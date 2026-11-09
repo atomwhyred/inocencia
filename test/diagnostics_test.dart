@@ -114,8 +114,13 @@ void main() {
   });
 
   group('valoracion', () {
-    TutorDiagnostics answered(String model, {int first = 10, double rate = 8}) =>
-        TutorDiagnostics(model: model).withAnswer(
+    TutorDiagnostics answered(
+      String model, {
+      int first = 10,
+      double rate = 8,
+      String? cpu,
+      bool compat = false,
+    }) => TutorDiagnostics(model: model, cpuFeatures: cpu, cpuCompat: compat).withAnswer(
           firstPieceSeconds: first,
           pieces: 80,
           totalSeconds: 30,
@@ -123,8 +128,22 @@ void main() {
           promptChars: 2900,
         );
 
-    test('el 7B avisa de que es muy lento', () {
-      expect(answered('qwen2.5-7b-instruct-q4_k_m.gguf').verdict(), contains('7B es muy lento'));
+    test('el 7B se valora por su velocidad medida', () {
+      const m = 'qwen2.5-7b-instruct-q4_k_m.gguf';
+      expect(answered(m, rate: 0.5).verdict(), contains('7B es muy lento'));
+      expect(TutorDiagnostics(model: m).verdict(), contains('7B es muy lento'));
+      // Xiaomi 17T Pro, 9-nov: primera pieza a los 104 s y 3,3 piezas/s.
+      expect(answered(m, first: 104, rate: 3.3).verdict(), allOf(contains('funciona'), contains('104s')));
+      expect(answered(m).verdict(), contains('va bien'));
+    });
+
+    test('con SME y sin modo compatible sugiere probarlo', () {
+      const sme = 'CPU : NEON = 1 | MATMUL_INT8 = 1 | SVE = 1 | SME = 1 | REPACK = 1 |';
+      const m = 'qwen2.5-3b-instruct-q4_0.gguf';
+      expect(answered(m, first: 37, cpu: sme).verdict(), contains('modo compatible'));
+      expect(answered(m, first: 37, cpu: sme, compat: true).verdict(), isNot(contains('modo compatible')));
+      expect(answered(m, first: 37).verdict(), isNot(contains('modo compatible')));
+      expect(answered(m, first: 37).verdict(), isNot(contains('modestos')));
     });
 
     test('generar despacio sugiere un modelo menor; tardar en empezar se explica', () {

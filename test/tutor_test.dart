@@ -929,6 +929,7 @@ void main() {
       WidgetTester tester, {
       DateTime Function()? clock,
       Map<String, Object> prefs = const {},
+      bool lowBattery = false,
     }) async {
       tester.view.physicalSize = const Size(500, 1100);
       tester.view.devicePixelRatio = 1;
@@ -952,6 +953,8 @@ void main() {
         pomodoroTickProvider.overrideWithValue(null),
         speechServiceProvider.overrideWithValue(FakeSpeechService()),
         if (clock != null) clockProvider.overrideWithValue(clock),
+        if (lowBattery) lowBatterySuggestionProvider.overrideWithValue(true),
+        batteryPollProvider.overrideWithValue(null),
       ]);
       c.read(sessionProvider.notifier).selectChild(leo);
       addTearDown(() async {
@@ -1242,6 +1245,17 @@ RESPUESTA: C
         await tester.pumpAndSettle();
         expect(engine.loads, 3);
         expect(engine.lastLowPower, isFalse);
+      });
+
+      testWidgets('con poca batería Toco lo dice como un mensaje, con los botones debajo', (tester) async {
+        final c = await openPage(tester, lowBattery: true);
+        final text = tester.getRect(find.text('Queda poca batería. ¿Ahorramos energía?'));
+        expect(tester.getRect(find.text('Ahorrar')).top, greaterThan(text.bottom));
+        // Encima de la barra de escribir.
+        expect(text.bottom, lessThan(tester.getRect(find.byType(TextField)).top));
+        await tester.tap(find.text('Ahorrar'));
+        await tester.pumpAndSettle();
+        expect(c.read(batterySaverProvider), isTrue);
       });
 
       testWidgets('si el tutor está contestando, la recarga espera a que acabe', (tester) async {

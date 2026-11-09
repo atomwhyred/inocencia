@@ -211,7 +211,6 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
             : MaxContentWidth(
                 child: Column(
                   children: [
-                    const PowerSuggestion(),
                     const MedalToast(),
                     if (_cheer != null)
                       _CheerBubble(
@@ -220,6 +219,7 @@ class _TutorPageState extends ConsumerState<TutorPage> with WidgetsBindingObserv
                         onDone: () => setState(() => _cheer = null),
                       ),
                     Expanded(child: _body(context, tutor, mascotOn: mascotOn, grade: grade)),
+                    const BatteryWatcher(child: _BatteryBubble()),
                     if (ready && _replyingTo != null && !tutor.generating)
                       _ReplyBanner(
                         question: _replyingTo!,
@@ -412,6 +412,30 @@ class _Bubble extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// El aviso de poca bateria como un mensaje de Toco, encima de la barra de
+/// escribir. No entra en el historial.
+class _BatteryBubble extends ConsumerWidget {
+  const _BatteryBubble();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(lowBatterySuggestionProvider)) return const SizedBox.shrink();
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.85),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const LowBatteryMessage(),
       ),
     );
   }

@@ -69,6 +69,9 @@ Los PDF se nombran `<grado>_<...>.pdf` (`6to_matematica.pdf`, `6to_ct_ciencias.p
 | Xiaomi Pad 5 (Snapdragon 860, 6 GB) | 3B | 4 de 8 | 24 s | 130 piezas en 42 s (**7,1 piezas/s**) |
 | Xiaomi 17T Pro (Dimensity 9500, 12 GB) | 7B | 4 de 8 | sin medir | sin medir (la respuesta tardaba 1-3 min) |
 | Xiaomi 17T Pro, 8-nov | 3B Q4_0 | 4 de 8 (8 para el prompt) | 47 s (568 tokens, 12 tokens/s) | 131 piezas en 722 s (**0,2 piezas/s**): anómalo, ver [pendiente.md](pendiente.md) |
+| Xiaomi 17T Pro, 9-nov (prueba de velocidad: 3 hilos / 4 para el prompt) | 3B Q4_0 | 3 de 8 (4 para el prompt) | 37 s (805 tokens, 21,8 tokens/s) | 28 piezas en 40 s (**8,2 piezas/s**) |
+| Xiaomi 17T Pro, 9-nov | 3B Q4_K_M | 3 de 8 (4) | 42 s (627 tokens, 14,9 tokens/s) | **8,1 piezas/s** |
+| Xiaomi 17T Pro, 9-nov | 7B | 3 de 8 (4) | 104 s (739 tokens, 7,1 tokens/s) | **3,3 piezas/s** ("aceptable, pero mejorable") |
 | Pixel 6 (Tensor, 8 GB), 8-nov, libro a 1100 caracteres | 3B | 4 de 8 | 22 / 26 / 28 s (602 / 540 / 566 tokens, ~20-27 tokens/s) | 6,5-7,9 piezas/s |
 
 ### Q4_K_M frente a Q4_0 (3B, Pixel 6, 8-nov)
@@ -105,6 +108,10 @@ mejor, y **CPU en modo compatible** evita la variante SVE/SME. Pixel 6, prueba c
 9,2 / 6,6 / 6,1 tokens/s con 2-6 hilos; al leer, 40,6 / 30,0 / 34,2 tokens/s con 4/6/8 hilos. Con 4 o más hilos para
 escribir no gana nada: la generación está limitada por la memoria.
 
-En el 17T Pro la app cargó la variante de CPU correcta (`MATMUL_INT8`, `SVE`, `SME`, `DOTPROD`) y usa los 4 núcleos
-rápidos: la lentitud es del tamaño del modelo, no de la configuración. En la Pad 5 el cuello de botella es el tiempo
+**Causa del 0,2 piezas/s del 17T Pro (9-nov):** las dos pruebas de velocidad que llegaron (una con el Q4_0 y otra
+guardada, que salió igual en los informes del Q4_K_M y del 7B porque no anotaba el modelo) dicen lo mismo al escribir: 2 hilos 6,9-9,0, **3 hilos 9,8-12,7** y **4, 5 o 6 hilos 0,2 tokens/s**. Los hilos automáticos eran
+4 (todos los núcleos rápidos). El Dimensity 9500 no tiene núcleos pequeños que absorban la interfaz y Android: desde el
+9-nov, en chips así (todos los núcleos ≥ 2,2 GHz) se deja un núcleo rápido libre al escribir (3) y el prompt usa uno más
+(4; con 6 iba igual y con 8 peor). Aun así el prompt del Q4_0 va a ~20 tokens/s, menos de la mitad que en el Pixel 6:
+falta probar el **modo compatible** (sin SVE/SME). En la Pad 5 el cuello de botella es el tiempo
 hasta la primera pieza (procesar el prompt), no la generación.

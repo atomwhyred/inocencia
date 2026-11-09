@@ -77,7 +77,8 @@ Decisiones de diseño:
   botón para copiarlo (sin datos personales); útil cuando el tutor va lento.
 - Entrada protegida con PIN de 4 o 6 dígitos y bloqueo tras varios intentos fallidos.
 
-Guía paso a paso para familias: [docs/guia-padres.md](docs/guia-padres.md).
+Guía paso a paso para familias: [docs/guia-padres.md](docs/guia-padres.md). Guías cortas para compartir (canal de
+Telegram): [docs/guias/](docs/guias/README.md).
 
 ## Cómo funciona por dentro
 

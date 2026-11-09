@@ -39,12 +39,17 @@ class OfflineBadge extends StatelessWidget {
           children: [
             Icon(Icons.wifi_off_rounded, size: 16, color: scheme.onTertiaryContainer),
             const SizedBox(width: 6),
-            Text(
-              compact ? 'Sin internet' : 'Funciona sin internet',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: scheme.onTertiaryContainer,
+            // En barras estrechas (o con letra grande) se recorta en vez de desbordarse.
+            Flexible(
+              child: Text(
+                compact ? 'Sin internet' : 'Funciona sin internet',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.onTertiaryContainer,
+                ),
               ),
             ),
           ],

@@ -8,9 +8,10 @@ void main() {
       expect(CpuThreads.choose(freqs, coreCount: 8), 4);
     });
 
-    test('Dimensity 9500 (1 + 3 + 4 rapidos) cuenta los nucleos de mas de 70 % de la maxima', () {
+    test('Dimensity 9500 (sin nucleos pequenos) deja libre uno de los 4 rapidos', () {
+      // Xiaomi 17T Pro: con 4 hilos al escribir caia a 0,2 tokens/s; con 3, 9,8-12,7.
       const freqs = [2700000, 2700000, 2700000, 2700000, 3500000, 3500000, 3500000, 4210000];
-      expect(CpuThreads.choose(freqs, coreCount: 8), 4);
+      expect(CpuThreads.choose(freqs, coreCount: 8), 3);
     });
 
     test('un chip con 6 pequenos y 2 grandes usa solo los grandes', () {
@@ -19,6 +20,7 @@ void main() {
     });
 
     test('nunca pasa de 6 ni baja de 2', () {
+      expect(CpuThreads.choose(const [2400000, 2400000], coreCount: 2), 2);
       expect(CpuThreads.choose(List.filled(8, 3000000), coreCount: 8), 6);
       expect(CpuThreads.choose(const [3000000, 1000000, 1000000], coreCount: 3), 2);
     });
@@ -31,9 +33,10 @@ void main() {
   });
 
   group('CpuThreads.chooseBatch', () {
-    test('Dimensity 9500 (Xiaomi 17T Pro) procesa el prompt con 6: deja 2 nucleos libres', () {
+    test('Dimensity 9500 (Xiaomi 17T Pro) procesa el prompt con 4, uno mas que al escribir', () {
+      // Prueba de velocidad en el 17T Pro: 4 hilos 12,6-19,7, 6 hilos 11,5-19,8, 8 hilos 9,5-12,4.
       const freqs = [2700000, 2700000, 2700000, 2700000, 3500000, 3500000, 3500000, 4210000];
-      expect(CpuThreads.chooseBatch(freqs, coreCount: 8), 6);
+      expect(CpuThreads.chooseBatch(freqs, coreCount: 8), 4);
     });
 
     test('Snapdragon 860 (Xiaomi Pad 5) deja fuera los 4 pequenos', () {
@@ -49,10 +52,15 @@ void main() {
     });
 
     test('tope de 8 y, sin datos, los mismos que al generar', () {
-      expect(CpuThreads.chooseBatch(List.filled(12, 3000000), coreCount: 12), 8);
-      // 6 grandes por igual: generar se queda en 6 y el prompt nunca baja de ahi.
-      expect(CpuThreads.chooseBatch(List.filled(6, 3000000), coreCount: 6), 6);
-      expect(CpuThreads.chooseBatch(List.filled(10, 3000000), coreCount: 10), 8);
+      // Todos grandes: generar deja uno libre y el prompt usa uno mas.
+      expect(CpuThreads.chooseBatch(List.filled(12, 3000000), coreCount: 12), 7);
+      expect(CpuThreads.chooseBatch(List.filled(6, 3000000), coreCount: 6), 5);
+      expect(CpuThreads.chooseBatch(List.filled(10, 3000000), coreCount: 10), 7);
+      // Con nucleos pequenos sigue el tope de 8.
+      expect(
+        CpuThreads.chooseBatch([...List.filled(12, 3000000), 1800000, 1800000], coreCount: 14),
+        8,
+      );
       expect(CpuThreads.chooseBatch(const [], coreCount: 8), 4);
     });
   });

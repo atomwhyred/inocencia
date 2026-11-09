@@ -167,26 +167,37 @@ class TutorDiagnostics extends Equatable {
   /// Valoracion en lenguaje claro: que esperar y que hacer.
   String? verdict() {
     if (isEmpty) return null;
-    if (model!.toLowerCase().contains('7b')) {
-      return 'El modelo de 7B es muy lento: puede tardar minutos por respuesta aunque el '
-          'teléfono tenga mucha RAM. Prueba con el de 3B (o el de 1.5B).';
-    }
     if (backgrounded) {
       return 'Medida no válida: la app salió de la pantalla mientras respondía y Android la frenó. '
           'Repite la pregunta sin salir de la app, o usa la prueba de velocidad.';
     }
     final rate = piecesPerSecond;
     final first = firstPieceSeconds;
+    // Chips con SME (Dimensity 9500): la variante nueva de llama.cpp puede ir peor
+    // que la compatible; solo se sugiere si aun no se probo.
+    final tryCompat = !cpuCompat && (cpuFeatures?.contains('SME = 1') ?? false)
+        ? ' Prueba la CPU en modo compatible y repite la prueba de velocidad.'
+        : '';
+    if (model!.toLowerCase().contains('7b')) {
+      if (rate == null || rate < 3) {
+        return 'El modelo de 7B es muy lento: puede tardar minutos por respuesta aunque el '
+            'teléfono tenga mucha RAM. Prueba con el de 3B (o el de 1.5B).';
+      }
+      if (first != null && first > 30) {
+        return 'El de 7B funciona en este teléfono, pero tarda en empezar (${first}s leyendo el '
+            'libro). El de 3B (Q4_0) empieza mucho antes con calidad parecida.';
+      }
+      return 'El de 7B va bien en este teléfono.';
+    }
     if (rate != null && rate < 3) {
       if ((thermalEnd ?? 0) >= 2) {
         return 'Genera despacio porque el teléfono está caliente y Android lo frena: déjalo enfriar.';
       }
       return 'Genera despacio (menos de 3 piezas/s): haz la prueba de velocidad para que la app '
-          'busque la mejor configuración de este teléfono.';
+          'busque la mejor configuración de este teléfono.$tryCompat';
     }
     if (first != null && first > 30) {
-      return 'Genera bien, pero tarda en empezar (${first}s procesando el libro). Es normal con el '
-          'modelo de 3B en teléfonos modestos.';
+      return 'Genera bien, pero tarda en empezar (${first}s leyendo el libro).$tryCompat';
     }
     if (pieces != null) return 'Velocidad normal.';
     return null;

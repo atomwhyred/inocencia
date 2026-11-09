@@ -121,6 +121,7 @@ class SpeedTestController extends Notifier<SpeedTestView> {
   StreamSubscription<SpeedSample>? _sub;
   AppLifecycleListener? _lifecycle;
   late PlatformInfo _platform;
+  String? _model;
 
   @override
   SpeedTestView build() {
@@ -156,6 +157,7 @@ class SpeedTestController extends Notifier<SpeedTestView> {
         },
       );
     } catch (_) {}
+    _model = files.model.path!.split(RegExp(r'[/\\]')).last;
     unawaited(_platform.keepScreenOn(true));
     final engine = _engine = ref.read(speedTesterFactoryProvider)();
     try {
@@ -194,6 +196,7 @@ class SpeedTestController extends Notifier<SpeedTestView> {
       samples: samples,
       cpuCompat: ref.read(cpuCompatActiveProvider),
       thermal: thermal,
+      model: _model,
     );
     if (result.isComplete) {
       ref

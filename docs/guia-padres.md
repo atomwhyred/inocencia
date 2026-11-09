@@ -1,5 +1,7 @@
 # Guía para padres y madres
 
+> Hay guías más cortas, pensadas para compartir, en [guias/](guias/README.md).
+
 inocencIA es un tutor que funciona **sin internet**. Para eso necesita tres cosas en el teléfono o la tablet:
 la app, el **modelo de IA** (un archivo `.gguf`) y los **libros** (la base `knowledge.db` y los PDF). Se copian una
 sola vez.
@@ -19,7 +21,7 @@ Necesitas tres archivos:
 
 | Archivo | Qué es | Tamaño aprox. |
 |---|---|---|
-| `qwen2.5-3b-instruct-q4_k_m.gguf` (o el de 1.5B) | El modelo de IA | 2,1 GB (1,1 GB el pequeño) |
+| `qwen2.5-3b-instruct-q4_0.gguf` (o el de 1.5B) | El modelo de IA | 2,0 GB (1,1 GB el pequeño) |
 | `knowledge.db` | Los libros que consulta el tutor | según los libros |
 | PDF de los libros (`6to_matematica.pdf`...) | Para leerlos en "Mis libros" | varios cientos de MB |
 
@@ -61,8 +63,8 @@ al perfil de un niño mayor.
   mismo Wi-Fi o al **punto de acceso** del que crea la sala (no hace falta tener datos ni internet).
   Las preguntas salen del banco del juego que viene en la base de libros y de las tarjetas de cada niño.
 - **Pomodoro**: tras estudiar, Toco avisa del descanso y el chat se bloquea hasta que acabe.
-- **Icono de batería**: activa el modo apagón (pantalla negra, tutor más ligero). Con menos del 20 % la app lo
-  sugiere, pero nunca lo activa sola.
+- **Icono de batería**: activa el modo apagón (pantalla negra, tutor más ligero). Con menos del 20 % Toco lo
+  sugiere (en su globo del inicio o como un mensaje en el chat), pero nunca lo activa solo.
 
 ## El permiso de red
 Para jugar entre teléfonos, Android exige que la app declare el permiso **INTERNET**, aunque la conexión sea solo

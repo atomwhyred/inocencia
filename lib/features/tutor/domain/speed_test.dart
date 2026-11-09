@@ -69,7 +69,12 @@ class SpeedPlan {
 
 /// Resultado de la prueba: la tabla y la combinacion mas rapida.
 class SpeedTestResult extends Equatable {
-  const SpeedTestResult({required this.samples, this.cpuCompat = false, this.thermal});
+  const SpeedTestResult({
+    required this.samples,
+    this.cpuCompat = false,
+    this.thermal,
+    this.model,
+  });
 
   factory SpeedTestResult.fromJson(Map<String, Object?> j) => SpeedTestResult(
     samples: [
@@ -78,12 +83,14 @@ class SpeedTestResult extends Equatable {
     ],
     cpuCompat: j['cpuCompat'] as bool? ?? false,
     thermal: j['thermal'] as int?,
+    model: j['model'] as String?,
   );
 
   Map<String, Object?> toJson() => {
     'samples': [for (final s in samples) s.toJson()],
     'cpuCompat': cpuCompat,
     'thermal': thermal,
+    'model': model,
   };
 
   final List<SpeedSample> samples;
@@ -93,6 +100,10 @@ class SpeedTestResult extends Equatable {
 
   /// Estado termico de Android al terminar (ver [thermalLabel]).
   final int? thermal;
+
+  /// Archivo del modelo con el que se hizo (las pruebas antiguas no lo guardaban).
+  /// Los hilos dependen sobre todo del telefono, pero las cifras cambian con el modelo.
+  final String? model;
 
   /// Diferencias menores que esta se toman como empate: gana el que usa menos
   /// hilos (calienta menos y deja nucleos libres).
@@ -122,13 +133,17 @@ class SpeedTestResult extends Equatable {
 
   bool get isComplete => bestGeneration != null && bestPrompt != null;
 
-  /// Texto para el diagnostico que se copia.
-  String toReport() {
+  /// Texto para el diagnostico que se copia. Con [currentModel] (el modelo vinculado
+  /// ahora) avisa si la prueba se hizo con otro.
+  String toReport({String? currentModel}) {
     String row(SpeedSample s) =>
         '  ${s.threads} hilos: ${s.tokensPerSecond.toStringAsFixed(1)} tokens/s';
+    final other = currentModel != null && model != currentModel;
     return [
-      'Prueba de velocidad${cpuCompat ? ' (CPU en modo compatible)' : ''}'
+      'Prueba de velocidad${model == null ? '' : ' con $model'}'
+          '${cpuCompat ? ' (CPU en modo compatible)' : ''}'
           '${thermal == null ? '' : ', temperatura: ${thermalLabel(thermal!)}'}:',
+      if (other) ' Hecha con otro modelo: repítela con el actual para comparar.',
       ' Escribir la respuesta:',
       for (final s in of(SpeedKind.generation)) row(s),
       ' Leer el texto:',
@@ -138,7 +153,7 @@ class SpeedTestResult extends Equatable {
   }
 
   @override
-  List<Object?> get props => [samples, cpuCompat, thermal];
+  List<Object?> get props => [samples, cpuCompat, thermal, model];
 }
 
 /// Estado termico de Android (`PowerManager.THERMAL_STATUS_*`) en palabras.

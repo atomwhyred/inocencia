@@ -196,7 +196,7 @@ class DiagnosticsCard extends ConsumerWidget {
     final tuning = ref.watch(tutorTuningProvider);
     final report = [
       d.toReport(ramBytes: ram),
-      if (speed.result != null) speed.result!.toReport(),
+      if (speed.result != null) speed.result!.toReport(currentModel: d.model),
       'Hilos: ${tuning.threads == null ? 'automaticos' : '${tuning.threads!.generation} al escribir, '
           '${tuning.threads!.prompt} al leer (de la prueba)'}',
       if (tuning.cpuCompat || ref.watch(cpuCompatActiveProvider))
@@ -291,7 +291,10 @@ class SpeedTestSection extends ConsumerWidget {
           Text(view.message!, style: TextStyle(color: theme.colorScheme.error)),
         if (view.result != null && !view.busy) ...[
           const SizedBox(height: 4),
-          SelectableText(view.result!.toReport(), style: mono),
+          SelectableText(
+            view.result!.toReport(currentModel: ref.watch(tutorDiagnosticsProvider).model),
+            style: mono,
+          ),
         ],
         const SizedBox(height: 8),
         Wrap(
