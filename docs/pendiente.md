@@ -31,6 +31,9 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   Hay que dejar bajar la batería de verdad, sin cable (o depurar por Wi-Fi con `adb tcpip`). Verificado en el Pixel 6: el interruptor
   del inicio y del chat pone el fondo negro puro, Toco queda quieto y el tutor sigue respondiendo. Falta el aviso
   del 20 % (la simulación con `dumpsys battery` se reinicia sola mientras el USB carga el móvil).
+- [x] ~~Probar en un móvil de gama baja~~ (9-nov, **Redmi Note 9**, 3,7 GB, Helio G85 8 núcleos): app, 1.5B Q4_K_M, base
+  con el banco y 49 PDF copiados por `adb`; la app lo recomienda sola. Tutor: 757 tokens de prompt, primera pieza 38 s y
+  5,3 piezas/s (6 hilos), respuesta apoyada en 3 páginas de 2.º. Aceptable, no rápido.
 - [ ] **Probar el modelo de 7B en un móvil de 12 GB.** Está descargado (`models/qwen2.5-7b-instruct-q4_k_m.gguf`)
   y en el catálogo, pero **sin medir**: no cabe con margen en el Pixel 6 de 8 GB. Se espera ~2,3× la latencia
   del 3B ([models.md](models.md)).
@@ -51,8 +54,20 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 - [x] ~~Generar el banco completo~~ (9-nov): 300 preguntas (50 por grado, de 1.º a 6.º) con el 3B Q4_0, ~50 s por
   fragmento, desde una terminal con `./tools/question_bank/generar_banco.sh` (ver [juego.md](juego.md)). CSV revisado,
   copiado a `models/knowledge.db` y al Pixel 6: la carrera saca preguntas del grado del niño con las opciones barajadas.
-- [ ] Probar la partida en red con dos teléfonos de verdad (Pixel 6 + Pad 5) y el descubrimiento de salas por UDP
-  en un punto de acceso (en el PC solo se probó con `adb forward`).
+- [x] ~~Probar la partida en red con dos teléfonos de verdad~~ (9-nov, Pixel 6 + Redmi Note 9, Wi-Fi de casa): el
+  descubrimiento por UDP funciona en los dos sentidos (sala visible sin escribir la IP), se unen, cada uno recibe
+  preguntas de su grado (4.º y 2.º) y la ronda avanza a la vez en ambos. Sin probar aún: punto de acceso del
+  teléfono, 3+ jugadores, y terminar una partida entera.
+  - Si en un móvil falla hasta *crear* la sala (`Failed to create server socket ... errno = 111`), Android le está
+    bloqueando la red a la app (`dumpsys netpolicy`: `REJECT_ALL` / `Restricted networking mode: true`). Pasaba en el
+    Pixel 6 con `settings global restricted_networking_mode=1`; no es un fallo de la app.
+  - [x] ~~Fallo al salir de la pantalla de juego en red~~ (9-nov): `LanGameController._shutdown` leía el `Ref` ya
+    desechado y lanzaba una excepción; ahora recibe la plataforma guardada en `build()`. Prueba de regresión en
+    `test/lan_game_test.dart` (falla sin el arreglo) y comprobado en el Redmi (0 errores al salir).
+  - [x] ~~Lista de libros sin refrescar tras vincular la base~~ (9-nov): `_store` en `files_section.dart` invalida
+    `libraryStatusProvider` y `childBooksProvider`. Comprobado en el Redmi (desvincular y detectar la base).
+  - Al copiar los PDF con `adb` a una carpeta `libros/` nueva, dale permisos (`chmod 777 .../files/libros`): creada por
+    `adb shell` queda `drwxrws---` con dueño `shell` y la app ve «0 de 49 libros» aunque estén copiados.
 - [ ] Banco en inglés: el 3B escribía preguntas sin sentido; habría que hacerlas a mano o con otro método.
 
 ## Pulido

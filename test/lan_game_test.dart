@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inocencia/features/game/application/lan_game_controller.dart';
 import 'package:inocencia/features/game/data/lan/lan_client.dart';
 import 'package:inocencia/features/game/data/lan/lan_host.dart';
 import 'package:inocencia/features/game/domain/game_rules.dart';
@@ -128,4 +130,30 @@ void main() {
       expect((await closed).reason, contains('cerró'));
     });
   });
+
+  group('controlador', () {
+    test('al salir libera la plataforma sin usar el Ref ya desechado', () async {
+      final platform = _FakePlatform();
+      final errors = <Object>[];
+      await runZonedGuarded(() async {
+        final c = ProviderContainer(overrides: [lanPlatformProvider.overrideWithValue(platform)]);
+        c.read(lanGameProvider);
+        c.dispose();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }, (e, _) => errors.add(e));
+      expect(errors, isEmpty);
+      expect(platform.ended, 1);
+    });
+  });
+}
+
+class _FakePlatform extends LanPlatform {
+  _FakePlatform() : super();
+  int ended = 0;
+
+  @override
+  Future<void> begin() async {}
+
+  @override
+  Future<void> end() async => ended++;
 }

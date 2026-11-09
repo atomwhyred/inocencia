@@ -39,6 +39,9 @@ class FilesSection extends ConsumerWidget {
       await repo.setKnowledgePath(path);
     }
     ref.invalidate(linkedFilesStatusProvider);
+    // La lista de libros sale de la base: al cambiarla hay que recalcularla.
+    ref.invalidate(libraryStatusProvider);
+    ref.invalidate(childBooksProvider);
   }
 
   Future<void> _browse(BuildContext context, WidgetRef ref, _Kind kind) async {

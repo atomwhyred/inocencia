@@ -154,18 +154,20 @@ class LanGameController extends Notifier<LanView> {
 
   @override
   LanView build() {
-    ref.onDispose(_shutdown);
+    // `ref` no se puede usar dentro de onDispose: se guarda la plataforma ahora.
+    final platform = ref.read(lanPlatformProvider);
+    ref.onDispose(() => _shutdown(platform));
     return const LanView();
   }
 
-  void _shutdown() {
+  void _shutdown(LanPlatform platform) {
     _timer?.cancel();
     _sub?.cancel();
     _roomsSub?.cancel();
     _discovery?.close();
     _host?.close();
     _client?.close();
-    ref.read(lanPlatformProvider).end();
+    platform.end();
   }
 
   /// El niño de este teléfono como jugador (las fotos viajan como miniatura).
