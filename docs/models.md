@@ -72,6 +72,8 @@ Los PDF se nombran `<grado>_<...>.pdf` (`6to_matematica.pdf`, `6to_ct_ciencias.p
 | Xiaomi 17T Pro, 9-nov (prueba de velocidad: 3 hilos / 4 para el prompt) | 3B Q4_0 | 3 de 8 (4 para el prompt) | 37 s (805 tokens, 21,8 tokens/s) | 28 piezas en 40 s (**8,2 piezas/s**) |
 | Xiaomi 17T Pro, 9-nov | 3B Q4_K_M | 3 de 8 (4) | 42 s (627 tokens, 14,9 tokens/s) | **8,1 piezas/s** |
 | Xiaomi 17T Pro, 9-nov | 7B | 3 de 8 (4) | 104 s (739 tokens, 7,1 tokens/s) | **3,3 piezas/s** ("aceptable, pero mejorable") |
+| Redmi Note 9 (Helio G85, **3,7 GB**), 9-nov | 1.5B Q4_K_M | 6 de 8 (6 / 8 para el prompt) | 38-41 s (757-845 tokens) | 4,7-5,3 piezas/s |
+| Redmi Note 9, 9-nov | 3B Q4_0 | 6 de 8 (8 para el prompt) | **no llega**: la app muere (kill por memoria) unos 6 s después de enviar la pregunta, dos veces | no viable en 3,7 GB (1,2 GB libres; Android mata también otras apps) |
 | Pixel 6 (Tensor, 8 GB), 8-nov, libro a 1100 caracteres | 3B | 4 de 8 | 22 / 26 / 28 s (602 / 540 / 566 tokens, ~20-27 tokens/s) | 6,5-7,9 piezas/s |
 
 ### Q4_K_M frente a Q4_0 (3B, Pixel 6, 8-nov)

@@ -34,6 +34,9 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 - [x] ~~Probar en un móvil de gama baja~~ (9-nov, **Redmi Note 9**, 3,7 GB, Helio G85 8 núcleos): app, 1.5B Q4_K_M, base
   con el banco y 49 PDF copiados por `adb`; la app lo recomienda sola. Tutor: 757 tokens de prompt, primera pieza 38 s y
   5,3 piezas/s (6 hilos), respuesta apoyada en 3 páginas de 2.º. Aceptable, no rápido.
+  - **El 3B Q4_0 no es viable ahí** (9-nov): carga, pero al enviar la pregunta Android mata la app a los ~6 s (dos
+    intentos, decenas de `lowmemorykiller`). Con 3,7 GB de RAM el límite es el 1.5B, como ya recomienda la app
+    (3B solo desde 7 GB). El Redmi se queda con el 1.5B.
 - [ ] **Probar el modelo de 7B en un móvil de 12 GB.** Está descargado (`models/qwen2.5-7b-instruct-q4_k_m.gguf`)
   y en el catálogo, pero **sin medir**: no cabe con margen en el Pixel 6 de 8 GB. Se espera ~2,3× la latencia
   del 3B ([models.md](models.md)).
@@ -148,6 +151,9 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 - Sin problema: la release no declara `INTERNET`, la búsqueda en los libros usa consultas con parámetros, los PIN van
   con PBKDF2 + sal y bloqueo tras 5 fallos, y el proveedor de archivos no está exportado. El PIN sigue siendo una
   barrera doméstica (con root o borrando los datos de la app se salta).
+
+## Más adelante
+- [ ] Versiones para Windows 10/11 y Linux (.deb, .rpm): solo si hay aceptación en Android. Notas y pasos en [otras-plataformas.md](otras-plataformas.md).
 
 ## Aparcado a petición del usuario
 - Calor del teléfono con el modelo trabajando (la latencia crece por temperatura, no por el historial).

@@ -220,7 +220,15 @@ flutter build apk --release --split-per-abi \
   --target-platform android-arm,android-arm64 --build-number <N>
 ```
 
-Salen en `build/app/outputs/flutter-apk/`:
+Para compilar **una arquitectura detrás de otra** y dejar los APK con el nombre de la app
+(`inocencIA-<versión>-<abi>.apk` en `build/inocencIA/`, con `SHA256SUMS`):
+
+```bash
+./tools/build_apks.sh <build_number>                # arm64-v8a, armeabi-v7a y x86_64
+./tools/build_apks.sh <build_number> arm64-v8a      # solo una
+```
+
+Salen en `build/app/outputs/flutter-apk/` (con el nombre de Flutter, `app-<abi>-release.apk`):
 
 - `app-arm64-v8a-release.apk` (~20 MB): móviles y tablets de 64 bits (la gran mayoría).
 - `app-armeabi-v7a-release.apk` (~17 MB): teléfonos de 32 bits, **sin probar en un dispositivo real**.
@@ -235,7 +243,7 @@ Notas:
 
 ## Instalar en un dispositivo y usarlo
 
-1. Instala el APK (`adb install -r app-arm64-v8a-release.apk` o abriéndolo en el teléfono).
+1. Instala el APK (`adb install -r inocencIA-<versión>-arm64-v8a.apk` o abriéndolo en el teléfono).
 2. Crea tu nombre y un PIN de 4 o 6 dígitos.
 3. Copia el modelo `.gguf`, `knowledge.db` y los PDF a `Android/data/com.inocencia.app/files/` (los PDF, en la
    subcarpeta `libros/`), o usa la opción **Compartir / Copiar a…** desde otro dispositivo con la app.
