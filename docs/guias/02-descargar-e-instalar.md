@@ -8,7 +8,7 @@ internet, y los archivos se pueden pasar a otros teléfonos sin internet (ver m�
 Hacen falta **4 cosas**:
 
 1. **La app**: un archivo que empieza por **inocencIA** y termina en **`.apk`**, por ejemplo
-   `inocencIA-1.0.0-arm64-v8a.apk`.
+   `inocencIA-1.0.1-arm64-v8a.apk`.
    - Si en el canal hay varias versiones, coge **la más nueva**.
    - Si hay una que dice **arm64**, es la de casi todos los teléfonos actuales. La que dice **armeabi-v7a** es
      solo para teléfonos viejos de 32 bits.

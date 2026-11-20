@@ -236,6 +236,9 @@ Salen en `build/app/outputs/flutter-apk/` (con el nombre de Flutter, `app-<abi>-
 
 Notas:
 
+- **Versión.** Cada actualización lleva un número de versión nuevo en `pubspec.yaml` (`version: 1.0.1+5`: antes
+  del `+` la versión que ve la gente, 1.0.1, 1.0.2...; después, el build number). Súbelos juntos antes de compilar
+  y compila con ese mismo build number (`./tools/build_apks.sh 5`). Los APK salen como `inocencIA-1.0.1-<abi>.apk`.
 - **Sube siempre `--build-number`** respecto a la versión instalada, para actualizar sin desinstalar: desinstalar
   borra los perfiles, el historial y las medallas.
 - **Firma.** `./tools/crear_keystore.sh` crea una vez la clave propia (fuera del repositorio, por defecto en
@@ -251,7 +254,7 @@ Notas:
 ### Publicar una versión y la web
 
 1. Sube los APK y `SHA256SUMS` de `build/inocencIA/` a una release de GitHub:
-   `gh release create v1.0.0 build/inocencIA/inocencIA-*.apk build/inocencIA/SHA256SUMS`.
+   `gh release create v1.0.1 build/inocencIA/inocencIA-*.apk build/inocencIA/SHA256SUMS`.
    Los modelos (menos de 2 GB cada uno) y `knowledge.db` pueden ir como adjuntos de la misma release.
 2. La web está en `landing/` (HTML estático, sin scripts ni fuentes de terceros). Antes de publicarla, reemplaza
    `TU_USUARIO/inocencia` y `TU_CANAL` por el repositorio y el canal de Telegram reales.
