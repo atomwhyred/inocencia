@@ -23,8 +23,9 @@ Además:
 - **Crear tarjetas**: hace tarjetas de memoria sobre ese tema.
 - **Quiz** (botón de arriba a la derecha): 3 preguntas de opción múltiple sobre el último tema. Da estrellas.
 
-**Importante:** mientras el tutor responde, **no salgas de la app**. Android frena las apps que no están en
-pantalla y la respuesta tardaría muchísimo más.
+Mientras el tutor responde **puedes salir de la app o apagar la pantalla**: arriba aparece el aviso *"Toco está
+pensando…"* y la respuesta sigue a buen ritmo. Cuando termina, otro aviso dice *"¡Toco ya terminó!"*; tócalo para
+volver. **No cierres la app desde Recientes** (deslizándola hacia fuera): eso sí detiene la respuesta.
 
 Cuánto tarda: con el modelo recomendado, unos 20-40 segundos en empezar a escribir, según el teléfono. Es normal:
 todo se calcula dentro del teléfono, sin internet.

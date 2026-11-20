@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 
+import '../../../core/storage/background_work.dart';
 import '../../../core/utils/plain_text.dart';
 import '../domain/cpu_threads.dart';
 import '../domain/speed_test.dart';
@@ -28,7 +29,12 @@ class LlamaTutorEngine implements TutorEngine, SpeedTester {
     this.threadOverride,
     this.cpuCompat = false,
     this.thermalStatus,
+    this.backgroundWork,
   });
+
+  /// Servicio en primer plano mientras se carga el modelo o se genera: si el niño sale
+  /// de la app o apaga la pantalla, Android no la frena.
+  final BackgroundWork? backgroundWork;
 
   final Future<String?> Function()? nativeLibraryDir;
 
@@ -165,16 +171,22 @@ class LlamaTutorEngine implements TutorEngine, SpeedTester {
       ..topP = 0.9
       ..penaltyRepeat = 1.1;
 
-    _worker = await LlamaWorker.start(
-      WorkerLoad(
-        path: modelPath,
-        model: model,
-        context: context,
-        sampler: sampler,
-        // En depuracion llama.cpp cuenta por que falla una carga.
-        verbose: kDebugMode,
-      ),
-    );
+    unawaited(backgroundWork?.begin());
+    try {
+      _worker = await LlamaWorker.start(
+        WorkerLoad(
+          path: modelPath,
+          model: model,
+          context: context,
+          sampler: sampler,
+          // En depuracion llama.cpp cuenta por que falla una carga.
+          verbose: kDebugMode,
+        ),
+      );
+    } finally {
+      // Sin aviso de "ya terminó": cargar no es una respuesta.
+      backgroundWork?.end(produced: false);
+    }
   }
 
   @override
@@ -198,6 +210,12 @@ class LlamaTutorEngine implements TutorEngine, SpeedTester {
     Duration? firstPiece;
     var pieces = 0;
     var reported = false;
+    var holding = false;
+    void release() {
+      if (!holding) return;
+      holding = false;
+      backgroundWork?.end(produced: pieces > 0);
+    }
     // HyperOS y otras capas frenan o congelan las apps de fondo: una respuesta
     // medida con la app fuera de la pantalla no dice nada de la velocidad real.
     var backgrounded = false;
@@ -250,6 +268,8 @@ class LlamaTutorEngine implements TutorEngine, SpeedTester {
 
     out = StreamController<String>(
       onListen: () {
+        holding = true;
+        unawaited(backgroundWork?.begin());
         sub = stream.listen(
           (piece) {
             pieces++;
@@ -262,6 +282,7 @@ class LlamaTutorEngine implements TutorEngine, SpeedTester {
           },
           onDone: () {
             report();
+            release();
             if (!out.isClosed) out.close();
           },
         );
@@ -271,6 +292,7 @@ class LlamaTutorEngine implements TutorEngine, SpeedTester {
         worker.stop(id);
         await sub?.cancel();
         report();
+        release();
       },
     );
     return out.stream;

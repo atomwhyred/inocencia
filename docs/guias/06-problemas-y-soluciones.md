@@ -30,7 +30,10 @@ El modelo es demasiado grande para la memoria de ese teléfono. Cambia al de **1
 
 Es normal que tarde **20-40 segundos** en empezar a escribir con el modelo recomendado. Si tarda mucho más:
 
-1. **No salgas de la app** mientras responde: Android frena las apps que no están en pantalla.
+1. Mientras responde puedes salir de la app, pero **no la cierres desde Recientes**. Si al salir va mucho más
+   lento (algunos Xiaomi, Redmi y POCO frenan igualmente las apps), entra en *Ajustes › Aplicaciones › inocencIA ›
+   Ahorro de batería* y elige **Sin restricciones**. En Android 13 o superior, permite también las
+   **notificaciones** de inocencIA para ver el aviso *"Toco está pensando…"*.
 2. Usa el modelo recomendado (`qwen2.5-3b-instruct-q4_0.gguf`), no el de 7B.
 3. Haz la **prueba de velocidad**: **Zona de padres → Archivos → Diagnóstico del tutor → Hacer la prueba**
    (1-2 minutos, sin salir de la app). La app se queda con lo más rápido para tu teléfono.

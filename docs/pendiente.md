@@ -152,7 +152,16 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   con PBKDF2 + sal y bloqueo tras 5 fallos, y el proveedor de archivos no está exportado. El PIN sigue siendo una
   barrera doméstica (con root o borrando los datos de la app se salta).
 
-## Seguridad (auditoría del 20-nov)
+## Respuestas con la app en segundo plano (20-nov)
+- [x] Servicio en primer plano (`TutorWorkService.kt`, tipo `specialUse`) + wake lock parcial mientras el modelo
+  carga o genera (tutor, tarjetas, quiz). Medido con build 2003:
+  - Redmi Note 9 (Android 16), 1.5B, Inicio nada más enviar: **antes** el sistema mataba el proceso al instante
+    (`am_proc_died`, adj 700) y la respuesta se perdía; **ahora** adj 50 (`fg-service`), 35 s en total
+    (7,3 piezas/s), igual que en pantalla.
+  - Pixel 6 (Android 16), pantalla apagada: 36 s, wake lock tomado y liberado, aviso "¡Toco ya terminó!".
+  - Cerrar desde Recientes a mitad: servicio, aviso y wake lock fuera; la respuesta se pierde (esperado).
+- [ ] Probar en un Xiaomi con HyperOS de fábrica (el Redmi de pruebas lleva otra ROM) y en Android 10-12.
+
 - [x] Juego en red: código de sala de 4 cifras, aviso sin el nombre del niño, entradas limitadas (líneas, nombres,
   avatares sin rutas locales, conexiones, un saludo por conexión) y foto solo si el padre lo activa.
 - [x] Marcadores de chat (`<|im_start|>`...) neutralizados en libro, niño e historial; campo del tutor a 500 caracteres.

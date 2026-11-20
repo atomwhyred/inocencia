@@ -47,6 +47,15 @@ object StorageBridge {
                     "thermalStatus" -> result.success(thermalStatus(activity))
                     // Monótono desde el encendido: el bloqueo del PIN no se salta cambiando la hora.
                     "elapsedRealtime" -> result.success(SystemClock.elapsedRealtime())
+                    "startTutorWork" -> result.success(TutorWorkService.start(activity))
+                    "stopTutorWork" -> {
+                        TutorWorkService.stop(activity, call.argument<Boolean>("notifyDone") == true)
+                        result.success(null)
+                    }
+                    "clearTutorDone" -> {
+                        TutorWorkService.clearDone(activity)
+                        result.success(null)
+                    }
                     "keepScreenOn" -> {
                         val flag = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
                         if (call.argument<Boolean>("on") == true) {

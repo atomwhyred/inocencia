@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/storage/platform_info.dart';
+import '../../../core/storage/background_work.dart';
 import '../../achievements/application/achievement_service.dart';
 import '../../auth/application/session.dart';
 import '../../external_data/domain/linked_file_status.dart';
@@ -33,6 +34,7 @@ final tutorEngineProvider = Provider.autoDispose<TutorEngine>((ref) {
     threadOverride: tuning.threads,
     cpuCompat: tuning.cpuCompat,
     thermalStatus: const PlatformInfo().thermalStatus,
+    backgroundWork: ref.read(backgroundWorkProvider),
   );
   ref.onDispose(engine.dispose);
   return engine;

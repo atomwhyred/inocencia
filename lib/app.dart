@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/constants.dart';
 import 'core/di/providers.dart';
 import 'core/router/app_router.dart';
+import 'core/storage/platform_info.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_controller.dart';
 import 'core/widgets/splash_gate.dart';
@@ -56,6 +57,8 @@ class _InocenciaAppState extends ConsumerState<InocenciaApp>
       // El padre pudo conceder las alarmas exactas en Ajustes: reprogramar el
       // aviso para que pase de aproximado a exacto.
       unawaited(_rescheduleReminder());
+      // Ya está en la app: el aviso "Toco ya terminó" sobra.
+      unawaited(const PlatformInfo().clearTutorDone());
     }
   }
 

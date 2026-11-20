@@ -73,6 +73,43 @@ class PlatformInfo {
     }
   }
 
+  /// Arranca el servicio en primer plano del tutor (ver `TutorWorkService.kt`).
+  /// `false` si Android no lo deja (app ya en segundo plano) o fuera de Android.
+  Future<bool> startTutorWork() async {
+    if (!Platform.isAndroid) return false;
+    try {
+      return await _channel.invokeMethod<bool>('startTutorWork') ?? false;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
+    }
+  }
+
+  /// Para el servicio; con [notifyDone] deja el aviso "Toco ya terminó".
+  Future<void> stopTutorWork({bool notifyDone = false}) async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod<void>('stopTutorWork', {'notifyDone': notifyDone});
+    } on PlatformException {
+      // sin efecto
+    } on MissingPluginException {
+      // sin efecto
+    }
+  }
+
+  /// Quita el aviso "Toco ya terminó" (al volver a la app).
+  Future<void> clearTutorDone() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod<void>('clearTutorDone');
+    } on PlatformException {
+      // sin efecto
+    } on MissingPluginException {
+      // sin efecto
+    }
+  }
+
   /// Mantiene la pantalla encendida (durante la prueba de velocidad).
   Future<void> keepScreenOn(bool on) async {
     if (!Platform.isAndroid) return;

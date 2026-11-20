@@ -3,6 +3,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <!-- Servicio en primer plano mientras el modelo trabaja: con la app fuera de la pantalla
+         Android la frenaba y una respuesta de 30 s tardaba minutos (TutorWorkService.kt). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <!-- Solo para el explorador de rutas opcional en Android 11+ (el modelo y la base pesan GB). -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
@@ -45,6 +49,16 @@
             android:authorities="com.inocencia.app.share"
             android:exported="false"
             android:grantUriPermissions="true"/>
+
+        <service
+            android:name=".TutorWorkService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="true">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Generación local (sin internet) de las respuestas del tutor con un modelo de IA en el dispositivo"/>
+        </service>
 
         <!-- android_alarm_manager_plus: mismo patron que CAJAFACTUR (avisos exactos y fiables). -->
         <service
