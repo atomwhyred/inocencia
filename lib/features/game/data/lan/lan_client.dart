@@ -4,6 +4,7 @@ import 'dart:io';
 
 import '../../domain/game_rules.dart';
 import '../../domain/lan_protocol.dart';
+import '../../domain/net_sanitize.dart';
 
 /// Invitado en una partida en red: se presenta, recibe la sala y las rondas, y
 /// envía sus respuestas.
@@ -25,6 +26,7 @@ class LanClient {
   static Future<LanClient> connect(
     String host, {
     int port = LanProtocol.tcpPort,
+    required String code,
     required String name,
     required String avatar,
     required int grade,
@@ -34,17 +36,15 @@ class LanClient {
     socket.setOption(SocketOption.tcpNoDelay, true);
     socket.done.catchError((_) {});
     final c = LanClient._(socket);
-    socket
-        .cast<List<int>>()
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen(
-          c._onLine,
-          onDone: () => c._lost('La sala se cerró.'),
-          onError: (_) => c._lost('Se perdió la conexión.'),
-        );
+    boundedLines(socket.cast<List<int>>()).listen(
+      c._onLine,
+      onDone: () => c._lost('La sala se cerró.'),
+      onError: (_) => c._lost('Se perdió la conexión.'),
+      cancelOnError: true,
+    );
     socket.write(
       LanProtocol.encode('hello', {
+        'code': code,
         'player': {'name': name, 'avatar': avatar, 'grade': grade},
       }),
     );
@@ -57,14 +57,16 @@ class LanClient {
     try {
       switch (m['t']) {
         case 'welcome':
-          _id = m['id']! as String;
+          _id = NetSanitize.text(m['id'], 12, fallback: '?');
           _emit(LanJoined(_id!, GameMode.values.byName(m['mode']! as String)));
         case 'reject':
-          _lost(m['reason'] as String? ?? 'No se pudo entrar en la sala.');
+          _lost(
+            NetSanitize.text(m['reason'], 140, fallback: 'No se pudo entrar en la sala.'),
+          );
         case 'lobby':
           _emit(
             LanLobby([
-              for (final p in m['players']! as List)
+              for (final p in (m['players']! as List).take(GameRules.maxLanPlayers))
                 GamePlayer.fromJson((p as Map).cast<String, Object?>()),
             ]),
           );

@@ -16,6 +16,7 @@ import '../data/lan/lan_host.dart';
 import '../domain/game_question.dart';
 import '../domain/game_rules.dart';
 import '../domain/lan_protocol.dart';
+import '../domain/net_sanitize.dart';
 import 'game_providers.dart';
 
 enum LanPhase {
@@ -54,6 +55,8 @@ class LanView extends Equatable {
     this.addresses = const [],
     this.message,
     this.myStars,
+    this.roomCode,
+    this.roomName,
   });
 
   final LanPhase phase;
@@ -71,6 +74,10 @@ class LanView extends Equatable {
   final String? message;
   final int? myStars;
 
+  /// Solo el anfitrión: el código que tienen que escribir los demás y el nombre de la sala.
+  final String? roomCode;
+  final String? roomName;
+
   GamePlayer? get me => players.where((p) => p.id == myId).firstOrNull;
 
   LanView copyWith({
@@ -87,6 +94,8 @@ class LanView extends Equatable {
     List<String>? addresses,
     String? message,
     int? myStars,
+    String? roomCode,
+    String? roomName,
   }) => LanView(
     phase: phase ?? this.phase,
     isHost: isHost ?? this.isHost,
@@ -100,6 +109,8 @@ class LanView extends Equatable {
     addresses: addresses ?? this.addresses,
     message: message ?? this.message,
     myStars: myStars ?? this.myStars,
+    roomCode: roomCode ?? this.roomCode,
+    roomName: roomName ?? this.roomName,
   );
 
   @override
@@ -116,6 +127,8 @@ class LanView extends Equatable {
     addresses,
     message,
     myStars,
+    roomCode,
+    roomName,
   ];
 }
 
@@ -146,6 +159,12 @@ class LanGameController extends Notifier<LanView> {
   LanDiscovery? _discovery;
   StreamSubscription<LanEvent>? _sub;
   StreamSubscription<RoomBeacon>? _roomsSub;
+  Timer? _roomsPrune;
+  final _roomSeen = <String, DateTime>{};
+
+  /// Una sala que deja de anunciarse (cerró o se fue) desaparece de la lista.
+  static const roomExpiry = Duration(seconds: 5);
+  static const maxRooms = 12;
   QuestionDeck? _deck;
   Timer? _timer;
   int? _round;
@@ -164,6 +183,7 @@ class LanGameController extends Notifier<LanView> {
     _timer?.cancel();
     _sub?.cancel();
     _roomsSub?.cancel();
+    _roomsPrune?.cancel();
     _discovery?.close();
     _host?.close();
     _client?.close();
@@ -178,7 +198,9 @@ class LanGameController extends Notifier<LanView> {
     return GamePlayer(
       id: 'me',
       name: child.name,
-      avatar: await networkAvatar(child.avatar),
+      avatar: ref.read(lanSharePhotoProvider)
+          ? await networkAvatar(child.avatar)
+          : (child.avatar.startsWith('photo:') ? NetSanitize.defaultAvatar : child.avatar),
       grade: grade,
       color: 0,
       childId: child.id,
@@ -223,6 +245,8 @@ class LanGameController extends Notifier<LanView> {
       phase: LanPhase.hosting,
       myId: LanHost.hostId,
       players: host.players,
+      roomCode: host.code,
+      roomName: host.roomName,
       addresses: await LanHost.localAddresses(),
     );
   }
@@ -238,21 +262,36 @@ class LanGameController extends Notifier<LanView> {
     await ref.read(lanPlatformProvider).begin();
     _discovery?.close();
     _discovery = await LanDiscovery.start();
+    _roomSeen.clear();
     _roomsSub = _discovery?.rooms.listen((r) {
+      final known = state.rooms.any((x) => x.host == r.host);
+      if (!known && state.rooms.length >= maxRooms) return;
+      _roomSeen[r.host] = DateTime.now();
       final others = state.rooms.where((x) => x.host != r.host).toList();
       state = state.copyWith(rooms: [...others, r]);
     });
+    _roomsPrune?.cancel();
+    _roomsPrune = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (!ref.mounted || state.phase != LanPhase.searching) return;
+      final now = DateTime.now();
+      final alive = state.rooms
+          .where((r) => now.difference(_roomSeen[r.host] ?? now) < roomExpiry)
+          .toList();
+      if (alive.length != state.rooms.length) state = state.copyWith(rooms: alive);
+    });
   }
 
-  Future<void> join(String address) async {
+  Future<void> join(String address, String code) async {
     state = state.copyWith(phase: LanPhase.connecting);
     final me = await _me();
     if (me == null || !await _prepareDeck(me) || !ref.mounted) return;
     _roomsSub?.cancel();
+    _roomsPrune?.cancel();
     _discovery?.close();
     try {
       final client = _client = await LanClient.connect(
         address.trim(),
+        code: code.trim(),
         name: me.name,
         avatar: me.avatar,
         grade: me.grade,

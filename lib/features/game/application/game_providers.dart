@@ -15,6 +15,23 @@ final questionBankFactoryProvider =
 
 final gameRandomProvider = Provider<Random>((ref) => Random());
 
+/// Si en el juego en red se envía la miniatura de la foto del niño a los demás
+/// teléfonos. Apagado por defecto: sin él, el niño aparece con un emoji.
+class LanSharePhotoController extends Notifier<bool> {
+  static const _key = 'lan_share_photo';
+
+  @override
+  bool build() => ref.watch(sharedPreferencesProvider).getBool(_key) ?? false;
+
+  Future<void> set(bool value) async {
+    state = value;
+    await ref.read(sharedPreferencesProvider).setBool(_key, value);
+  }
+}
+
+final lanSharePhotoProvider =
+    NotifierProvider<LanSharePhotoController, bool>(LanSharePhotoController.new);
+
 /// Por que un nino no tiene preguntas para jugar.
 class NoQuestionsException implements Exception {
   const NoQuestionsException(this.message);

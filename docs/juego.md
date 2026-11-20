@@ -17,6 +17,13 @@ Código: `lib/features/game/` (reglas puras en `domain/game_rules.dart`).
 - **Con otros teléfonos** (hasta 6): uno crea la sala; los demás la ven en "Unirme" o escriben su IP.
   - Red: Wi-Fi común o el **punto de acceso** del anfitrión (sin datos). TCP 47321 para la partida y avisos UDP de
     difusión en 47320 (`domain/lan_protocol.dart`, JSON por líneas con versión).
+  - Seguridad (protocolo v2): el anfitrión muestra un **código de 4 cifras** que hay que escribir para entrar;
+    tras 5 códigos erróneos desde una IP, esa IP queda fuera hasta que se cierre la sala. El aviso UDP solo lleva
+    un nombre de sala al azar ("Sala del Sinsonte"), el grado y el modo: nunca el nombre del niño. Todo lo que llega
+    se limita en `domain/net_sanitize.dart`: líneas de hasta 256 KB, nombres de 24 caracteres, avatares que sean
+    emoji o una miniatura PNG pequeña (nunca `photo:<ruta>`), como mucho 8 conexiones, un solo saludo por
+    conexión y 8 s para presentarse. La miniatura de la foto solo se envía si el padre lo activa en
+    **Zona de padres → Apariencia → Enviar la foto en el juego en red** (apagado por defecto).
   - Cada teléfono saca las preguntas de **su** base y sus tarjetas; el anfitrión solo lleva el reloj y los puntos.
   - Android: `INTERNET` (obligatorio para cualquier socket), `ACCESS_WIFI_STATE` y `CHANGE_WIFI_MULTICAST_STATE`
     (el `MulticastLock` de `LanBridge.kt` deja recibir los avisos). La app nunca sale a internet.

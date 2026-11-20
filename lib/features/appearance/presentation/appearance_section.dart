@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_mode_controller.dart';
+import '../../game/application/game_providers.dart';
 import '../../mascot/application/mascot_settings.dart';
 import '../../pomodoro/application/pomodoro.dart';
 import '../../power/application/power_mode.dart';
@@ -133,6 +134,18 @@ class AppearanceSection extends ConsumerWidget {
             ),
             value: ref.watch(pomodoroEnabledProvider),
             onChanged: (v) => ref.read(pomodoroEnabledProvider.notifier).set(v),
+          ),
+        ),
+        Card(
+          child: SwitchListTile(
+            secondary: const Icon(Icons.wifi_tethering_rounded),
+            title: const Text('Enviar la foto en el juego en red'),
+            subtitle: const Text(
+              'Al jugar con otros teléfonos, los niños que tienen foto se muestran con una '
+              'miniatura de ella. Apagado, salen con un emoji y la foto no sale de este teléfono.',
+            ),
+            value: ref.watch(lanSharePhotoProvider),
+            onChanged: (v) => ref.read(lanSharePhotoProvider.notifier).set(v),
           ),
         ),
       ],

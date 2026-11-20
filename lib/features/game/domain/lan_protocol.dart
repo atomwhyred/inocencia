@@ -1,17 +1,23 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'game_rules.dart';
+import 'net_sanitize.dart';
 
 /// Mensajes del juego en red: JSON de una linea por mensaje, con versión.
 ///
-/// Invitado → anfitrion: `hello{player}`, `result{round, correct, points, ms}`.
+/// Invitado → anfitrion: `hello{code, player}`, `result{round, correct, points, ms}`.
 /// Anfitrion → invitado: `welcome{id, color, mode}`, `reject{reason}`,
 /// `lobby{players}`, `start{state}`, `round{round}`, `state{state}`, `end{state}`.
-/// Aviso de sala por UDP: `room{name, grade, mode, players, port}`.
+/// Aviso de sala por UDP: `room{name, grade, mode, players, port}`. El nombre es el de
+/// la sala ("Sala del Sinsonte"), nunca el del niño: el aviso lo oye todo el Wi-Fi.
+///
+/// Versión 2: código de sala de 4 cifras (lo muestra el anfitrión y lo escribe quien
+/// entra) y aviso sin el nombre del niño.
 class LanProtocol {
   const LanProtocol._();
 
-  static const version = 1;
+  static const version = 2;
   static const tcpPort = 47321;
   static const udpPort = 47320;
 
@@ -30,6 +36,33 @@ class LanProtocol {
   }
 
   static bool compatible(Map<String, Object?> m) => m['v'] == version;
+
+  /// Código de sala: 4 cifras al azar (seguro), sin ceros a la izquierda para que se
+  /// lea bien en voz alta.
+  static String newRoomCode([Random? random]) =>
+      (1000 + (random ?? Random.secure()).nextInt(9000)).toString();
+
+  static bool isRoomCode(Object? code) =>
+      code is String && RegExp(r'^[0-9]{4}$').hasMatch(code);
+
+  /// Nombre de la sala para el aviso: un ave cubana al azar.
+  static String newRoomName([Random? random]) =>
+      'Sala ${roomBirds[(random ?? Random.secure()).nextInt(roomBirds.length)]}';
+
+  static const roomBirds = [
+    'del Tocororo',
+    'del Sinsonte',
+    'del Zunzún',
+    'del Tomeguín',
+    'del Cartacuba',
+    'del Negrito',
+    'del Totí',
+    'de la Cotorra',
+    'del Pitirre',
+    'del Carpintero',
+    'de la Paloma',
+    'del Colibrí',
+  ];
 }
 
 /// Una sala anunciada en la red.
@@ -46,7 +79,7 @@ class RoomBeacon {
   final String host;
   final int port;
 
-  /// Nombre y grado del niño que la creó.
+  /// Nombre de la sala ("Sala del Sinsonte") y grado del niño que la creó.
   final String name;
   final int grade;
   final GameMode mode;
@@ -57,11 +90,11 @@ class RoomBeacon {
       if (m['t'] != 'room' || !LanProtocol.compatible(m)) return null;
       return RoomBeacon(
         host: host,
-        port: m['port']! as int,
-        name: m['name']! as String,
-        grade: m['grade']! as int,
+        port: NetSanitize.intIn(m['port'], 1, 65535, LanProtocol.tcpPort),
+        name: NetSanitize.text(m['name'], 28, fallback: 'Sala'),
+        grade: NetSanitize.intIn(m['grade'], 1, 6, 1),
         mode: GameMode.values.byName(m['mode']! as String),
-        players: m['players']! as int,
+        players: NetSanitize.intIn(m['players'], 0, GameRules.maxLanPlayers, 0),
       );
     } catch (_) {
       return null;

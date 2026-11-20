@@ -4,9 +4,13 @@ import 'dart:io';
 
 import '../../domain/game_rules.dart';
 import '../../domain/lan_protocol.dart';
+import '../../domain/net_sanitize.dart';
 
 /// Anfitrion de una partida en red: su propio niño juega (id `h`) y los demás se
 /// conectan por TCP. Lleva el reloj y los puntos; cada teléfono pone sus preguntas.
+///
+/// Solo entra quien escribe el [code] que muestra la pantalla del anfitrión. Cualquiera
+/// en el mismo Wi-Fi puede conectarse al puerto, así que todo lo que llega se limita.
 class LanHost {
   LanHost({
     required GamePlayer self,
@@ -15,7 +19,12 @@ class LanHost {
     this.revealPause = const Duration(milliseconds: 2500),
     this.grace = const Duration(seconds: 4),
     this.announce = true,
-  }) : _self = GamePlayer(
+    String? code,
+    String? roomName,
+    this.helloTimeout = const Duration(seconds: 8),
+  }) : code = code ?? LanProtocol.newRoomCode(),
+       roomName = roomName ?? LanProtocol.newRoomName(),
+       _self = GamePlayer(
          id: hostId,
          name: self.name,
          avatar: self.avatar,
@@ -26,8 +35,23 @@ class LanHost {
 
   static const hostId = 'h';
 
+  /// Conexiones abiertas a la vez (con o sin jugador): los 5 invitados y margen.
+  static const maxConnections = 8;
+
+  /// Códigos equivocados desde una misma IP antes de ignorarla hasta cerrar la sala.
+  static const maxWrongCodes = 5;
+
   final GameMode mode;
   final int port;
+
+  /// Código de 4 cifras que hay que escribir para entrar.
+  final String code;
+
+  /// Nombre que se anuncia por el Wi-Fi ("Sala del Sinsonte"), sin datos del niño.
+  final String roomName;
+
+  /// Quien se conecta y no se presenta en este tiempo, fuera.
+  final Duration helloTimeout;
 
   /// Pausa entre rondas para ver avanzar a los tocororos.
   final Duration revealPause;
@@ -41,6 +65,8 @@ class LanHost {
   final GamePlayer _self;
   final _events = StreamController<LanEvent>.broadcast();
   final _peers = <String, _Peer>{};
+  final _connections = <_Peer>{};
+  final _wrongCodes = <String, int>{};
   ServerSocket? _server;
   RawDatagramSocket? _udp;
   Timer? _beacon;
@@ -79,7 +105,7 @@ class LanHost {
     _beacon = Timer.periodic(const Duration(seconds: 1), (_) {
       final msg = utf8.encode(
         LanProtocol.encode('room', {
-          'name': _self.name,
+          'name': roomName,
           'grade': _self.grade,
           'mode': mode.name,
           'players': players.length,
@@ -122,16 +148,48 @@ class LanHost {
   void _accept(Socket socket) {
     // Un invitado que se va a mitad de un envío no es un error del anfitrión.
     socket.done.catchError((_) {});
-    final peer = _Peer(socket);
-    socket
-        .cast<List<int>>()
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen(
-          (line) => _onLine(peer, line),
-          onDone: () => _drop(peer),
-          onError: (_) => _drop(peer),
-        );
+    final ip = _ipOf(socket);
+    if (_closed ||
+        _connections.length >= maxConnections ||
+        (_wrongCodes[ip] ?? 0) >= maxWrongCodes) {
+      socket.destroy();
+      return;
+    }
+    final peer = _Peer(socket, ip);
+    _connections.add(peer);
+    peer.helloTimer = Timer(helloTimeout, () {
+      if (peer.player == null) _disconnect(peer);
+    });
+    boundedLines(socket.cast<List<int>>()).listen(
+      (line) => _onLine(peer, line),
+      onDone: () => _disconnect(peer),
+      onError: (_) => _disconnect(peer),
+      cancelOnError: true,
+    );
+  }
+
+  static String _ipOf(Socket socket) {
+    try {
+      return socket.remoteAddress.address;
+    } catch (_) {
+      return '?';
+    }
+  }
+
+  /// Envía el motivo y cierra dejando que llegue (un `destroy` lo podría perder).
+  void _reject(_Peer peer, String reason) {
+    peer.send('reject', {'reason': reason});
+    peer.helloTimer?.cancel();
+    _connections.remove(peer);
+    peer.socket.close().catchError((_) {});
+    Timer(const Duration(seconds: 2), peer.socket.destroy);
+  }
+
+  void _disconnect(_Peer peer) {
+    peer.helloTimer?.cancel();
+    _connections.remove(peer);
+    peer.socket.destroy();
+    _drop(peer);
   }
 
   void _onLine(_Peer peer, String line) {
@@ -139,16 +197,23 @@ class LanHost {
     if (m == null) return;
     switch (m['t']) {
       case 'hello':
+        // Un solo saludo por conexión: repetirlo creaba jugadores fantasma.
+        if (peer.greeted) {
+          _disconnect(peer);
+          return;
+        }
+        peer.greeted = true;
         _hello(peer, m);
       case 'result':
         final id = peer.player?.id;
         if (id == null || m['round'] != _game?.round) return;
+        final ms = m['ms'];
         submit(
           AnswerResult(
             playerId: id,
             correct: m['correct'] == true,
-            points: (m['points'] as int?)?.clamp(1, 2) ?? 1,
-            millis: m['ms'] as int?,
+            points: NetSanitize.intIn(m['points'], 1, 2, 1),
+            millis: ms is int && ms >= 0 && ms < 3600000 ? ms : null,
           ),
         );
     }
@@ -160,22 +225,27 @@ class LanHost {
       reason = 'Tu inocencIA y la del anfitrión son de versiones distintas: actualizad las dos.';
     } else if (_game != null) {
       reason = 'La partida ya empezó.';
+    } else if (m['code'] != code) {
+      _wrongCodes[peer.ip] = (_wrongCodes[peer.ip] ?? 0) + 1;
+      reason = 'El código de la sala no es ese. Mira la pantalla del anfitrión.';
     } else if (players.length >= GameRules.maxLanPlayers) {
       reason = 'La sala está llena.';
     }
     if (reason != null) {
-      peer.send('reject', {'reason': reason});
-      peer.socket.destroy();
+      _reject(peer, reason);
       return;
     }
     try {
       final p = (m['player']! as Map).cast<String, Object?>();
+      final grade = p['grade'];
+      if (grade is! int || grade < 1 || grade > 6) throw const FormatException('grado');
       final id = 'p${_nextId++}';
+      peer.helloTimer?.cancel();
       peer.player = GamePlayer(
         id: id,
-        name: (p['name']! as String).trim().characters(24),
-        avatar: p['avatar']! as String,
-        grade: p['grade']! as int,
+        name: NetSanitize.text(p['name'], GamePlayer.maxNameLength, fallback: 'Jugador'),
+        avatar: NetSanitize.avatar(p['avatar']),
+        grade: grade,
         color: _nextColor(),
       );
       _peers[id] = peer;
@@ -186,7 +256,7 @@ class LanHost {
       });
       _lobby();
     } catch (_) {
-      peer.socket.destroy();
+      _disconnect(peer);
     }
   }
 
@@ -310,9 +380,11 @@ class LanHost {
     _roundTimer?.cancel();
     _pause?.cancel();
     _udp?.close();
-    final peers = [..._peers.values];
+    final peers = {..._peers.values, ..._connections};
     _peers.clear();
+    _connections.clear();
     for (final p in peers) {
+      p.helloTimer?.cancel();
       p.socket.destroy();
     }
     await _server?.close();
@@ -321,19 +393,17 @@ class LanHost {
 }
 
 class _Peer {
-  _Peer(this.socket);
+  _Peer(this.socket, this.ip);
 
   final Socket socket;
+  final String ip;
   GamePlayer? player;
+  Timer? helloTimer;
+  var greeted = false;
 
   void send(String type, Map<String, Object?> data) {
     try {
       socket.write(LanProtocol.encode(type, data));
     } catch (_) {}
   }
-}
-
-extension on String {
-  /// Corta a [max] caracteres (los nombres llegan de otro teléfono).
-  String characters(int max) => length <= max ? this : substring(0, max);
 }

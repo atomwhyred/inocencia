@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'net_sanitize.dart';
+
 /// Carrera (gana quien llega antes a la meta) o Entre todos (cooperativo).
 enum GameMode { race, team }
 
@@ -34,13 +36,16 @@ class GamePlayer extends Equatable {
     'color': color,
   };
 
+  /// Llega de otro teléfono: se limpia (nombre corto, avatar sin rutas locales).
   factory GamePlayer.fromJson(Map<String, Object?> j) => GamePlayer(
-    id: j['id']! as String,
-    name: j['name']! as String,
-    avatar: j['avatar']! as String,
-    grade: j['grade']! as int,
-    color: j['color']! as int,
+    id: NetSanitize.text(j['id'], 12, fallback: '?'),
+    name: NetSanitize.text(j['name'], GamePlayer.maxNameLength, fallback: 'Jugador'),
+    avatar: NetSanitize.avatar(j['avatar']),
+    grade: NetSanitize.intIn(j['grade'], 1, 6, 1),
+    color: NetSanitize.intIn(j['color'], 0, 63, 0),
   );
+
+  static const maxNameLength = 24;
 
   @override
   List<Object?> get props => [id, name, avatar, grade, color, childId];
@@ -150,7 +155,7 @@ class GameState extends Equatable {
   factory GameState.fromJson(Map<String, Object?> j) => GameState(
     mode: GameMode.values.byName(j['mode']! as String),
     players: [
-      for (final p in j['players']! as List)
+      for (final p in (j['players']! as List).take(GameRules.maxLanPlayers))
         GamePlayer.fromJson((p as Map).cast<String, Object?>()),
     ],
     positions: (j['positions']! as Map).map(

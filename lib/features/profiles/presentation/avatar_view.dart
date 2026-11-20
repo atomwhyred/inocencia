@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import '../../game/domain/net_sanitize.dart';
+
 /// Avatares predefinidos que el nino puede elegir sin foto.
 const avatarEmojis = [
   '🦊', '🐼', '🦁', '🐯', '🐸', '🐵', '🐶', '🐱',
@@ -23,8 +25,25 @@ class AvatarView extends StatelessWidget {
   final String avatar;
   final double radius;
 
-  /// Las miniaturas de red se decodifican una vez (se pintan en cada fotograma de la carrera).
+  /// Las miniaturas de red se decodifican una vez (se pintan en cada fotograma de la
+  /// carrera). Como mucho unas pocas: en una sala hay 6 jugadores.
   static final _decoded = <String, Uint8List>{};
+  static const _maxDecoded = 16;
+
+  static Uint8List _bytesOf(String avatar) {
+    final hit = _decoded.remove(avatar);
+    if (hit != null) return _decoded[avatar] = hit; // al final: usado hace poco
+    Uint8List bytes;
+    try {
+      bytes = avatar.length > NetSanitize.maxImageAvatarChars
+          ? Uint8List(0)
+          : base64Decode(avatar.substring(4));
+    } catch (_) {
+      bytes = Uint8List(0);
+    }
+    if (_decoded.length >= _maxDecoded) _decoded.remove(_decoded.keys.first);
+    return _decoded[avatar] = bytes;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,17 +58,16 @@ class AvatarView extends StatelessWidget {
       );
     }
     if (avatar.startsWith('img:')) {
-      final bytes = _decoded.putIfAbsent(avatar, () {
-        try {
-          return base64Decode(avatar.substring(4));
-        } catch (_) {
-          return Uint8List(0);
-        }
-      });
+      final bytes = _bytesOf(avatar);
+      // Se decodifica al tamaño en pantalla: una imagen enorme comprimida en pocos KB
+      // no llega a ocupar memoria a resolución completa.
+      final px = (radius * 2 * MediaQuery.devicePixelRatioOf(context)).ceil().clamp(16, 512);
       return CircleAvatar(
         radius: radius,
         backgroundColor: scheme.secondaryContainer,
-        backgroundImage: bytes.isEmpty ? null : MemoryImage(bytes),
+        backgroundImage: bytes.isEmpty
+            ? null
+            : ResizeImage(MemoryImage(bytes), width: px, height: px, policy: ResizeImagePolicy.fit),
         child: bytes.isEmpty ? Icon(Icons.person, size: radius) : null,
       );
     }

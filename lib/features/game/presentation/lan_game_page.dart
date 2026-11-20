@@ -7,6 +7,7 @@ import '../../../core/di/providers.dart';
 import '../../../core/utils/school_grade_calculator.dart';
 import '../application/lan_game_controller.dart';
 import '../domain/game_rules.dart';
+import '../domain/lan_protocol.dart';
 import 'game_widgets.dart';
 import 'local_game_page.dart';
 
@@ -80,7 +81,10 @@ class _LanGamePageState extends ConsumerState<LanGamePage> {
                 LanPhase.searching => _Search(
                   view: view,
                   ip: _ip,
-                  onJoin: c.join,
+                  onJoin: (address) async {
+                    final code = await askRoomCode(context);
+                    if (code != null) await c.join(address, code);
+                  },
                 ),
                 LanPhase.lobby => _Players(
                   title: 'Ya estás en la sala',
@@ -207,8 +211,9 @@ class _HostLobby extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final enough = view.players.length >= GameRules.minPlayers;
+    final scheme = Theme.of(context).colorScheme;
     return _Players(
-      title: 'Tu sala está abierta',
+      title: view.roomName == null ? 'Tu sala está abierta' : '${view.roomName} está abierta',
       subtitle: view.addresses.isEmpty
           ? 'Activa el punto de acceso o conéctate a un Wi-Fi para que te encuentren.'
           : 'Si no te encuentran, que escriban esta dirección al unirse:',
@@ -216,6 +221,34 @@ class _HostLobby extends StatelessWidget {
       footer: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (view.roomCode != null)
+            Card(
+              color: scheme.primaryContainer,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                child: Column(
+                  children: [
+                    Text(
+                      'Código para entrar',
+                      style: text.titleMedium?.copyWith(color: scheme.onPrimaryContainer),
+                    ),
+                    Text(
+                      view.roomCode!,
+                      key: const Key('room-code'),
+                      style: text.displayMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 8,
+                        color: scheme.onPrimaryContainer,
+                      ),
+                    ),
+                    Text(
+                      'Díselo solo a quien juega contigo.',
+                      style: text.bodyMedium?.copyWith(color: scheme.onPrimaryContainer),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           for (final a in view.addresses)
             Padding(
               padding: const EdgeInsets.only(top: 4),
@@ -276,7 +309,7 @@ class _Search extends StatelessWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.sports_esports_rounded, size: 32),
-              title: Text('Sala de ${r.name}'),
+              title: Text(r.name),
               subtitle: Text(
                 '${SchoolGradeCalculator.label(r.grade)} · '
                 '${r.mode == GameMode.race ? 'Carrera' : 'Entre todos'} · ${r.players} jugando',
@@ -423,4 +456,46 @@ class _Error extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// Pide el código de 4 cifras que muestra el anfitrión. `null` si se cancela.
+Future<String?> askRoomCode(BuildContext context) {
+  final controller = TextEditingController();
+  return showDialog<String>(
+    context: context,
+    builder: (context) {
+      void submit() {
+        final code = controller.text.trim();
+        if (LanProtocol.isRoomCode(code)) Navigator.of(context).pop(code);
+      }
+
+      return AlertDialog(
+        title: const Text('Código de la sala'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Escribe las 4 cifras que se ven en el teléfono del anfitrión.'),
+            const SizedBox(height: 12),
+            TextField(
+              key: const Key('room-code-field'),
+              controller: controller,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(letterSpacing: 8),
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onSubmitted: (_) => submit(),
+              decoration: const InputDecoration(border: OutlineInputBorder(), counterText: ''),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
+          FilledButton(onPressed: submit, child: const Text('Entrar')),
+        ],
+      );
+    },
+  );
+  // El controlador no se libera aquí: el diálogo aún lo usa durante la animación de cierre.
 }

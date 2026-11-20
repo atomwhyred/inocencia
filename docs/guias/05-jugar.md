@@ -30,8 +30,10 @@ Cada niño en su teléfono (hasta 6). **No hace falta internet ni datos**: basta
 2. En ese teléfono: **Jugar → Con otros teléfonos → Crear sala**.
 
 <p align="center"><img src="img/11-con-otros-telefonos.png" alt="Con otros teléfonos: Crear sala o Unirme a una sala" width="240"> <img src="img/12-sala-abierta.png" alt="Sala abierta, con el niño que la creó y las direcciones para entrar a mano" width="240"></p>
+   La pantalla muestra el **nombre de la sala** (por ejemplo "Sala del Sinsonte") y un **código de 4 cifras**.
 3. En los demás: **Jugar → Con otros teléfonos → Unirme a una sala**. La sala aparece sola. Si no aparece, escribe
-   la dirección que se ve en el teléfono que creó la sala.
+   la dirección que se ve en el teléfono que creó la sala. Al pulsar **Entrar**, escribe el **código** que se ve en
+   el teléfono que creó la sala. Así no se cuela nadie que esté en el mismo Wi-Fi.
 4. Cuando estén todos, el que creó la sala pulsa **¡Empezar!** y empieza la partida.
 
 <p align="center"><img src="img/13-salas-cercanas.png" alt="Salas cercanas: aparece la sala de Pepe con el botón Entrar" width="240"> <img src="img/14-en-la-sala.png" alt="Ya estás en la sala, esperando a que el anfitrión empiece" width="240"></p>
@@ -41,6 +43,10 @@ Ya jugando, cada niño ve **su** pregunta (del libro de su grado) y su tocororo 
 <p align="center"><img src="img/15-carrera.png" alt="Carrera de tocororos con una pregunta de opción múltiple" width="260"></p>
 
 Cada teléfono necesita la app con su **base de libros** (`knowledge.db`) y un perfil de niño.
+
+Si el niño tiene foto en su perfil, en el juego en red sale con un emoji. Para que los demás vean una miniatura de su
+foto, actívalo en **Zona de padres → Apariencia → Enviar la foto en el juego en red**. Todos los teléfonos de la
+partida tienen que tener la misma versión de inocencIA.
 
 ## El permiso de red
 
