@@ -168,8 +168,14 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   un fallo.
 - Web de presentación en `landing/` (HTML estático, sin scripts de terceros, botón de tema claro/oscuro) y el workflow
   `.github/workflows/pages.yml` que la publica en GitHub Pages.
-- [ ] **Publicar la web.** Reemplazar `TU_USUARIO/inocencia` y `TU_CANAL` en `landing/index.html` (descargas, código
-  fuente y Telegram) y activar en GitHub *Settings › Pages › Source: GitHub Actions*.
+- Portada con Toco en 3D (three.js 0.170 empaquetado en la propia web, `landing-src/` + `tools/landing_build.sh`):
+  las capas y la animación de reposo de la app, mira al dedo, salta con estrellas al tocarlo; letras y números de los
+  libros alrededor y estrellas de noche. Probado en el Redmi (Chrome y Firefox) y en Chrome de escritorio. Pesa
+  483 KB (126 KB comprimido) y solo se descarga si se va a ver.
+- Enlaces reales: `github.com/atomwhyred/inocencia` y `t.me/elrincondeatomwhyred`.
+- [ ] **Publicar la web.** Crear el repositorio `atomwhyred/inocencia`, subir el código a `main` (el trabajo está en
+  `master`, y el workflow publica desde `main`), crear la primera release con los APK y activar
+  *Settings › Pages › Source: GitHub Actions*. Hasta entonces los enlaces de descarga dan 404.
 - [ ] Probar en un Xiaomi con HyperOS de fábrica (el Redmi de pruebas lleva otra ROM) y en Android 10-12.
 
 - [x] Juego en red: código de sala de 4 cifras, aviso sin el nombre del niño, entradas limitadas (líneas, nombres,

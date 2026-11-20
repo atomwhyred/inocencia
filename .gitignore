@@ -58,3 +58,6 @@ app.*.map.json
 /libros.zip
 /ninito_cubano_letra.txt
 /models/
+
+# Landing: dependencias de la escena 3D (se instalan con tools/landing_build.sh)
+landing-src/node_modules/

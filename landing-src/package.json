@@ -1,0 +1,12 @@
+{
+  "name": "inocencia-landing",
+  "private": true,
+  "description": "Escena 3D de la portada (Toco). Se empaqueta con ../tools/landing_build.sh en landing/js/escena.js.",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "three": "0.170.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.2"
+  }
+}

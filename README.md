@@ -259,8 +259,11 @@ Notas:
 1. Sube los APK y `SHA256SUMS` de `build/inocencIA/` a una release de GitHub:
    `gh release create v1.0.1 build/inocencIA/inocencIA-*.apk build/inocencIA/SHA256SUMS`.
    Los modelos (menos de 2 GB cada uno) y `knowledge.db` pueden ir como adjuntos de la misma release.
-2. La web está en `landing/` (HTML estático, sin scripts ni fuentes de terceros). Antes de publicarla, reemplaza
-   `TU_USUARIO/inocencia` y `TU_CANAL` por el repositorio y el canal de Telegram reales.
+2. La web está en `landing/` (HTML estático, sin scripts ni fuentes de terceros). Enlaza al repositorio
+   `atomwhyred/inocencia` y al canal de Telegram `elrincondeatomwhyred`. La portada lleva a Toco en 3D (three.js):
+   el código está en `landing-src/escena.js` y, tras cambiarlo, `./tools/landing_build.sh` (necesita Node y `cwebp`)
+   regenera `landing/js/escena.js` y las capas `landing/img/toco/*.webp`, que se suben al repositorio. Sin WebGL, con
+   "reducir movimiento", ahorro de datos o poca memoria, la página no descarga la escena y enseña la imagen fija.
 3. En GitHub: **Settings › Pages › Source: GitHub Actions**. El workflow `.github/workflows/pages.yml` la publica en
    cada push a `main` que cambie `landing/`. Para un dominio propio, añade `landing/CNAME` con el dominio.
 
@@ -314,9 +317,10 @@ lib/
    └─ external_data/            vincular, compartir y copiar modelo, base y libros; archivos oficiales
 android/.../TutorWorkService.kt servicio en primer plano mientras el modelo trabaja
 assets/official/                lista de archivos oficiales (tamaño y SHA-256)
-landing/                        web de presentación (HTML estático)
+landing/                        web de presentación (HTML estático; js/escena.js se genera)
+landing-src/                    escena 3D de la portada (three.js), se empaqueta con tools/landing_build.sh
 native/llama/                   script para compilar llama.cpp para Android
-tools/                          build_apks, crear_keystore, official_files, knowledge_builder, question_bank, mascot
+tools/                          build_apks, crear_keystore, landing_build, official_files, knowledge_builder, question_bank, mascot
 docs/                           documentación detallada
 test/                           pruebas
 ```

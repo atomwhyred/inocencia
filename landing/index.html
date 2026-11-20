@@ -21,12 +21,10 @@
 try { var t = localStorage.getItem("tema"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
 </script>
 <!--
-  Enlaces que hay que cambiar al publicar (buscar y reemplazar):
-    TU_USUARIO/inocencia  → usuario y repositorio de GitHub
-    TU_CANAL              → nombre del canal de Telegram
   Sin fuentes, scripts ni analíticas de terceros: la página no avisa a nadie de quién la visita
-  (como la app) y carga rápido con conexiones lentas. El único script es propio y solo recuerda
-  el tema claro u oscuro.
+  (como la app). Los scripts son propios: el del tema claro u oscuro y la escena de Toco en 3D
+  (js/escena.js, three.js empaquetado aquí mismo; se genera con tools/landing_build.sh desde
+  landing-src/). La escena es un adorno: sin ella se ve la imagen fija de Toco.
 -->
 <style>
 /* Concepto: una columna estrecha como la pantalla de un teléfono; la conversación real con
@@ -122,7 +120,7 @@ section > header p { color: var(--muted); }
 .small { font-size: var(--step--1); color: var(--muted); }
 
 /* Portada */
-.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(24px, 5vw, 64px); align-items: center; padding-block: clamp(24px, 6vw, 72px) clamp(40px, 7vw, 80px); }
+.hero { position: relative; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(24px, 5vw, 64px); align-items: center; padding-block: clamp(24px, 6vw, 72px) clamp(40px, 7vw, 80px); }
 .hero h1 { font-size: var(--step-3); font-weight: 700; letter-spacing: -0.01em; }
 .hero h1 span { color: var(--red); }
 .hero-copy { display: grid; gap: var(--s6); min-width: 0; }
@@ -132,7 +130,17 @@ section > header p { color: var(--muted); }
 .facts li { display: flex; align-items: center; gap: 8px; }
 .facts li::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
 
-/* La conversación (pieza central) */
+/* Toco en 3D (la imagen fija queda debajo hasta que la escena pinta) */
+.stage { position: relative; aspect-ratio: 4 / 5; width: 100%; max-width: 460px; justify-self: center; display: grid; place-items: center; touch-action: pan-y; -webkit-tap-highlight-color: transparent; }
+.stage > img { width: 52%; height: auto; transition: opacity 400ms var(--ease); }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 400ms var(--ease); cursor: pointer; }
+.stage.is-3d > img { opacity: 0; }
+.stage.is-3d canvas { opacity: 1; }
+.stage-hint { position: absolute; bottom: 4%; left: 0; right: 0; text-align: center; font-size: var(--step--1); color: var(--muted); opacity: 0; transition: opacity 400ms var(--ease); pointer-events: none; }
+.stage.is-3d .stage-hint { opacity: 1; }
+.hero-bg { background: radial-gradient(60% 55% at 72% 45%, var(--blue-soft), transparent 70%); }
+
+/* La conversación */
 .chat {
   background: var(--surface); border: 1px solid var(--line); border-radius: 28px;
   padding: 18px; display: grid; gap: 12px; min-width: 0;
@@ -206,6 +214,9 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 
 @media (max-width: 760px) {
   .hero, .privacy, .two { grid-template-columns: 1fr; }
+  .stage { order: -1; aspect-ratio: 5 / 4; max-width: 420px; margin-bottom: calc(-1 * var(--s4)); }
+  .stage > img { width: 30%; }
+  .hero-bg { background: radial-gradient(70% 30% at 50% 18%, var(--blue-soft), transparent 70%); }
   .shots { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
   .shots img { border-width: 3px; border-radius: 14px; }
   .btn { width: 100%; }
@@ -223,13 +234,13 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
   </header>
 
   <main>
-    <div class="hero">
+    <div class="hero hero-bg">
       <div class="hero-copy">
         <p class="age">Para niños de 1.º a 6.º grado</p>
         <h1>Un tutor que vive dentro del teléfono y <span>funciona sin internet</span></h1>
         <p class="lead">El niño pregunta lo que no entiende de su libro. Toco le explica con las palabras del libro cubano de su grado, le dice en qué página está y le hace pensar el siguiente paso.</p>
         <div class="actions">
-          <a class="btn btn-primary" href="https://github.com/TU_USUARIO/inocencia/releases/latest">
+          <a class="btn btn-primary" href="https://github.com/atomwhyred/inocencia/releases/latest">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
             Descargar para Android
           </a>
@@ -240,21 +251,38 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
         </ul>
       </div>
 
-      <div class="chat" aria-label="Ejemplo de conversación con el tutor">
-        <div class="chat-bar">
-          <img src="img/toco.webp" alt="" width="40" height="66">
-          <strong>Toco</strong>
-          <span class="offline">Sin internet</span>
-        </div>
-        <p class="msg msg-kid">Que es un triangulo</p>
-        <div class="msg msg-toco">
-          <p>Un triángulo es un polígono con tres lados y tres vértices. ¿Qué otros elementos tiene un triángulo?</p>
-          <p class="cite">Matemática · 2.º grado · pág. 193</p>
-        </div>
-        <p class="tap">¿Qué otros elementos tiene un triángulo?</p>
-        <p class="chat-note">Respuesta real de la app en un teléfono sin conexión. Toco no da la solución hecha: explica un paso y pregunta. El niño contesta con un toque.</p>
+      <div class="stage" data-escena>
+        <img src="img/toco.webp" alt="Toco, el tocororo de inocencIA" width="120" height="198">
+        <canvas aria-hidden="true"></canvas>
+        <p class="stage-hint" aria-hidden="true">Toca a Toco</p>
       </div>
     </div>
+
+    <section id="asi-responde" aria-labelledby="asi-responde-t">
+      <header class="narrow">
+        <h2 id="asi-responde-t">Así responde</h2>
+      </header>
+      <div class="two">
+        <div class="chat" aria-label="Ejemplo de conversación con el tutor">
+          <div class="chat-bar">
+            <img src="img/toco.webp" alt="" width="40" height="66">
+            <strong>Toco</strong>
+            <span class="offline">Sin internet</span>
+          </div>
+          <p class="msg msg-kid">Que es un triangulo</p>
+          <div class="msg msg-toco">
+            <p>Un triángulo es un polígono con tres lados y tres vértices. ¿Qué otros elementos tiene un triángulo?</p>
+            <p class="cite">Matemática · 2.º grado · pág. 193</p>
+          </div>
+          <p class="tap">¿Qué otros elementos tiene un triángulo?</p>
+          <p class="chat-note">Respuesta real de la app en un teléfono sin conexión. El niño contesta con un toque.</p>
+        </div>
+        <div class="share">
+          <h3>Explica un paso y pregunta</h3>
+          <p>Toco no da la solución hecha: explica un paso y le devuelve una pregunta. Cuando el niño contesta, valora lo que dijo y corrige con suavidad. La cita lleva al libro, abierto en esa página.</p>
+        </div>
+      </div>
+    </section>
 
     <section id="que-hace" aria-labelledby="que-hace-t">
       <header class="narrow">
@@ -347,8 +375,8 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
       <img src="img/toco.webp" alt="Toco, el tocororo de inocencIA" width="120" height="198" loading="lazy">
       <h2 id="cta-t">¿Qué aprendemos hoy?</h2>
       <div class="actions" style="justify-content:center">
-        <a class="btn btn-primary" href="https://github.com/TU_USUARIO/inocencia/releases/latest">Descargar para Android</a>
-        <a class="btn btn-ghost" href="https://t.me/TU_CANAL">Canal de Telegram</a>
+        <a class="btn btn-primary" href="https://github.com/atomwhyred/inocencia/releases/latest">Descargar para Android</a>
+        <a class="btn btn-ghost" href="https://t.me/elrincondeatomwhyred">Canal de Telegram</a>
       </div>
     </section>
   </main>
@@ -359,9 +387,9 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
       <span>inocencIA · Hecho para las familias cubanas · Licencia Apache 2.0</span>
     </div>
     <nav aria-label="Enlaces">
-      <a href="https://github.com/TU_USUARIO/inocencia">Código fuente</a>
-      <a href="https://github.com/TU_USUARIO/inocencia/releases">Todas las versiones</a>
-      <a href="https://t.me/TU_CANAL">Telegram</a>
+      <a href="https://github.com/atomwhyred/inocencia">Código fuente</a>
+      <a href="https://github.com/atomwhyred/inocencia/releases">Todas las versiones</a>
+      <a href="https://t.me/elrincondeatomwhyred">Telegram</a>
     </nav>
   </footer>
 </div>
@@ -393,6 +421,22 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
   if (mq.addEventListener) mq.addEventListener("change", paint);
   btn.hidden = false;
   paint();
+})();
+</script>
+<script>
+/* La escena 3D solo se descarga si se va a ver: con WebGL, sin "reducir movimiento", sin ahorro de datos y con memoria. */
+(function () {
+  try {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (navigator.connection && navigator.connection.saveData) return;
+    if (navigator.deviceMemory && navigator.deviceMemory <= 2) return;
+    var c = document.createElement("canvas");
+    if (!(c.getContext("webgl2") || c.getContext("webgl"))) return;
+    var s = document.createElement("script");
+    s.type = "module";
+    s.src = "js/escena.js";
+    document.body.appendChild(s);
+  } catch (e) {}
 })();
 </script>
 </body>
