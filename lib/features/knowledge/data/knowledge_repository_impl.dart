@@ -1,5 +1,7 @@
 import 'package:sqlite3/sqlite3.dart';
 
+import '../../../core/storage/untrusted_db.dart';
+
 import '../domain/knowledge_chunk.dart';
 import 'fts_query.dart';
 
@@ -7,7 +9,7 @@ import 'fts_query.dart';
 /// Cada consulta pide `grade = ?`: nunca se mezclan libros de otros grados.
 class KnowledgeRepositoryImpl implements KnowledgeRepository {
   KnowledgeRepositoryImpl.open(String path)
-      : _db = sqlite3.open(path, mode: OpenMode.readOnly);
+      : _db = openUntrustedDb(path);
 
   final Database _db;
 

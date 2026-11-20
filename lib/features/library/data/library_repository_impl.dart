@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
+import '../../../core/storage/untrusted_db.dart';
+
 import '../../external_data/domain/external_files_repository.dart';
 import '../domain/library_book.dart';
 import '../domain/library_repository.dart';
@@ -139,7 +141,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
   List<_Meta> _readCatalog() {
     final path = _files.knowledgePath;
     if (path == null || !File(path).existsSync()) return const [];
-    final db = sqlite3.open(path, mode: OpenMode.readOnly);
+    final db = openUntrustedDb(path);
     try {
       final row = db.select("SELECT value FROM meta WHERE key = 'books'");
       if (row.isNotEmpty) {

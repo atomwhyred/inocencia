@@ -20,3 +20,11 @@ String plainText(String s) {
 /// un recuadro, un dibujo...): no sirve para una pregunta o una tarjeta suelta.
 bool dependsOnBookLayout(String text) =>
     RegExp(r'\b(pagina|recuadro|ejercicio|imagen|dibujo|figura|texto)\b').hasMatch(plainText(text));
+
+/// Desactiva los marcadores de control del formato de chat (`<|im_start|>`,
+/// `<|im_end|>`, `<|endoftext|>`...). llama.cpp convierte ese texto en tokens de
+/// control reales, así que un fragmento de libro, lo que escribe el niño o una
+/// respuesta guardada podrían cerrar su turno y abrir uno de "system" con otras
+/// órdenes. Con un espacio en medio el modelo lo lee como texto normal.
+String neutralizeChatMarkup(String s) =>
+    s.contains('<|') || s.contains('|>') ? s.replaceAll('<|', '< |').replaceAll('|>', '| >') : s;

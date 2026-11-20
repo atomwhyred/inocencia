@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:sqlite3/sqlite3.dart';
 
+import '../../../core/storage/untrusted_db.dart';
+
 import '../../quiz/domain/quiz.dart';
 import '../domain/game_question.dart';
 
@@ -10,7 +12,7 @@ import '../domain/game_question.dart';
 /// tienen y entonces solo se juega con las tarjetas del nino.
 class SqliteQuestionBank implements QuestionBank {
   SqliteQuestionBank.open(String path)
-    : _db = sqlite3.open(path, mode: OpenMode.readOnly) {
+    : _db = openUntrustedDb(path) {
     _available = _db
         .select(
           "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'game_questions'",

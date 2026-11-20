@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "name": "knowledge.db",
+      "kind": "knowledge",
+      "size": 14434304,
+      "sha256": "a62c18e4e8c03e9d95eea68a0a7ffbc4f6b0746f61e1c482cec60651c889ba40"
+    },
+    {
+      "name": "qwen2.5-1.5b-instruct-q4_k_m.gguf",
+      "kind": "model",
+      "size": 1117320736,
+      "sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e"
+    },
+    {
+      "name": "qwen2.5-3b-instruct-q4_0.gguf",
+      "kind": "model",
+      "size": 1997879712,
+      "sha256": "670d82d0fbee6289b661eb323612c65bd2e97ec8c65cdbd9131aa44d30e9816a"
+    },
+    {
+      "name": "qwen2.5-3b-instruct-q4_k_m.gguf",
+      "kind": "model",
+      "size": 2104932768,
+      "sha256": "626b4a6678b86442240e33df819e00132d3ba7dddfe1cdc4fbb18e0a9615c62d"
+    },
+    {
+      "name": "qwen2.5-7b-instruct-q4_k_m.gguf",
+      "kind": "model",
+      "size": 4683074240,
+      "sha256": "65b8fcd92af6b4fefa935c625d1ac27ea29dcb6ee14589c55a8f115ceaaa1423"
+    }
+  ]
+}

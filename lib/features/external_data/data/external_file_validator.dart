@@ -3,6 +3,8 @@ import 'dart:isolate';
 
 import 'package:sqlite3/sqlite3.dart';
 
+import '../../../core/storage/untrusted_db.dart';
+
 import '../../../core/constants.dart';
 import '../domain/linked_file_status.dart';
 
@@ -98,10 +100,11 @@ class ExternalFileValidator {
 
     Database? db;
     try {
-      db = sqlite3.open(path, mode: OpenMode.readOnly);
+      db = openUntrustedDb(path);
       final tables = db
           .select(
-            "SELECT name FROM sqlite_master WHERE type IN ('table','view') "
+            // Solo tablas de verdad: una vista podría esconder una consulta sin fin.
+            "SELECT name FROM sqlite_master WHERE type = 'table' "
             "AND name IN ('meta','chunks','chunks_fts')",
           )
           .map((r) => r['name'] as String)
@@ -155,6 +158,14 @@ class ExternalFileValidator {
         path: path,
         sizeBytes: size,
         message: 'No es una base de conocimiento valida (${e.message}).',
+      );
+    } on Object {
+      // Tipos inesperados en las columnas (una base manipulada o de otra app).
+      return KnowledgeDbStatus(
+        state: LinkState.invalid,
+        path: path,
+        sizeBytes: size,
+        message: 'No es una base de conocimiento valida (datos con un formato inesperado).',
       );
     } finally {
       db?.close();

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 
+import '../../../core/utils/plain_text.dart';
 import '../domain/cpu_threads.dart';
 import '../domain/speed_test.dart';
 import '../domain/tutor_diagnostics.dart';
@@ -186,8 +187,8 @@ class LlamaTutorEngine implements TutorEngine, SpeedTester {
     // demas (historial, libro y pregunta) cambia en cada turno.
     final hasSystem = turns.isNotEmpty && turns.first.role == 'system';
     final (id, stream) = worker.generate(
-      system: hasSystem ? _chatml(turns.take(1)) : '',
-      suffix: '${_chatml(hasSystem ? turns.skip(1) : turns)}<|im_start|>assistant\n',
+      system: hasSystem ? chatml(turns.take(1)) : '',
+      suffix: '${chatml(hasSystem ? turns.skip(1) : turns)}<|im_start|>assistant\n',
       maxTokens: maxTokens ?? (_lowPower ? lowPowerAnswerTokens : maxAnswerTokens),
     );
     late final StreamController<String> out;
@@ -302,11 +303,13 @@ class LlamaTutorEngine implements TutorEngine, SpeedTester {
 
   /// ChatML de Qwen2.5: `<|im_start|>rol\ncontenido<|im_end|>\n`. Los turnos del
   /// asistente vacios se omiten.
-  static String _chatml(Iterable<ChatTurn> turns) {
+  @visibleForTesting
+  static String chatml(Iterable<ChatTurn> turns) {
     final buf = StringBuffer();
     for (final t in turns) {
       if (t.role == 'assistant' && t.content.isEmpty) continue;
-      buf.write('<|im_start|>${t.role}\n${t.content}<|im_end|>\n');
+      // El contenido nunca puede abrir o cerrar turnos (ver neutralizeChatMarkup).
+      buf.write('<|im_start|>${t.role}\n${neutralizeChatMarkup(t.content)}<|im_end|>\n');
     }
     return buf.toString();
   }

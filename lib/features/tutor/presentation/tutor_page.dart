@@ -691,8 +691,10 @@ class _InputBar extends StatelessWidget {
               textCapitalization: TextCapitalization.sentences,
               minLines: 1,
               maxLines: 3,
+              // Una duda de un niño cabe de sobra; un texto enorme solo alargaría la espera.
+              maxLength: 500,
               onSubmitted: (_) => onSend(),
-              decoration: InputDecoration(hintText: hint),
+              decoration: InputDecoration(hintText: hint, counterText: ''),
             ),
           ),
           const SizedBox(width: 8),

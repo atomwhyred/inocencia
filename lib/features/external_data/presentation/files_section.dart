@@ -11,6 +11,7 @@ import '../../library/application/library_providers.dart';
 import '../../library/domain/library_book.dart';
 import '../../tutor/application/speed_test_controller.dart';
 import '../../tutor/application/tutor_diagnostics_provider.dart';
+import '../data/file_integrity.dart';
 import '../domain/file_exporter.dart';
 import '../domain/linked_file_status.dart';
 import '../domain/model_recommendation.dart';
@@ -129,6 +130,7 @@ class FilesSection extends ConsumerWidget {
                 icon: Icons.psychology_alt_rounded,
                 title: 'Modelo de IA (GGUF)',
                 status: s.model,
+                integrity: s.model.isReady ? IntegrityLine(path: s.model.path!) : null,
                 onBrowse: () => _browse(context, ref, _Kind.model),
                 onDetect: () => _detect(context, ref, _Kind.model),
                 onUnlink: () => _store(ref, _Kind.model, null),
@@ -143,6 +145,7 @@ class FilesSection extends ConsumerWidget {
                 title: 'Libros de texto (base de datos)',
                 status: s.knowledge,
                 details: _knowledgeDetails(s.knowledge),
+                integrity: s.knowledge.isReady ? IntegrityLine(path: s.knowledge.path!) : null,
                 onBrowse: () => _browse(context, ref, _Kind.knowledge),
                 onDetect: () => _detect(context, ref, _Kind.knowledge),
                 onUnlink: () => _store(ref, _Kind.knowledge, null),
@@ -693,7 +696,11 @@ class _FileCard extends StatelessWidget {
     this.onShare,
     this.onCopy,
     this.details,
+    this.integrity,
   });
+
+  /// "Archivo oficial" o "no reconocido" (solo con el archivo listo).
+  final Widget? integrity;
 
   final IconData icon;
   final String title;
@@ -744,6 +751,7 @@ class _FileCard extends StatelessWidget {
             if (status.sizeBytes != null)
               Text('Tamaño: ${formatBytes(status.sizeBytes!)}'),
             if (details != null) Text(details!),
+            ?integrity,
             if (status.message != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
@@ -826,6 +834,45 @@ class _FileActions extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Si el archivo vinculado es uno de los publicados. Un archivo que llega por ShareIt o
+/// Bluetooth pudo cambiar por el camino: una base manipulada haría decir otras cosas al tutor.
+class IntegrityLine extends ConsumerWidget {
+  const IntegrityLine({super.key, required this.path});
+
+  final String path;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final (icon, color, text) = switch (ref.watch(fileIntegrityProvider(path))) {
+      AsyncData(value: FileIntegrity.official) => (
+        Icons.verified_rounded,
+        Colors.green,
+        'Archivo oficial de inocencIA.',
+      ),
+      AsyncData(value: FileIntegrity.unknown) => (
+        Icons.help_outline_rounded,
+        scheme.tertiary,
+        'Archivo no reconocido: no coincide con los publicados. Puede ser una versión nueva u '
+            'otro modelo; si no sabes de dónde salió, vuelve a copiarlo desde el canal oficial.',
+      ),
+      AsyncError() => (Icons.help_outline_rounded, scheme.outline, 'No se pudo comprobar el archivo.'),
+      _ => (Icons.hourglass_top_rounded, scheme.outline, 'Comprobando si es un archivo oficial…'),
+    };
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 6),
+          Expanded(child: Text(text)),
+        ],
+      ),
     );
   }
 }
