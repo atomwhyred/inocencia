@@ -172,8 +172,8 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   las capas y la animación de reposo de la app, mira al dedo, salta con estrellas al tocarlo; letras y números de los
   libros alrededor y estrellas de noche. Al entrar, un libro se abre y Toco sale volando de él; después el libro pasa
   páginas. Las capturas se ven como teléfonos girados. Barra de navegación flotante como la de la app: arriba en
-  pantallas anchas (Qué hace, Así responde, Instalar, Preguntas, Telegram, tema, Descargar) y abajo en el móvil
-  (Inicio, Qué hace, Descargar, Instalar, Canal), con la sección visible marcada.
+  pantallas anchas (Así responde, Funciones, Instalar, Preguntas, Telegram, Descargar, tema) y abajo en el móvil
+  (Inicio, Funciones, Descargar, Instalar, Canal), con la sección visible marcada.
   En escritorio, Toco también sale del libro junto a las preguntas frecuentes (el mismo lienzo 3D pasa de un sitio a
   otro) y los botones finales y las tres capturas se inclinan en 3D hacia el ratón. Probado en el Redmi (Chrome y Firefox) y en Chrome de
   escritorio. Pesa 491 KB (unos 128 KB comprimido) y solo se descarga si se va a ver.
