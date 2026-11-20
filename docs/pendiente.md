@@ -171,7 +171,9 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 - Portada con Toco en 3D (three.js 0.170 empaquetado en la propia web, `landing-src/` + `tools/landing_build.sh`):
   las capas y la animación de reposo de la app, mira al dedo, salta con estrellas al tocarlo; letras y números de los
   libros alrededor y estrellas de noche. Al entrar, un libro se abre y Toco sale volando de él; después el libro pasa
-  páginas. Las capturas se ven como teléfonos girados. Probado en el Redmi (Chrome y Firefox) y en Chrome de
+  páginas. Las capturas se ven como teléfonos girados. Barra de navegación flotante como la de la app: arriba en
+  pantallas anchas (Qué hace, Así responde, Instalar, Preguntas, Telegram, tema, Descargar) y abajo en el móvil
+  (Inicio, Qué hace, Descargar, Instalar, Canal), con la sección visible marcada. Probado en el Redmi (Chrome y Firefox) y en Chrome de
   escritorio. Pesa 491 KB (unos 128 KB comprimido) y solo se descarga si se va a ver.
 - Enlaces reales: `github.com/atomwhyred/inocencia` y `t.me/elrincondeatomwhyred`.
 - [ ] **Publicar la web.** Crear el repositorio `atomwhyred/inocencia`, subir el código a `main` (el trabajo está en

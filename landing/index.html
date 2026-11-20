@@ -45,6 +45,10 @@ try { var t = localStorage.getItem("tema"); if (t === "dark" || t === "light") d
   --bubble-kid: #0035ad;
   --bubble-toco: #e6eaf6;
   --bezel: #1b1b2e;
+  --bar-bg: rgba(255, 255, 255, .9);
+  --bar-shadow: 0 8px 24px rgba(16, 19, 58, .16);
+  --nav-active-bg: #dce4ff;
+  --nav-active-fg: #0035ad;
   --font-display: ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round", system-ui, sans-serif;
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
   --font-data: ui-monospace, "SF Mono", "Roboto Mono", "Noto Sans Mono", monospace;
@@ -61,13 +65,13 @@ try { var t = localStorage.getItem("tema"); if (t === "dark" || t === "light") d
   :root:not([data-theme="light"]) {
     --bg: #1d1d44; --surface: #272757; --surface-2: #31316a; --fg: #eef0ff; --muted: #b8bddc;
     --line: #3d3d78; --blue: #b6c4ff; --blue-soft: #31316a; --red: #ff6b5f; --on-accent: #10133a;
-    --bubble-kid: #0035ad; --bubble-toco: #3a3a72; --bezel: #0b0b1c; color-scheme: dark;
+    --bubble-kid: #0035ad; --bubble-toco: #3a3a72; --bezel: #0b0b1c; --bar-bg: rgba(39, 39, 87, .92); --bar-shadow: 0 8px 24px rgba(0, 0, 0, .45); --nav-active-bg: #b6c4ff; --nav-active-fg: #10133a; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #1d1d44; --surface: #272757; --surface-2: #31316a; --fg: #eef0ff; --muted: #b8bddc;
   --line: #3d3d78; --blue: #b6c4ff; --blue-soft: #31316a; --red: #ff6b5f; --on-accent: #10133a;
-  --bubble-kid: #0035ad; --bubble-toco: #3a3a72; --bezel: #0b0b1c; color-scheme: dark;
+  --bubble-kid: #0035ad; --bubble-toco: #3a3a72; --bezel: #0b0b1c; --bar-bg: rgba(39, 39, 87, .92); --bar-shadow: 0 8px 24px rgba(0, 0, 0, .45); --nav-active-bg: #b6c4ff; --nav-active-fg: #10133a; color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -106,6 +110,52 @@ section > header p { color: var(--muted); }
 .brand { display: flex; align-items: center; gap: 10px; font: 700 1.35rem/1 var(--font-display); color: var(--fg); text-decoration: none; }
 .brand img { width: 34px; height: 34px; border-radius: 10px; }
 .brand b { color: var(--red); }
+
+/* Barras de navegación flotantes, como la de la app: arriba en pantallas anchas, abajo en el móvil. */
+.top-links, .dock { display: none; }
+.icon-btn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: var(--fg); border: 1px solid var(--line); background: var(--surface); transition: border-color 150ms var(--ease); }
+.icon-btn:hover { border-color: var(--blue); }
+.icon-btn svg { width: 20px; height: 20px; }
+@media (min-width: 901px) {
+  .top {
+    position: sticky; top: calc(12px + env(safe-area-inset-top, 0px)); z-index: 50; margin-top: 12px;
+    padding: 8px 8px 8px 18px; border-radius: 32px; border: 1px solid var(--line);
+    background: var(--bar-bg); box-shadow: var(--bar-shadow);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2); backdrop-filter: blur(12px) saturate(1.2);
+  }
+  .top-links { display: flex; gap: 2px; }
+  .top-links a { padding: 8px 14px; border-radius: 999px; color: var(--fg); text-decoration: none; font-weight: 600; font-size: .95rem; transition: background-color 150ms var(--ease); }
+  .top-links a:hover { background: var(--surface-2); }
+  .top-links a[aria-current="true"] { background: var(--nav-active-bg); color: var(--nav-active-fg); }
+  .top-actions { gap: var(--s2); }
+  .top .btn-sm { min-height: 44px; padding: 8px 20px; }
+  section, .hero { scroll-margin-top: 100px; }
+}
+@media (max-width: 900px) {
+  .only-wide { display: none !important; }
+  body { padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)); }
+  .dock {
+    display: flex; position: fixed; z-index: 50; margin: 0 auto; max-width: 460px; padding: 6px;
+    left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px));
+    bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    border-radius: 32px; border: 1px solid var(--line); background: var(--bar-bg); box-shadow: var(--bar-shadow);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2); backdrop-filter: blur(12px) saturate(1.2);
+  }
+  .dock a {
+    flex: 1 1 0; min-width: 0; display: grid; justify-items: center; gap: 2px; padding: 2px 0 4px;
+    color: var(--fg); text-decoration: none; font: 600 .75rem/1.2 var(--font-body); white-space: nowrap;
+    -webkit-tap-highlight-color: transparent; transition: transform 120ms ease-out;
+  }
+  .dock a:active { transform: scale(.92); }
+  .dock .ico { height: 44px; display: grid; place-items: center; }
+  .dock .ico svg { box-sizing: content-box; width: 22px; height: 22px; padding: 6px 13px; border-radius: 17px; background: var(--surface-2); transition: background-color 150ms var(--ease); }
+  .dock a[aria-current="true"] .ico svg { background: var(--nav-active-bg); color: var(--nav-active-fg); }
+  /* Descargar: la acción principal, más grande y en el rojo de la bandera (no se confunde con la sección activa). */
+  .dock a.main { color: var(--red); }
+  .dock a.main .ico svg { width: 26px; height: 26px; padding: 8px 17px; border-radius: 21px; background: #c81f1a; color: #fff; box-shadow: 0 4px 12px rgba(200, 31, 26, .35); }
+  html { scroll-padding-bottom: 110px; }
+}
+@media (prefers-reduced-motion: reduce) { .dock a { transition: none; } .dock a:active { transform: none; } }
 
 /* Botones */
 .btn {
@@ -239,15 +289,22 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 <body>
 <div class="wrap">
   <header class="top">
-    <a class="brand" href="#"><img src="img/icono-180.png" alt="" width="34" height="34"><span>inocenc<b>IA</b></span></a>
+    <a class="brand" href="#inicio"><img src="img/icono-180.png" alt="" width="34" height="34"><span>inocenc<b>IA</b></span></a>
+    <nav class="top-links" aria-label="Secciones">
+      <a href="#que-hace">Qué hace</a>
+      <a href="#asi-responde">Así responde</a>
+      <a href="#instalar">Instalar</a>
+      <a href="#preguntas">Preguntas</a>
+    </nav>
     <div class="top-actions">
-      <a class="small" href="#instalar">Cómo instalarla</a>
+      <a class="icon-btn only-wide" href="https://t.me/elrincondeatomwhyred" aria-label="Canal de Telegram" title="Canal de Telegram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4 3 11.2l6.2 2.1M21 4l-3.2 16-7.1-5.3M21 4 9.2 13.3v5.2l2.9-2.9"/></svg></a>
       <button id="tema" class="theme-btn" type="button" hidden aria-label="Cambiar a tema oscuro" title="Cambiar a tema oscuro">🌙</button>
+      <a class="btn btn-primary btn-sm only-wide" href="https://github.com/atomwhyred/inocencia/releases/latest">Descargar</a>
     </div>
   </header>
 
   <main>
-    <div class="hero">
+    <div class="hero" id="inicio">
       <div class="hero-copy">
         <p class="age">Para niños de 1.º a 6.º grado</p>
         <h1>Un tutor que vive dentro del teléfono y <span>funciona sin internet</span></h1>
@@ -369,7 +426,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
       </div>
     </section>
 
-    <section aria-labelledby="faq-t">
+    <section id="preguntas" aria-labelledby="faq-t">
       <header class="narrow">
         <h2 id="faq-t">Preguntas frecuentes</h2>
       </header>
@@ -405,6 +462,13 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
     </nav>
   </footer>
 </div>
+<nav class="dock" aria-label="Secciones">
+  <a href="#inicio"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg></span>Inicio</a>
+  <a href="#que-hace"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3.5 2.4 5.1 5.6.7-4.1 3.9 1 5.5L12 16l-4.9 2.7 1-5.5L4 9.3l5.6-.7z"/></svg></span>Qué hace</a>
+  <a class="main" href="https://github.com/atomwhyred/inocencia/releases/latest"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg></span>Descargar</a>
+  <a href="#instalar"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 17.5h2"/></svg></span>Instalar</a>
+  <a href="https://t.me/elrincondeatomwhyred"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4 3 11.2l6.2 2.1M21 4l-3.2 16-7.1-5.3M21 4 9.2 13.3v5.2l2.9-2.9"/></svg></span>Canal</a>
+</nav>
 <script>
 /* Botón de tema: ☀️/🌙. Muestra el tema al que se cambia. Sin JS el botón queda oculto y manda el del teléfono. */
 (function () {
@@ -433,6 +497,28 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
   if (mq.addEventListener) mq.addEventListener("change", paint);
   btn.hidden = false;
   paint();
+})();
+</script>
+<script>
+/* Marca en las barras la sección que se está viendo (como la pastilla clara de la app). */
+(function () {
+  try {
+    if (!("IntersectionObserver" in window)) return;
+    var links = document.querySelectorAll('.top-links a[href^="#"], .dock a[href^="#"]');
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        var id = "#" + e.target.id;
+        links.forEach(function (a) {
+          if (a.getAttribute("href") !== id) return;
+          if (e.isIntersecting) a.setAttribute("aria-current", "true"); else a.removeAttribute("aria-current");
+        });
+      });
+    }, { rootMargin: "-45% 0px -50% 0px" });
+    ["inicio", "asi-responde", "que-hace", "instalar", "preguntas"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) io.observe(el);
+    });
+  } catch (e) {}
 })();
 </script>
 <script>
