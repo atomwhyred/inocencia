@@ -216,7 +216,8 @@ class _HostLobby extends StatelessWidget {
       title: view.roomName == null ? 'Tu sala está abierta' : '${view.roomName} está abierta',
       subtitle: view.addresses.isEmpty
           ? 'Activa el punto de acceso o conéctate a un Wi-Fi para que te encuentren.'
-          : 'Si no te encuentran, que escriban esta dirección al unirse:',
+          : 'Para entrar, los demás escriben el código. Si no encuentran la sala, que escriban '
+                'también una de las direcciones de abajo.',
       view: view,
       footer: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
