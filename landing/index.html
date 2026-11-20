@@ -128,7 +128,11 @@ section > header p { color: var(--muted); }
   .top-links a:hover { background: var(--surface-2); }
   .top-links a[aria-current="true"] { background: var(--nav-active-bg); color: var(--nav-active-fg); }
   .top-actions { gap: var(--s2); }
-  .top .btn-sm { min-height: 44px; padding: 8px 20px; }
+  /* Descargar: como en la barra de abajo del móvil, la acción principal en el rojo de la bandera. */
+  .top-dl { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px 0 16px; border-radius: 999px; background: #c81f1a; color: #fff; font: 700 .95rem/1 var(--font-body); text-decoration: none; box-shadow: 0 4px 12px rgba(200, 31, 26, .35); transition: filter 150ms var(--ease), transform 150ms var(--ease); }
+  .top-dl svg { width: 20px; height: 20px; flex: none; }
+  .top-dl:hover { filter: brightness(1.1); }
+  .top-dl:active { transform: scale(.97); }
   section, .hero { scroll-margin-top: 100px; }
 }
 @media (max-width: 900px) {
@@ -276,7 +280,7 @@ details[open] summary::after { content: "–"; }
 details > p { padding-bottom: 16px; color: var(--muted); }
 
 /* Llamada final y pie */
-.cta { text-align: center; justify-items: center; }
+.cta { text-align: center; justify-items: center; padding-top: clamp(8px, 2vw, 24px); }
 /* Botones finales: se inclinan en 3D hacia el ratón, con un brillo que lo sigue. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .cta .actions { perspective: 600px; }
@@ -324,8 +328,8 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
     </nav>
     <div class="top-actions">
       <a class="icon-btn only-wide" href="https://t.me/elrincondeatomwhyred" aria-label="Canal de Telegram" title="Canal de Telegram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4 3 11.2l6.2 2.1M21 4l-3.2 16-7.1-5.3M21 4 9.2 13.3v5.2l2.9-2.9"/></svg></a>
+      <a class="top-dl only-wide" href="https://github.com/atomwhyred/inocencia/releases/latest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>Descargar</a>
       <button id="tema" class="theme-btn" type="button" hidden aria-label="Cambiar a tema oscuro" title="Cambiar a tema oscuro">🌙</button>
-      <a class="btn btn-primary btn-sm only-wide" href="https://github.com/atomwhyred/inocencia/releases/latest">Descargar</a>
     </div>
   </header>
 
@@ -470,8 +474,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
       </div>
     </section>
 
-    <section class="cta" aria-labelledby="cta-t">
-      <h2 id="cta-t">¿Qué aprendemos hoy?</h2>
+    <section class="cta" aria-label="Descargar inocencIA">
       <div class="actions" style="justify-content:center">
         <a class="btn btn-primary" href="https://github.com/atomwhyred/inocencia/releases/latest">Descargar para Android</a>
         <a class="btn btn-ghost" href="https://t.me/elrincondeatomwhyred">Canal de Telegram</a>
