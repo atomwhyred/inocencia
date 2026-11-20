@@ -163,7 +163,7 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
     (7,3 piezas/s), igual que en pantalla.
   - Pixel 6 (Android 16), pantalla apagada: 36 s, wake lock tomado y liberado, aviso "¡Toco ya terminó!".
   - Cerrar desde Recientes a mitad: servicio, aviso y wake lock fuera; la respuesta se pierde (esperado).
-- Versión **1.0.1+5** (`pubspec.yaml`): cada actualización lleva un número de versión nuevo (1.0.2+6…); ver el README.
+- Versión **1.0.1+5** (`pubspec.yaml`): cada actualización lleva un número de versión nuevo (1.0.2+6…); ver [docs/desarrollo.md](desarrollo.md).
 - La release va **ofuscada** (`--obfuscate`); los símbolos quedan en `build/simbolos/<versión>/`: guárdalos para leer
   un fallo.
 - Web de presentación en `landing/` (HTML estático, sin scripts de terceros, botón de tema claro/oscuro) y el workflow

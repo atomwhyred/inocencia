@@ -34,7 +34,7 @@ Todos los comandos se ejecutan en la carpeta del proyecto. `gh` (GitHub CLI) ya 
   ```
   Y en GitHub: *Settings › Emails › Keep my email addresses private*.
 - **Los libros de texto tienen derechos de autor**: no los subas al repositorio ni a las versiones salvo que tengas
-  permiso para distribuirlos (ver "Qué NO incluye este repositorio" en el README).
+  permiso para distribuirlos (ver "Qué NO incluye este repositorio" en [docs/desarrollo.md](desarrollo.md)).
 
 ## 1. Crear el repositorio y subir el código
 
@@ -72,7 +72,7 @@ Pruébala en un móvil: Toco sale del libro, el botón ☀️/🌙, los enlaces 
    ```
    Guarda una copia de `~/.inocencia/inocencia-release.jks` y de `android/key.properties` **fuera del ordenador**
    (memoria USB, nube privada). Si se pierde, ninguna versión futura se podrá instalar encima de las anteriores.
-2. **Subir la versión** en `pubspec.yaml` (`version: 1.0.2+6`, ver "Versiones" en el README) y compilar:
+2. **Subir la versión** en `pubspec.yaml` (`version: 1.0.2+6`, ver "Compilar la release" en [docs/desarrollo.md](desarrollo.md)) y compilar:
    ```bash
    ./tools/build_apks.sh 6
    ```
