@@ -148,9 +148,23 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   Cambiar de clave obliga a desinstalar una vez (se pierden los datos de las instalaciones de prueba).
 - [ ] **Revisar `MANAGE_EXTERNAL_STORAGE`.** Se usa solo para el explorador de carpetas opcional de Android 11+.
   Valorar quitarlo (basta la carpeta de la app y el selector del sistema) o explicarlo en el README; Google Play lo restringe.
-- Sin problema: la release no declara `INTERNET`, la búsqueda en los libros usa consultas con parámetros, los PIN van
+- Sin problema: la release declara `INTERNET` solo para el juego en red (nunca sale a internet), la búsqueda en los libros usa consultas con parámetros, los PIN van
   con PBKDF2 + sal y bloqueo tras 5 fallos, y el proveedor de archivos no está exportado. El PIN sigue siendo una
   barrera doméstica (con root o borrando los datos de la app se salta).
+
+## Seguridad (auditoría del 20-nov)
+- [x] Juego en red: código de sala de 4 cifras, aviso sin el nombre del niño, entradas limitadas (líneas, nombres,
+  avatares sin rutas locales, conexiones, un saludo por conexión) y foto solo si el padre lo activa.
+- [x] Marcadores de chat (`<|im_start|>`...) neutralizados en libro, niño e historial; campo del tutor a 500 caracteres.
+- [x] `knowledge.db` abierta con `trusted_schema=OFF` y `query_only`; el validador exige tablas reales.
+- [x] Lista de archivos oficiales (SHA-256) en Zona de padres → Archivos.
+- [x] Bloqueo del PIN medido también desde el encendido; PIN obvios rechazados al crearlos; zona de padres cerrada
+  al ocultarse la app y tras 10 min sin tocarla.
+- [x] Aviso diario privado en la pantalla de bloqueo; `dataExtractionRules`; fotos borradas con el perfil;
+  `shareFiles` nunca comparte los datos privados de la app.
+- [ ] Actualizar llama.cpp (fijado el 28-dic-2025) y repetir la prueba de velocidad.
+- [ ] Mover las consultas a la base de libros fuera del hilo de la interfaz (una base enorme o manipulada congela
+  la pantalla mientras se lee).
 
 ## Más adelante
 - [ ] Versiones para Windows 10/11 y Linux (.deb, .rpm): solo si hay aceptación en Android. Notas y pasos en [otras-plataformas.md](otras-plataformas.md).

@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Environment
 import android.os.PowerManager
 import android.os.StatFs
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.WindowManager
 import io.flutter.embedding.engine.FlutterEngine
@@ -44,6 +45,8 @@ object StorageBridge {
                         result.success(shareFiles(activity, paths, call.argument<String>("title")))
                     }
                     "thermalStatus" -> result.success(thermalStatus(activity))
+                    // Monótono desde el encendido: el bloqueo del PIN no se salta cambiando la hora.
+                    "elapsedRealtime" -> result.success(SystemClock.elapsedRealtime())
                     "keepScreenOn" -> {
                         val flag = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
                         if (call.argument<Boolean>("on") == true) {
@@ -84,7 +87,12 @@ object StorageBridge {
      * [ShareProvider] los sirve directamente. Devuelve false si no hay nada que compartir.
      */
     private fun shareFiles(activity: Activity, paths: List<String>, title: String?): Boolean {
-        val files = paths.map { File(it) }.filter { it.isFile && it.canRead() }
+        // Nunca los datos privados de la app (perfiles, historial, PIN): solo el modelo, la
+        // base y los libros, que están fuera de dataDir.
+        val privateDir = File(activity.applicationInfo.dataDir).canonicalFile
+        val files = paths.map { File(it) }.filter {
+            it.isFile && it.canRead() && !it.canonicalFile.startsWith(privateDir)
+        }
         if (files.isEmpty()) return false
         val uris = files.map { ShareProvider.register(it) }
         val mimes = files.map { ShareProvider.mimeOf(it) }.distinct()

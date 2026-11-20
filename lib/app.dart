@@ -45,8 +45,9 @@ class _InocenciaAppState extends ConsumerState<InocenciaApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Al enviar la app a segundo plano se vuelve a pedir el PIN del padre.
-    if (state == AppLifecycleState.paused) {
+    // Al dejar de verse la app (segundo plano, otra app encima) se vuelve a pedir el
+    // PIN del padre.
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
       ref.read(sessionProvider.notifier).lockParent();
     } else if (state == AppLifecycleState.resumed) {
       // El padre pudo conceder el permiso en Ajustes o copiar archivos por USB.

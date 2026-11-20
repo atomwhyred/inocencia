@@ -60,6 +60,19 @@ class PlatformInfo {
     }
   }
 
+  /// Milisegundos desde que se encendió el teléfono (`SystemClock.elapsedRealtime`).
+  /// Null fuera de Android.
+  Future<int?> elapsedRealtimeMs() async {
+    if (!Platform.isAndroid) return null;
+    try {
+      return await _channel.invokeMethod<int>('elapsedRealtime');
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
   /// Mantiene la pantalla encendida (durante la prueba de velocidad).
   Future<void> keepScreenOn(bool on) async {
     if (!Platform.isAndroid) return;

@@ -6,6 +6,7 @@ import '../../../core/di/providers.dart';
 import '../../../core/responsive/max_content_width.dart';
 import '../../../core/widgets/offline_badge.dart';
 import '../../../core/widgets/pin_pad.dart';
+import '../../../core/security/pin_strength.dart';
 
 enum _Step { name, pin, confirm }
 
@@ -38,6 +39,14 @@ class _SetupPageState extends ConsumerState<SetupPage> {
   }
 
   void _onFirstPin(String pin) {
+    final weak = weakPinReason(pin);
+    if (weak != null) {
+      setState(() {
+        _error = weak;
+        _resetToken++;
+      });
+      return;
+    }
     setState(() {
       _firstPin = pin;
       _step = _Step.confirm;

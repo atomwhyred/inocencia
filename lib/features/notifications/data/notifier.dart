@@ -1,10 +1,13 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+/// El aviso lleva el nombre del niño: con `private`, la pantalla de bloqueo solo dice
+/// que hay un aviso de inocencIA; el texto completo se ve con el teléfono desbloqueado.
 const _channel = AndroidNotificationDetails(
   'estudio_diario',
   'Aviso diario de estudio',
   channelDescription: 'Invita al niño a estudiar con su tutor',
   importance: Importance.defaultImportance,
+  visibility: NotificationVisibility.private,
 );
 
 /// Muestra la notificacion local. Se usa tanto desde la app como desde el

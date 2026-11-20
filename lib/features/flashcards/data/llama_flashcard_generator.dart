@@ -38,7 +38,7 @@ class LlamaFlashcardGenerator implements FlashcardGenerator {
           if (emitted >= FlashcardPrompt.cards) break;
           if (!seen.add(card.front)) continue;
           if (!FlashcardGrounding.isGrounded(card, bookText)) {
-            debugPrint('[tarjetas] descartada: ${card.front} -> ${card.back}');
+            if (kDebugMode) debugPrint('[tarjetas] descartada: ${card.front} -> ${card.back}');
             continue;
           }
           emitted++;
@@ -46,12 +46,12 @@ class LlamaFlashcardGenerator implements FlashcardGenerator {
         }
         if (emitted >= FlashcardPrompt.cards) return;
       }
-      debugPrint('[tarjetas] texto del modelo:\n$buf');
+      if (kDebugMode) debugPrint('[tarjetas] texto del modelo:\n$buf');
       for (final card in FlashcardParser.parse(buf.toString())) {
         if (emitted >= FlashcardPrompt.cards) break;
         if (!seen.add(card.front)) continue;
         if (!FlashcardGrounding.isGrounded(card, bookText)) {
-          debugPrint('[tarjetas] descartada: ${card.front} -> ${card.back}');
+          if (kDebugMode) debugPrint('[tarjetas] descartada: ${card.front} -> ${card.back}');
           continue;
         }
         emitted++;

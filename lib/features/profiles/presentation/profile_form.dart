@@ -54,9 +54,33 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
 
   @override
   void dispose() {
+    // Fotos elegidas y descartadas (se salió sin guardar o se eligió otra).
+    for (final path in _unsavedPhotos) {
+      _deletePhoto('photo:$path');
+    }
     _nameController.dispose();
     _pinController.dispose();
     super.dispose();
+  }
+
+  /// Avatar guardado en la base (para borrar su foto si se cambia o se borra el perfil).
+  String? _savedAvatar;
+
+  /// Fotos copiadas en esta pantalla que aún no se han guardado.
+  final _unsavedPhotos = <String>{};
+
+  static String? _photoPath(String? avatar) =>
+      avatar != null && avatar.startsWith('photo:') ? avatar.substring(6) : null;
+
+  /// Borra la foto de un avatar, solo si es de la carpeta de avatares de la app.
+  static void _deletePhoto(String? avatar) {
+    final path = _photoPath(avatar);
+    if (path == null || p.basename(p.dirname(path)) != 'avatars') return;
+    try {
+      File(path).deleteSync();
+    } on FileSystemException {
+      // ya no estaba
+    }
   }
 
   Future<void> _load() async {
@@ -66,6 +90,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
       if (c != null) {
         _nameController.text = c.name;
         _avatar = c.avatar;
+        _savedAvatar = c.avatar;
         _birthDate = c.birthDate;
         _gradeOverride = c.gradeOverride;
         _hadPin = c.hasPin;
@@ -103,6 +128,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
       final dir = Directory(p.join(docs.path, 'avatars'))..createSync(recursive: true);
       final dest = p.join(dir.path, '${DateTime.now().millisecondsSinceEpoch}.jpg');
       await File(picked.path).copy(dest);
+      _unsavedPhotos.add(dest);
       if (mounted) setState(() => _avatar = photoAvatar(dest));
     } on Exception {
       messenger.showSnackBar(
@@ -137,6 +163,14 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
           : (_hadPin && !_changingPin ? const KeepChildPin() : SetChildPin(newPin));
       await repo.update(id, input, change);
     }
+    // La foto anterior y las elegidas sin guardar ya no las usa nadie.
+    if (_savedAvatar != _avatar) _deletePhoto(_savedAvatar);
+    _unsavedPhotos.remove(_photoPath(_avatar));
+    for (final path in _unsavedPhotos) {
+      _deletePhoto('photo:$path');
+    }
+    _unsavedPhotos.clear();
+    _savedAvatar = _avatar;
     if (mounted) widget.onDone();
   }
 
@@ -154,6 +188,8 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
     );
     if (ok != true) return;
     await ref.read(childProfileRepositoryProvider).delete(widget.childId!);
+    // La foto del niño no se queda en el teléfono cuando se borra su perfil.
+    _deletePhoto(_savedAvatar);
     if (mounted) widget.onDone();
   }
 

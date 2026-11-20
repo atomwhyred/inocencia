@@ -39,7 +39,6 @@ dependencies:
   sqlite3: ^3.8.0
   path: ^1.9.1
   path_provider: ^2.1.6
-  flutter_secure_storage: ^11.2.0
   crypto: ^3.0.8
   shared_preferences: ^2.5.6
   flutter_local_notifications: ^22.3.3

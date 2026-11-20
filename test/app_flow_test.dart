@@ -85,8 +85,12 @@ void main() {
 
     await typePin('1234');
     await tester.pumpAndSettle();
+    expect(find.textContaining('fácil de adivinar'), findsOneWidget, reason: 'PIN débil rechazado');
+    expect(find.text('Crea tu PIN'), findsOneWidget);
+    await typePin('4829');
+    await tester.pumpAndSettle();
     expect(find.text('Repite tu PIN'), findsOneWidget);
-    await typePin('1234');
+    await typePin('4829');
     // El hash se calcula en un isolate: hay que dejar correr tiempo real.
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 500)));
     await tester.pumpAndSettle();
@@ -99,12 +103,12 @@ void main() {
     await tester.enterText(find.byType(TextFormField), 'Ana');
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
-    for (final d in '1234'.split('')) {
+    for (final d in '4829'.split('')) {
       await tester.tap(find.text(d));
       await tester.pump();
     }
     await tester.pumpAndSettle();
-    for (final d in '1235'.split('')) {
+    for (final d in '4828'.split('')) {
       await tester.tap(find.text(d));
       await tester.pump();
     }

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
 import 'core/di/providers.dart';
+import 'core/storage/platform_info.dart';
 import 'core/splash_phrases.dart';
 import 'features/notifications/application/reminder_controller.dart';
 
@@ -16,10 +17,17 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   // Los versos de la bienvenida se leen antes de abrir la app (si fallan, hay unos de respaldo).
   final phrases = await SplashPhrases.load(rootBundle);
+  // Tiempo desde el encendido al abrir la app + lo que lleva abierta = reloj monótono.
+  final bootMs = await const PlatformInfo().elapsedRealtimeMs();
+  final sinceStart = Stopwatch()..start();
   final container = ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
       splashPhrasesProvider.overrideWithValue(phrases),
+      if (bootMs != null)
+        uptimeProvider.overrideWithValue(
+          () => Duration(milliseconds: bootMs) + sinceStart.elapsed,
+        ),
     ],
   );
   // Un fallo con las alarmas nunca debe impedir que la app arranque.

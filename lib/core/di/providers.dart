@@ -38,8 +38,19 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
 
 final pinHasherProvider = Provider<PinHasher>((ref) => const PinHasher());
 
+/// Tiempo desde que se encendió el teléfono (monótono: no cambia al tocar la hora).
+/// `main` fija el punto de partida con Android; sin él, cuenta desde que abrió la app.
+final uptimeProvider = Provider<Duration Function()>((ref) {
+  final sinceStart = Stopwatch()..start();
+  return () => sinceStart.elapsed;
+});
+
 final pinLockoutProvider = Provider.family<PinLockout, String>(
-  (ref, scope) => PinLockout(ref.watch(sharedPreferencesProvider), scope),
+  (ref, scope) => PinLockout(
+    ref.watch(sharedPreferencesProvider),
+    scope,
+    uptime: ref.watch(uptimeProvider),
+  ),
 );
 
 // --- Padre/madre ---

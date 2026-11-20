@@ -6,7 +6,8 @@ contenido de sus propios libros de texto, y lo guía paso a paso en lugar de dar
 
 - App Flutter para **Android 10 o superior** (móviles y tablets, 64 y 32 bits).
 - Nombre visible: `inocencIA` · identificador: `com.inocencia.app`.
-- **100 % local**: no envía nada a ningún servidor. La versión release no pide permiso de internet.
+- **100 % local**: no envía nada a ningún servidor. Declara el permiso de red solo porque Android lo exige para el
+  juego entre teléfonos del mismo Wi-Fi; la app nunca se conecta a internet.
 
 > **Estado:** versión de pruebas (1.0). Probada en un Pixel 6 (8 GB) y en una Xiaomi Pad 5. La versión de 32 bits
 > compila pero no se ha probado en un teléfono real. Lo que falta está en [docs/pendiente.md](docs/pendiente.md).
@@ -309,10 +310,21 @@ prueban en un dispositivo físico.
 
 ## Privacidad y seguridad
 
-- **Sin red.** La release no declara el permiso `INTERNET` (solo las compilaciones de depuración, para el hot reload); los datos del niño (nombre, historial, medallas, progreso de lectura)
-  no salen del dispositivo.
+- **Sin internet.** La app declara `INTERNET` porque Android lo exige para cualquier socket, también los del juego
+  entre teléfonos de la misma red; nunca se conecta a internet. Los datos del niño (nombre, historial, medallas,
+  progreso de lectura) no salen del dispositivo: `allowBackup="false"` y `dataExtractionRules` excluyen todo de la
+  copia en la nube y del paso a un teléfono nuevo.
+- **Juego en red.** Solo se entra con el código de 4 cifras que muestra el anfitrión; el aviso por Wi-Fi no lleva el
+  nombre del niño y todo lo que llega de otro teléfono se limita y se limpia. La foto del niño solo viaja si el padre
+  lo activa.
 - **PIN.** Se guarda como hash PBKDF2-HMAC-SHA256 con sal aleatoria, y hay bloqueo temporal tras 5 intentos
-  fallidos. Es una barrera doméstica para que el niño no entre a la zona de padres, no seguridad fuerte.
+  fallidos, medido también con el tiempo desde el encendido (adelantar la hora no lo quita). Al crearlo se rechazan
+  los PIN obvios (0000, 1234, 1212...). La zona de padres se cierra al salir de la app y tras 10 minutos sin
+  tocarla. Es una barrera doméstica para que el niño no entre a la zona de padres, no seguridad fuerte.
+- **Archivos que llegan de otro teléfono.** La base de libros se abre en solo lectura y sin confiar en su esquema;
+  el texto de los libros no puede colar órdenes al modelo (los marcadores de turno se neutralizan). Zona de padres
+  → Archivos indica si el modelo y la base son los publicados (`assets/official/official_files.json`, generado con
+  `tools/official_files.py`; hay que regenerarlo al publicar una base nueva).
 - **Permisos usados:** notificaciones y alarmas exactas (recordatorios), arranque del sistema (reprogramarlos) y
   acceso a todos los archivos solo para el explorador de carpetas opcional de Android 11+, porque el modelo y los
   libros pesan gigas.

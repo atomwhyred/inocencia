@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,6 +27,30 @@ class AdminPage extends ConsumerStatefulWidget {
 class _AdminPageState extends ConsumerState<AdminPage> {
   int _section = 0;
 
+  /// Sin tocar la pantalla este tiempo, la zona de padres se cierra sola: un padre que
+  /// deja la tablet desbloqueada no deja el panel abierto al niño.
+  static const idleLock = Duration(minutes: 10);
+  Timer? _idle;
+
+  @override
+  void initState() {
+    super.initState();
+    _touch();
+  }
+
+  @override
+  void dispose() {
+    _idle?.cancel();
+    super.dispose();
+  }
+
+  void _touch() {
+    _idle?.cancel();
+    _idle = Timer(idleLock, () {
+      if (mounted) ref.read(sessionProvider.notifier).lockParent();
+    });
+  }
+
   static const _destinations = [
     (icon: Icons.child_care_rounded, label: 'Perfiles'),
     (icon: Icons.folder_open_rounded, label: 'Archivos'),
@@ -47,46 +73,53 @@ class _AdminPageState extends ConsumerState<AdminPage> {
       _ => const MaxContentWidth(maxWidth: 720, child: AppearanceSection()),
     };
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Zona de padres'),
-        actions: [
-          const PowerToggle(),
-          TextButton.icon(
-            onPressed: _exit,
-            icon: const Icon(Icons.logout_rounded),
-            label: const Text('Salir'),
-          ),
-        ],
-      ),
-      bottomNavigationBar: size.isCompact
-          ? NavigationBar(
-              selectedIndex: _section,
-              onDestinationSelected: (i) => setState(() => _section = i),
-              destinations: [
-                for (final d in _destinations)
-                  NavigationDestination(icon: Icon(d.icon), label: d.label),
-              ],
-            )
-          : null,
-      body: SafeArea(
-        child: size.isCompact
-            ? content
-            : Row(
-                children: [
-                  NavigationRail(
-                    selectedIndex: _section,
-                    labelType: NavigationRailLabelType.all,
-                    onDestinationSelected: (i) => setState(() => _section = i),
-                    destinations: [
-                      for (final d in _destinations)
-                        NavigationRailDestination(icon: Icon(d.icon), label: Text(d.label)),
-                    ],
-                  ),
-                  const VerticalDivider(width: 1),
-                  Expanded(child: content),
+    return Listener(
+      onPointerDown: (_) => _touch(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Zona de padres'),
+          actions: [
+            const PowerToggle(),
+            TextButton.icon(
+              onPressed: _exit,
+              icon: const Icon(Icons.logout_rounded),
+              label: const Text('Salir'),
+            ),
+          ],
+        ),
+        bottomNavigationBar: size.isCompact
+            ? NavigationBar(
+                selectedIndex: _section,
+                onDestinationSelected: (i) => setState(() => _section = i),
+                destinations: [
+                  for (final d in _destinations)
+                    NavigationDestination(icon: Icon(d.icon), label: d.label),
                 ],
-              ),
+              )
+            : null,
+        body: SafeArea(
+          child: size.isCompact
+              ? content
+              : Row(
+                  children: [
+                    NavigationRail(
+                      selectedIndex: _section,
+                      labelType: NavigationRailLabelType.all,
+                      onDestinationSelected: (i) =>
+                          setState(() => _section = i),
+                      destinations: [
+                        for (final d in _destinations)
+                          NavigationRailDestination(
+                            icon: Icon(d.icon),
+                            label: Text(d.label),
+                          ),
+                      ],
+                    ),
+                    const VerticalDivider(width: 1),
+                    Expanded(child: content),
+                  ],
+                ),
+        ),
       ),
     );
   }
@@ -202,7 +235,9 @@ class _ProfileList extends ConsumerWidget {
                         ),
                         leading: AvatarView(avatar: c.avatar, radius: 24),
                         title: Text(c.name),
-                        subtitle: Text(SchoolGradeCalculator.label(c.gradeAt(now))),
+                        subtitle: Text(
+                          SchoolGradeCalculator.label(c.gradeAt(now)),
+                        ),
                         trailing: c.hasPin
                             ? const Icon(Icons.lock_outline_rounded, size: 18)
                             : null,

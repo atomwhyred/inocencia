@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inocencia/core/security/pin_hasher.dart';
 import 'package:inocencia/core/security/pin_lockout.dart';
+import 'package:inocencia/core/security/pin_strength.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -101,5 +102,45 @@ void main() {
       await lock.reset();
       expect(lock.remaining(t0), isNull);
     });
+
+    test('adelantar la hora del teléfono no quita el bloqueo', () async {
+      var up = const Duration(hours: 3);
+      final lock = PinLockout(prefs, 'g', uptime: () => up);
+      for (var i = 0; i < 5; i++) {
+        await lock.registerFailure(t0);
+      }
+      // Reloj adelantado un día, pero solo han pasado 10 s desde el bloqueo.
+      up += const Duration(seconds: 10);
+      expect(lock.remaining(t0.add(const Duration(days: 1))), const Duration(seconds: 20));
+      up += const Duration(seconds: 21);
+      expect(lock.remaining(t0.add(const Duration(days: 1))), isNull);
+    });
+
+    test('atrasar la hora no alarga el bloqueo más de lo que tocaba', () async {
+      final lock = PinLockout(prefs, 'g', uptime: () => const Duration(hours: 1));
+      for (var i = 0; i < 5; i++) {
+        await lock.registerFailure(t0);
+      }
+      expect(lock.remaining(t0.subtract(const Duration(days: 30))), const Duration(seconds: 30));
+    });
+
+    test('tras reiniciar el teléfono el bloqueo cuenta desde el encendido', () async {
+      var up = const Duration(hours: 5);
+      final lock = PinLockout(prefs, 'g', uptime: () => up);
+      for (var i = 0; i < 5; i++) {
+        await lock.registerFailure(t0);
+      }
+      up = const Duration(seconds: 12); // reinicio + reloj adelantado
+      expect(lock.remaining(t0.add(const Duration(days: 1))), const Duration(seconds: 18));
+    });
+  });
+
+  test('PIN débiles', () {
+    for (final pin in ['0000', '1111', '1234', '4321', '0123', '123456', '987654', '1212', '4545', '2580']) {
+      expect(weakPinReason(pin), isNotNull, reason: pin);
+    }
+    for (final pin in ['4829', '1235', '7391', '205817', '1990']) {
+      expect(weakPinReason(pin), isNull, reason: pin);
+    }
   });
 }
