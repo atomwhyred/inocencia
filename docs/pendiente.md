@@ -143,9 +143,9 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 - [x] ~~Desactivar la copia de seguridad de Android~~ (29-oct, `allowBackup="false"`). Antes: añadir `android:allowBackup="false"` en `<application>` de
   `AndroidManifest.xml`. Hoy `adb backup` o la copia en la nube pueden sacar la base con nombres, historial y los
   hashes de PIN (un PIN de 4 dígitos se averigua con 10.000 intentos). Exige recompilar la release.
-- [ ] **Firma propia.** El release usa la clave de depuración, que es pública: cualquiera puede firmar una
-  «actualización» falsa. Crear un keystore propio, configurarlo en `signingConfigs` y guardarlo fuera del repositorio.
-  Cambiar de clave obliga a desinstalar una vez (se pierden los datos de las instalaciones de prueba).
+- [ ] **Firma propia.** Ya configurada (`android/key.properties`, `tools/crear_keystore.sh`; `build_apks.sh` no
+  compila sin ella). Falta **crear el keystore** (lo hace el responsable, con copia de seguridad) y desinstalar una
+  vez en los teléfonos de prueba antes de instalar la primera versión firmada.
 - [ ] **Revisar `MANAGE_EXTERNAL_STORAGE`.** Se usa solo para el explorador de carpetas opcional de Android 11+.
   Valorar quitarlo (basta la carpeta de la app y el selector del sistema) o explicarlo en el README; Google Play lo restringe.
 - Sin problema: la release declara `INTERNET` solo para el juego en red (nunca sale a internet), la búsqueda en los libros usa consultas con parámetros, los PIN van

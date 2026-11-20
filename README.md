@@ -238,9 +238,25 @@ Notas:
 
 - **Sube siempre `--build-number`** respecto a la versión instalada, para actualizar sin desinstalar: desinstalar
   borra los perfiles, el historial y las medallas.
-- El APK sale **firmado con la clave de depuración**. Sirve para repartirlo a mano; para una tienda hay que crear
-  tu propia clave (`android/app/build.gradle.kts`, bloque `signingConfigs`) y guardarla fuera del repositorio.
-- Mientras no tenga clave propia, Android pedirá permitir «orígenes desconocidos» al instalar.
+- **Firma.** `./tools/crear_keystore.sh` crea una vez la clave propia (fuera del repositorio, por defecto en
+  `~/.inocencia/`) y `android/key.properties`, que Gradle usa para firmar la release. **Haz copia de seguridad del
+  keystore y su contraseña**: sin ellos no se pueden publicar actualizaciones. `build_apks.sh` se niega a compilar
+  sin esa clave; para probar en tus teléfonos, `INOCENCIA_FIRMA_DEPURACION=1 ./tools/build_apks.sh <N>` firma con
+  la de depuración (esos APK no se reparten). Pasar de la clave de depuración a la propia obliga a desinstalar una
+  vez en los teléfonos que ya tenían la app.
+- La release va ofuscada; los símbolos para leer un fallo quedan en `build/simbolos/<versión>/`: guárdalos.
+- Si publicas una `knowledge.db` o un modelo nuevos, añade su huella con
+  `python3 tools/official_files.py <archivos>` y recompila, para que la app los reconozca como oficiales.
+
+### Publicar una versión y la web
+
+1. Sube los APK y `SHA256SUMS` de `build/inocencIA/` a una release de GitHub:
+   `gh release create v1.0.0 build/inocencIA/inocencIA-*.apk build/inocencIA/SHA256SUMS`.
+   Los modelos (menos de 2 GB cada uno) y `knowledge.db` pueden ir como adjuntos de la misma release.
+2. La web está en `landing/` (HTML estático, sin scripts ni fuentes de terceros). Antes de publicarla, reemplaza
+   `TU_USUARIO/inocencia` y `TU_CANAL` por el repositorio y el canal de Telegram reales.
+3. En GitHub: **Settings › Pages › Source: GitHub Actions**. El workflow `.github/workflows/pages.yml` la publica en
+   cada push a `main` que cambie `landing/`. Para un dominio propio, añade `landing/CNAME` con el dominio.
 
 ## Instalar en un dispositivo y usarlo
 

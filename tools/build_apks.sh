@@ -26,6 +26,16 @@ shift
 ABIS=("$@")
 [[ ${#ABIS[@]} -eq 0 ]] && ABIS=(arm64-v8a armeabi-v7a x86_64)
 
+# Una release que se publica se firma con la clave propia (android/key.properties, ver
+# tools/crear_keystore.sh). INOCENCIA_FIRMA_DEPURACION=1 permite compilar sin ella para
+# probar en los teléfonos de desarrollo; esos APK no se deben repartir.
+if [[ ! -f android/key.properties && "${INOCENCIA_FIRMA_DEPURACION:-0}" != 1 ]]; then
+  echo "Falta android/key.properties (la clave para firmar la release)." >&2
+  echo "Créala con ./tools/crear_keystore.sh, o compila solo para pruebas con" >&2
+  echo "  INOCENCIA_FIRMA_DEPURACION=1 $0 $*" >&2
+  exit 1
+fi
+
 VERSION="$(grep -m1 '^version:' pubspec.yaml | sed -E 's/^version:[[:space:]]*([0-9.]+).*/\1/')"
 SALIDA=build/inocencIA
 mkdir -p "$SALIDA"
@@ -42,7 +52,9 @@ plataforma() {
 for abi in "${ABIS[@]}"; do
   destino="$SALIDA/inocencIA-$VERSION-$abi.apk"
   echo "=== $abi (build $NUMERO) ==="
+  # Ofuscado: los símbolos para leer un fallo quedan en build/simbolos/<version>/ (guárdalos).
   flutter build apk --release --split-per-abi \
+    --obfuscate --split-debug-info="build/simbolos/$VERSION+$NUMERO" \
     --target-platform "$(plataforma "$abi")" --build-number "$NUMERO"
   cp -f "build/app/outputs/flutter-apk/app-$abi-release.apk" "$destino"
   echo "-> $destino ($(du -h "$destino" | cut -f1))"
