@@ -68,11 +68,13 @@ const PX = TOCO_H / CANVAS[1];
 
 // ------------------------------------------------------------------ comprobaciones
 
-const stage = document.querySelector("[data-escena]");
+// Escenarios donde puede salir Toco (portada y preguntas). Un solo lienzo WebGL va al que
+// esté a la vista: nunca se ven dos a la vez y así no se gasta un segundo contexto.
+const stages = Array.from(document.querySelectorAll("[data-escena]"));
 const motionOk = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const conn = navigator.connection;
 const lowMem = typeof navigator.deviceMemory === "number" && navigator.deviceMemory <= 2;
-if (stage && motionOk && !(conn && conn.saveData) && !lowMem) start(stage).catch(() => {});
+if (stages.length && motionOk && !(conn && conn.saveData) && !lowMem) start().catch(() => {});
 
 // ------------------------------------------------------------------ utilidades
 
@@ -239,8 +241,11 @@ function pageTexture() {
 
 // ------------------------------------------------------------------ escena
 
-async function start(stage) {
-  const canvas = stage.querySelector("canvas");
+async function start() {
+  let stage = stages[0];
+  const canvas = document.createElement("canvas");
+  canvas.setAttribute("aria-hidden", "true");
+  stage.appendChild(canvas);
   let renderer;
   try {
     renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "low-power" });
@@ -516,12 +521,16 @@ async function start(stage) {
     pointer.last = performance.now() / 1000;
   }
   window.addEventListener("pointermove", onPointer, { passive: true });
-  stage.addEventListener("pointerdown", (e) => { onPointer(e); if (clock() > 2.2) celebrate(); }, { passive: true });
+  stages.forEach((st) => st.addEventListener("pointerdown", (e) => {
+    if (st !== stage) return;
+    onPointer(e);
+    if (clock() - introAt > 2.2) celebrate();
+  }, { passive: true }));
 
   let happyAt = -10;
   function celebrate(from) {
     happyAt = clock();
-    if (clock() > 3.2 && clock() - turnAt > 1.6) turnAt = clock();
+    if (clock() - introAt > 3.2 && clock() - turnAt > 1.6) turnAt = clock();
     const head = new Vector3();
     if (from) head.copy(from); else parts.head.getWorldPosition(head);
     burst.forEach((b, i) => {
@@ -547,7 +556,8 @@ async function start(stage) {
     rect = stage.getBoundingClientRect();
   }
   resize();
-  new ResizeObserver(resize).observe(stage);
+  const ro = new ResizeObserver(resize);
+  stages.forEach((st) => ro.observe(st));
 
   // ---- bucle
   const t0 = performance.now();
@@ -555,22 +565,24 @@ async function start(stage) {
   const eyeWorld = new Vector3();
   let prev = 0;
   let introBurst = false;
+  let introAt = 0; // la entrada se repite cada vez que el lienzo cambia de escenario
 
   function frame() {
     const t = clock();
     const dt = Math.min(0.05, t - prev);
     prev = t;
+    const it = t - introAt;
 
     // Entrada: aparece el libro, se abre y Toco sale volando de él.
-    const pop = easeOutBack(clamp01(t / 0.55));
+    const pop = easeOutBack(clamp01(it / 0.55));
     book.scale.setScalar(0.82 * Math.max(0.001, pop));
-    setBook(smooth(clamp01((t - 0.45) / 0.8)));
-    const rise = clamp01((t - 1.0) / 1.1);
+    setBook(smooth(clamp01((it - 0.45) / 0.8)));
+    const rise = clamp01((it - 1.0) / 1.1);
     toco.position.y = -1.55 + (TOCO_Y + 1.55) * easeOutBack(rise);
     toco.scale.setScalar(TOCO_S * (0.15 + 0.85 * smooth(rise)));
-    const tocoAlpha = clamp01((t - 1.0) / 0.3);
+    const tocoAlpha = clamp01((it - 1.0) / 0.3);
     tocoMats.forEach((m) => { m.opacity = tocoAlpha; });
-    if (!introBurst && t > 1.15) {
+    if (!introBurst && it > 1.15) {
       introBurst = true;
       const from = new Vector3();
       book.getWorldPosition(from);
@@ -579,7 +591,7 @@ async function start(stage) {
     }
     book.position.y = -1.75 + 0.04 * wave(t, 5);
     // Luego, de vez en cuando, pasa una página.
-    if (t > 3.2 && t - turnAt > 7) turnAt = t;
+    if (it > 3.2 && t - turnAt > 7) turnAt = t;
     setLeaf((t - turnAt) / 1.3);
 
     // Pose de reposo de la app, algo más viva para que se note en la web.
@@ -645,7 +657,7 @@ async function start(stage) {
       const u = t / g.sp + g.ph;
       g.s.position.set(g.base.x * spreadX + 0.12 * Math.sin(TAU * u * 0.7), g.base.y + 0.22 * Math.sin(TAU * u), g.base.z);
       g.s.material.rotation = 0.25 * Math.sin(TAU * (u * 0.5 + 0.3));
-      g.s.material.opacity = (night ? 0.75 : 0.55) * clamp01((t - 1.4) / 0.8);
+      g.s.material.opacity = (night ? 0.75 : 0.55) * clamp01((it - 1.4) / 0.8);
     });
 
     sky[0].material.opacity = night ? 0.55 + 0.35 * Math.sin(t * 1.3) : 0.16;
@@ -666,16 +678,38 @@ async function start(stage) {
     renderer.render(scene, camera);
   }
 
-  // Solo se anima con la portada a la vista y la pestaña abierta.
-  let onScreen = true, raf = 0;
+  // Solo se anima con un escenario a la vista y la pestaña abierta.
+  let onScreen = true, raf = 0, lost = false;
+  const visible = new Set([stage]);
   const loop = () => { frame(); raf = requestAnimationFrame(loop); };
-  const run = () => { if (!raf && onScreen && !document.hidden) { prev = clock(); raf = requestAnimationFrame(loop); } };
+  const run = () => { if (!raf && !lost && onScreen && !document.hidden) { prev = clock(); raf = requestAnimationFrame(loop); } };
   const stop = () => { if (raf) cancelAnimationFrame(raf); raf = 0; };
-  new IntersectionObserver((es) => { onScreen = es[0].isIntersecting; onScreen ? run() : stop(); }).observe(stage);
+
+  /** Lleva el lienzo a otro escenario y repite la entrada (el libro se abre otra vez). */
+  function moveTo(st) {
+    stage.classList.remove("is-3d");
+    stage = st;
+    stage.appendChild(canvas);
+    resize();
+    introAt = clock();
+    introBurst = false;
+    burst.forEach((b) => { b.life = 0; b.s.visible = false; });
+    frame();
+    stage.classList.add("is-3d");
+  }
+
+  const io = new IntersectionObserver((es) => {
+    es.forEach((e) => (e.isIntersecting ? visible.add(e.target) : visible.delete(e.target)));
+    if (!visible.has(stage) && visible.size && !lost) moveTo(visible.values().next().value);
+    onScreen = visible.size > 0;
+    onScreen ? run() : stop();
+  });
+  stages.forEach((st) => io.observe(st));
   document.addEventListener("visibilitychange", () => (document.hidden ? stop() : run()));
 
   canvas.addEventListener("webglcontextlost", (e) => {
     e.preventDefault();
+    lost = true;
     stop();
     stage.classList.remove("is-3d");
   });

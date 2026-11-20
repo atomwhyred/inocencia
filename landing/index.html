@@ -217,10 +217,10 @@ section > header p { color: var(--muted); }
 .feature p { color: var(--muted); }
 
 /* Capturas */
-.shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(12px, 3vw, 32px); align-items: center; perspective: 1200px; }
+.shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(12px, 3vw, 32px); align-items: center; perspective: 1200px; width: 100%; max-width: 720px; margin-inline: auto; }
 .shots figure { margin: 0; display: grid; gap: 10px; }
 /* Cada captura como un teléfono, los de los lados girados hacia el centro. */
-.shots img { width: 100%; border-radius: 30px; border: 8px solid var(--bezel); box-shadow: 0 18px 40px -18px rgba(16, 19, 58, .45); transition: transform 400ms var(--ease); }
+.shots img { width: 100%; aspect-ratio: 320 / 659; object-fit: cover; object-position: top; border-radius: 30px; border: 8px solid var(--bezel); box-shadow: 0 18px 40px -18px rgba(16, 19, 58, .45); transition: transform 400ms var(--ease); }
 .shots figure:nth-child(1) img { transform: rotateY(16deg) scale(.94); }
 .shots figure:nth-child(2) img { transform: translateY(-8px); }
 .shots figure:nth-child(3) img { transform: rotateY(-16deg) scale(.94); }
@@ -231,11 +231,12 @@ section > header p { color: var(--muted); }
 .shots figcaption { font-size: var(--step--1); color: var(--muted); text-align: center; }
 
 /* Privacidad */
-.privacy { background: var(--surface); border: 1px solid var(--line); border-radius: 28px; padding: clamp(22px, 5vw, 48px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s8); }
-.checks { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--s4); }
+.privacy { background: var(--surface); border: 1px solid var(--line); border-radius: 28px; padding: clamp(22px, 5vw, 48px); display: grid; gap: var(--s8); }
+.checks { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s6) var(--s8); }
 .checks li { display: grid; grid-template-columns: 26px 1fr; gap: 10px; }
 .checks li::before { content: "✓"; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--blue-soft); color: var(--blue); font-weight: 700; }
-.privacy-head { display: grid; gap: var(--s3); align-content: start; }
+.privacy-head { display: grid; gap: var(--s3); justify-items: center; text-align: center; }
+.privacy-head p { max-width: 52ch; }
 .checks strong { display: block; font-weight: 600; }
 .checks span { color: var(--muted); }
 
@@ -259,7 +260,9 @@ td.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; whit
 .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s8); align-items: start; }
 
 /* Preguntas */
-.faq { display: grid; gap: var(--s3); }
+.faq { display: grid; gap: var(--s3); align-content: start; min-width: 0; }
+.faq-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: clamp(24px, 5vw, 64px); align-items: center; }
+.faq-grid > .stage { max-width: 380px; }
 details { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 20px; }
 summary { cursor: pointer; font-weight: 600; padding-block: 14px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
 summary::-webkit-details-marker { display: none; }
@@ -269,13 +272,30 @@ details > p { padding-bottom: 16px; color: var(--muted); }
 
 /* Llamada final y pie */
 .cta { text-align: center; justify-items: center; }
-.cta img { width: 120px; }
+/* Botones finales: se inclinan en 3D hacia el ratón, con un brillo que lo sigue. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .cta .actions { perspective: 600px; }
+  .cta .btn {
+    position: relative; overflow: hidden; transform-style: preserve-3d;
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(var(--tz, 0px));
+    box-shadow: calc(var(--sx, 0) * 1px) calc(var(--sy, 0) * 1px + 10px) 24px -12px rgba(16, 19, 58, calc(var(--lift, 0) * .5));
+    transition: transform 300ms var(--ease), box-shadow 300ms var(--ease), border-color 150ms var(--ease);
+  }
+  .cta .btn.tilt { transition: transform 60ms linear, box-shadow 60ms linear, border-color 150ms var(--ease); }
+  .cta .btn::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: var(--lift, 0);
+    background: radial-gradient(120px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, .35), transparent 70%);
+    transition: opacity 300ms var(--ease);
+  }
+}
 footer { border-top: 1px solid var(--line); padding-block: 28px 40px; display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; color: var(--muted); font-size: var(--step--1); }
 footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 .flag { height: 6px; background: linear-gradient(90deg, var(--blue) 0 50%, var(--red) 50% 100%); border-radius: 3px; width: 72px; }
 
 @media (max-width: 760px) {
-  .hero, .privacy, .two { grid-template-columns: 1fr; }
+  .hero, .two, .faq-grid { grid-template-columns: 1fr; }
+  .checks { grid-template-columns: 1fr; }
+  .faq-grid > .stage { display: none; }
   .stage { order: -1; aspect-ratio: 5 / 4; max-width: 420px; margin-bottom: calc(-1 * var(--s4)); }
   .stage > img { width: 30%; }
   .shots { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
@@ -291,8 +311,8 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
   <header class="top">
     <a class="brand" href="#inicio"><img src="img/icono-180.png" alt="" width="34" height="34"><span>inocenc<b>IA</b></span></a>
     <nav class="top-links" aria-label="Secciones">
-      <a href="#que-hace">Qué hace</a>
       <a href="#asi-responde">Así responde</a>
+      <a href="#que-hace">Qué hace</a>
       <a href="#instalar">Instalar</a>
       <a href="#preguntas">Preguntas</a>
     </nav>
@@ -323,7 +343,6 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 
       <div class="stage" data-escena>
         <img src="img/toco.webp" alt="Toco, el tocororo de inocencIA" width="120" height="198">
-        <canvas aria-hidden="true"></canvas>
       </div>
     </div>
 
@@ -430,7 +449,8 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
       <header class="narrow">
         <h2 id="faq-t">Preguntas frecuentes</h2>
       </header>
-      <div data-reveal class="faq narrow">
+      <div class="faq-grid">
+      <div data-reveal class="faq">
         <details><summary>¿Cuánto tarda en responder?</summary><p>Con el modelo recomendado, unos 20 a 40 segundos en empezar a escribir, según el teléfono. Todo se calcula dentro del teléfono. Mientras piensa se puede salir de la app o apagar la pantalla; un aviso dice cuándo terminó.</p></details>
         <details><summary>¿Cuesta algo?</summary><p>No. Es gratis, sin anuncios ni compras dentro de la app. El código es abierto (licencia Apache 2.0).</p></details>
         <details><summary>¿Le hace los deberes al niño?</summary><p>No. Ante un ejercicio no da la solución: pide el primer paso, valora lo que el niño contesta y corrige con suavidad.</p></details>
@@ -438,10 +458,13 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
         <details><summary>¿Cómo sé que el archivo es el original?</summary><p>Junto a cada versión se publica la suma SHA-256 de los APK. Además, la app avisa en Zona de padres → Archivos si el modelo o la base de libros no coinciden con los publicados.</p></details>
         <details><summary>¿Se puede actualizar sin perder nada?</summary><p>Sí: instala el APK nuevo encima del anterior, sin desinstalar. Desinstalar borra los perfiles, el historial y las medallas.</p></details>
       </div>
+      <div class="stage" data-escena>
+        <img src="img/toco.webp" alt="" width="120" height="198" loading="lazy">
+      </div>
+      </div>
     </section>
 
     <section class="cta" aria-labelledby="cta-t">
-      <img src="img/toco.webp" alt="Toco, el tocororo de inocencIA" width="120" height="198" loading="lazy">
       <h2 id="cta-t">¿Qué aprendemos hoy?</h2>
       <div class="actions" style="justify-content:center">
         <a class="btn btn-primary" href="https://github.com/atomwhyred/inocencia/releases/latest">Descargar para Android</a>
@@ -497,6 +520,33 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
   if (mq.addEventListener) mq.addEventListener("change", paint);
   btn.hidden = false;
   paint();
+})();
+</script>
+<script>
+/* Inclinación 3D de los botones finales al pasar el ratón (el CSS decide si se aplica). */
+(function () {
+  try {
+    if (!matchMedia("(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)").matches) return;
+    document.querySelectorAll(".cta .btn").forEach(function (b) {
+      b.addEventListener("pointermove", function (e) {
+        var r = b.getBoundingClientRect();
+        var x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+        b.classList.add("tilt");
+        b.style.setProperty("--ry", ((x - 0.5) * 24).toFixed(1) + "deg");
+        b.style.setProperty("--rx", ((0.5 - y) * 24).toFixed(1) + "deg");
+        b.style.setProperty("--tz", "14px");
+        b.style.setProperty("--sx", ((0.5 - x) * 20).toFixed(1));
+        b.style.setProperty("--sy", ((0.5 - y) * -20 + 8).toFixed(1));
+        b.style.setProperty("--lift", "1");
+        b.style.setProperty("--mx", (x * 100).toFixed(0) + "%");
+        b.style.setProperty("--my", (y * 100).toFixed(0) + "%");
+      });
+      b.addEventListener("pointerleave", function () {
+        b.classList.remove("tilt");
+        ["--rx", "--ry", "--tz", "--lift", "--sx", "--sy"].forEach(function (k) { b.style.removeProperty(k); });
+      });
+    });
+  } catch (e) {}
 })();
 </script>
 <script>

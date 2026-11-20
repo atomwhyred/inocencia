@@ -173,7 +173,9 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   libros alrededor y estrellas de noche. Al entrar, un libro se abre y Toco sale volando de él; después el libro pasa
   páginas. Las capturas se ven como teléfonos girados. Barra de navegación flotante como la de la app: arriba en
   pantallas anchas (Qué hace, Así responde, Instalar, Preguntas, Telegram, tema, Descargar) y abajo en el móvil
-  (Inicio, Qué hace, Descargar, Instalar, Canal), con la sección visible marcada. Probado en el Redmi (Chrome y Firefox) y en Chrome de
+  (Inicio, Qué hace, Descargar, Instalar, Canal), con la sección visible marcada.
+  En escritorio, Toco también sale del libro junto a las preguntas frecuentes (el mismo lienzo 3D pasa de un sitio a
+  otro) y los botones finales se inclinan en 3D hacia el ratón. Probado en el Redmi (Chrome y Firefox) y en Chrome de
   escritorio. Pesa 491 KB (unos 128 KB comprimido) y solo se descarga si se va a ver.
 - Enlaces reales: `github.com/atomwhyred/inocencia` y `t.me/elrincondeatomwhyred`.
 - [ ] **Publicar la web.** Crear el repositorio `atomwhyred/inocencia`, subir el código a `main` (el trabajo está en
