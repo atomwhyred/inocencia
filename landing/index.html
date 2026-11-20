@@ -9,7 +9,9 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="inocencIA: un tutor que funciona sin internet">
 <meta property="og:description" content="Para niños de 1.º a 6.º grado. Responde con sus libros de texto, cita la página y lo guía paso a paso. Gratis, sin cuentas y sin anuncios.">
-<meta property="og:image" content="img/compartir.jpg">
+<meta property="og:url" content="https://atomwhyred.github.io/inocencia/">
+<meta property="og:image" content="https://atomwhyred.github.io/inocencia/img/compartir.jpg">
+<link rel="canonical" href="https://atomwhyred.github.io/inocencia/">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:locale" content="es_ES">
@@ -42,6 +44,7 @@ try { var t = localStorage.getItem("tema"); if (t === "dark" || t === "light") d
   --on-accent: #ffffff;
   --bubble-kid: #0035ad;
   --bubble-toco: #e6eaf6;
+  --bezel: #1b1b2e;
   --font-display: ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round", system-ui, sans-serif;
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
   --font-data: ui-monospace, "SF Mono", "Roboto Mono", "Noto Sans Mono", monospace;
@@ -58,13 +61,13 @@ try { var t = localStorage.getItem("tema"); if (t === "dark" || t === "light") d
   :root:not([data-theme="light"]) {
     --bg: #1d1d44; --surface: #272757; --surface-2: #31316a; --fg: #eef0ff; --muted: #b8bddc;
     --line: #3d3d78; --blue: #b6c4ff; --blue-soft: #31316a; --red: #ff6b5f; --on-accent: #10133a;
-    --bubble-kid: #0035ad; --bubble-toco: #3a3a72; color-scheme: dark;
+    --bubble-kid: #0035ad; --bubble-toco: #3a3a72; --bezel: #0b0b1c; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #1d1d44; --surface: #272757; --surface-2: #31316a; --fg: #eef0ff; --muted: #b8bddc;
   --line: #3d3d78; --blue: #b6c4ff; --blue-soft: #31316a; --red: #ff6b5f; --on-accent: #10133a;
-  --bubble-kid: #0035ad; --bubble-toco: #3a3a72; color-scheme: dark;
+  --bubble-kid: #0035ad; --bubble-toco: #3a3a72; --bezel: #0b0b1c; color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -136,9 +139,10 @@ section > header p { color: var(--muted); }
 .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 400ms var(--ease); cursor: pointer; }
 .stage.is-3d > img { opacity: 0; }
 .stage.is-3d canvas { opacity: 1; }
-.stage-hint { position: absolute; bottom: 4%; left: 0; right: 0; text-align: center; font-size: var(--step--1); color: var(--muted); opacity: 0; transition: opacity 400ms var(--ease); pointer-events: none; }
-.stage.is-3d .stage-hint { opacity: 1; }
-.hero-bg { background: radial-gradient(60% 55% at 72% 45%, var(--blue-soft), transparent 70%); }
+/* Brillo suave detrás de Toco: se apaga antes del borde, sin cantos rectos. */
+.stage::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(closest-side, var(--blue-soft), transparent); pointer-events: none; }
+/* Las letras y estrellas se desvanecen hacia el borde del lienzo en vez de cortarse. */
+.stage canvas { -webkit-mask-image: radial-gradient(closest-side, #000 72%, transparent); mask-image: radial-gradient(closest-side, #000 72%, transparent); }
 
 /* La conversación */
 .chat {
@@ -163,9 +167,17 @@ section > header p { color: var(--muted); }
 .feature p { color: var(--muted); }
 
 /* Capturas */
-.shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(12px, 3vw, 32px); align-items: start; }
+.shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(12px, 3vw, 32px); align-items: center; perspective: 1200px; }
 .shots figure { margin: 0; display: grid; gap: 10px; }
-.shots img { border-radius: 22px; border: 6px solid var(--surface-2); width: 100%; }
+/* Cada captura como un teléfono, los de los lados girados hacia el centro. */
+.shots img { width: 100%; border-radius: 30px; border: 8px solid var(--bezel); box-shadow: 0 18px 40px -18px rgba(16, 19, 58, .45); transition: transform 400ms var(--ease); }
+.shots figure:nth-child(1) img { transform: rotateY(16deg) scale(.94); }
+.shots figure:nth-child(2) img { transform: translateY(-8px); }
+.shots figure:nth-child(3) img { transform: rotateY(-16deg) scale(.94); }
+.shots figure:hover img { transform: none; }
+/* Aparición suave al bajar (solo con JS y sin "reducir movimiento"). */
+.reveal [data-reveal] { opacity: 0; transform: translateY(18px); transition: opacity 600ms var(--ease), transform 600ms var(--ease); }
+.reveal [data-reveal].in { opacity: 1; transform: none; }
 .shots figcaption { font-size: var(--step--1); color: var(--muted); text-align: center; }
 
 /* Privacidad */
@@ -216,9 +228,10 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
   .hero, .privacy, .two { grid-template-columns: 1fr; }
   .stage { order: -1; aspect-ratio: 5 / 4; max-width: 420px; margin-bottom: calc(-1 * var(--s4)); }
   .stage > img { width: 30%; }
-  .hero-bg { background: radial-gradient(70% 30% at 50% 18%, var(--blue-soft), transparent 70%); }
   .shots { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-  .shots img { border-width: 3px; border-radius: 14px; }
+  .shots img { border-width: 4px; border-radius: 16px; }
+  .shots figure:nth-child(1) img { transform: rotateY(10deg) scale(.95); }
+  .shots figure:nth-child(3) img { transform: rotateY(-10deg) scale(.95); }
   .btn { width: 100%; }
 }
 </style>
@@ -234,7 +247,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
   </header>
 
   <main>
-    <div class="hero hero-bg">
+    <div class="hero">
       <div class="hero-copy">
         <p class="age">Para niños de 1.º a 6.º grado</p>
         <h1>Un tutor que vive dentro del teléfono y <span>funciona sin internet</span></h1>
@@ -254,7 +267,6 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
       <div class="stage" data-escena>
         <img src="img/toco.webp" alt="Toco, el tocororo de inocencIA" width="120" height="198">
         <canvas aria-hidden="true"></canvas>
-        <p class="stage-hint" aria-hidden="true">Toca a Toco</p>
       </div>
     </div>
 
@@ -263,7 +275,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
         <h2 id="asi-responde-t">Así responde</h2>
       </header>
       <div class="two">
-        <div class="chat" aria-label="Ejemplo de conversación con el tutor">
+        <div data-reveal class="chat" aria-label="Ejemplo de conversación con el tutor">
           <div class="chat-bar">
             <img src="img/toco.webp" alt="" width="40" height="66">
             <strong>Toco</strong>
@@ -288,7 +300,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
       <header class="narrow">
         <h2 id="que-hace-t">Estudiar, repasar y jugar</h2>
       </header>
-      <div class="features">
+      <div data-reveal class="features">
         <article class="feature"><h3>Pregunta y aprende paso a paso</h3><p>Busca primero en los libros del grado del niño y responde en dos o tres frases. Si el libro no lo explica, lo dice y sugiere preguntar al maestro.</p></article>
         <article class="feature"><h3>Sus libros siempre a mano</h3><p>Los libros en PDF de su grado. Cada uno se abre en la página donde se quedó, y desde una respuesta se salta a la página citada.</p></article>
         <article class="feature"><h3>Repasar sin aburrirse</h3><p>Tarjetas de memoria creadas a partir de lo que preguntó y quizzes de tres preguntas que dan estrellas y medallas.</p></article>
@@ -302,7 +314,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
       <header class="narrow">
         <h2 id="capturas-t">Pensada para manos pequeñas</h2>
       </header>
-      <div class="shots">
+      <div data-reveal class="shots">
         <figure><img src="img/08-inicio.webp" alt="Pantalla de inicio con Toco, las medallas y las tarjetas del niño" width="320" height="659" loading="lazy"><figcaption>Inicio</figcaption></figure>
         <figure><img src="img/09-tutor-respuesta.webp" alt="El tutor responde citando el libro y la página" width="320" height="659" loading="lazy"><figcaption>Tutor</figcaption></figure>
         <figure><img src="img/15-carrera.webp" alt="Carrera de tocororos con una pregunta de opción múltiple" width="320" height="674" loading="lazy"><figcaption>Juego</figcaption></figure>
@@ -310,7 +322,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
     </section>
 
     <section aria-labelledby="privacidad-t">
-      <div class="privacy">
+      <div data-reveal class="privacy">
         <header class="privacy-head">
           <h2 id="privacidad-t">Todo queda en el teléfono</h2>
           <p class="small">La inteligencia artificial está dentro de la app. No hay servidor al que mandar las preguntas del niño.</p>
@@ -361,7 +373,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
       <header class="narrow">
         <h2 id="faq-t">Preguntas frecuentes</h2>
       </header>
-      <div class="faq narrow">
+      <div data-reveal class="faq narrow">
         <details><summary>¿Cuánto tarda en responder?</summary><p>Con el modelo recomendado, unos 20 a 40 segundos en empezar a escribir, según el teléfono. Todo se calcula dentro del teléfono. Mientras piensa se puede salir de la app o apagar la pantalla; un aviso dice cuándo terminó.</p></details>
         <details><summary>¿Cuesta algo?</summary><p>No. Es gratis, sin anuncios ni compras dentro de la app. El código es abierto (licencia Apache 2.0).</p></details>
         <details><summary>¿Le hace los deberes al niño?</summary><p>No. Ante un ejercicio no da la solución: pide el primer paso, valora lo que el niño contesta y corrige con suavidad.</p></details>
@@ -421,6 +433,19 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
   if (mq.addEventListener) mq.addEventListener("change", paint);
   btn.hidden = false;
   paint();
+})();
+</script>
+<script>
+/* Las secciones aparecen al llegar a ellas. Sin JS o con "reducir movimiento" se ven siempre. */
+(function () {
+  try {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) return;
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+    }, { rootMargin: "0px 0px -8% 0px" });
+    document.querySelectorAll("[data-reveal]").forEach(function (el) { io.observe(el); });
+    document.documentElement.classList.add("reveal");
+  } catch (e) {}
 })();
 </script>
 <script>

@@ -3,9 +3,10 @@
  *
  * Se monta con las mismas capas que usa la app (assets/mascot/, ver layers.json) y la
  * misma animación de reposo que lib/features/mascot/presentation/mascot_pose.dart:
- * respira, parpadea, mueve cabeza, ala y cola, y mira al dedo o al ratón. Al tocarlo da
- * un saltito con estrellas. Alrededor flotan letras, números y figuras de los libros, y
- * de noche hay estrellas.
+ * respira, parpadea, mueve cabeza, ala y cola, y mira al dedo o al ratón. Al empezar,
+ * un libro se abre y Toco sale volando de él; luego se queda encima mientras el libro
+ * pasa páginas. Al tocarlo da un saltito con estrellas. Alrededor flotan letras, números
+ * y figuras de los libros, y de noche hay estrellas.
  *
  * Es solo un adorno: si algo falla (sin WebGL, poca memoria, ahorro de datos, movimiento
  * reducido) se queda la imagen fija de Toco que ya trae la página.
@@ -31,6 +32,11 @@ import {
   Vector3,
   WebGLRenderer,
   Color,
+  BoxGeometry,
+  MeshLambertMaterial,
+  AmbientLight,
+  DirectionalLight,
+  DoubleSide,
 } from "three";
 
 // ------------------------------------------------------------------ datos de la app
@@ -169,6 +175,68 @@ function dotTexture() {
   return new CanvasTexture(c);
 }
 
+/** Salida con un pequeño rebote al final (0..1). */
+function easeOutBack(x) {
+  const c1 = 1.5, c3 = c1 + 1;
+  return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+}
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+
+function canvasTexture(w, h, draw) {
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  draw(c.getContext("2d"), w, h);
+  const t = new CanvasTexture(c);
+  t.colorSpace = SRGBColorSpace;
+  return t;
+}
+
+/** Tapa del libro: azul, franja roja junto al lomo y una estrella blanca. */
+function coverTexture() {
+  return canvasTexture(256, 340, (g, w, h) => {
+    g.fillStyle = "#0035ad";
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = "#dc241f";
+    g.fillRect(0, 0, 34, h);
+    g.fillStyle = "rgba(255,255,255,.18)";
+    g.fillRect(70, 230, 140, 14);
+    g.fillRect(70, 256, 100, 14);
+    g.translate(140, 130);
+    g.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const r = i % 2 ? 22 : 54;
+      const a = (i * Math.PI) / 5 - Math.PI / 2;
+      g.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    g.closePath();
+    g.fillStyle = "#fff";
+    g.fill();
+  });
+}
+
+/** Página: renglones y un triángulo, como un libro de Matemática. */
+function pageTexture() {
+  return canvasTexture(256, 340, (g, w, h) => {
+    g.fillStyle = "#fbf8ef";
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = "#c9cede";
+    for (let y = 40; y < 150; y += 22) g.fillRect(28, y, w - 56 - ((y * 7) % 60), 7);
+    g.strokeStyle = "#0035ad";
+    g.lineWidth = 6;
+    g.lineJoin = "round";
+    g.beginPath();
+    g.moveTo(70, 290);
+    g.lineTo(186, 290);
+    g.lineTo(110, 190);
+    g.closePath();
+    g.stroke();
+    g.fillStyle = "#dc241f";
+    g.font = "700 30px system-ui, sans-serif";
+    g.fillText("193", w - 80, h - 18);
+  });
+}
+
 // ------------------------------------------------------------------ escena
 
 async function start(stage) {
@@ -194,13 +262,16 @@ async function start(stage) {
     await Promise.all(names.map(async (n) => [n, await loadTexture(loader, `img/toco/${n}.webp`)])),
   );
 
-  const toco = new Group(); // gira hacia el puntero
+  const rig = new Group(); // Toco y el libro: gira hacia el puntero
+  scene.add(rig);
+  const toco = new Group(); // sale del libro
   const body = new Group(); // respira y salta (anclado en las patas)
   const [fx, fy] = toWorld(FEET[0], FEET[1]);
   body.position.set(fx, fy, 0);
   toco.add(body);
-  scene.add(toco);
-  toco.position.y = 0.05;
+  rig.add(toco);
+  const TOCO_Y = 0.55, TOCO_S = 0.84;
+  const tocoMats = [];
 
   const parts = {};
   ORDER.forEach((name, i) => {
@@ -209,6 +280,7 @@ async function start(stage) {
       new PlaneGeometry(L.w * PX, L.h * PX),
       new MeshBasicMaterial({ map: tex[name], transparent: true, depthWrite: false }),
     );
+    tocoMats.push(mesh.material);
     mesh.renderOrder = 10 + i;
     const [cx, cy] = toWorld(L.x + L.w / 2, L.y + L.h / 2);
     const z = DEPTH[name] * PX;
@@ -240,6 +312,7 @@ async function start(stage) {
     new MeshBasicMaterial({ map: eyeTex, transparent: true, depthWrite: false }),
   );
   eyeMesh.renderOrder = 20;
+  tocoMats.push(eyeMesh.material);
   {
     const [ex, ey] = toWorld(EYE.cx, EYE.cy);
     const [hx, hy] = toWorld(PIVOTS.head[0], PIVOTS.head[1]);
@@ -288,6 +361,80 @@ async function start(stage) {
     }
     eyeTex.needsUpdate = true;
   }
+
+  // ---- el libro (de él sale Toco)
+  scene.add(new AmbientLight(0xffffff, 1.6));
+  const sun = new DirectionalLight(0xffffff, 1.6);
+  sun.position.set(2, 5, 6);
+  scene.add(sun);
+
+  const W = 1.2, H = 1.6, CT = 0.04, BT = 0.12; // media anchura, alto, tapa y bloque de hojas
+  const ZC = CT + BT / 2 + CT / 2; // eje del lomo: a media altura del libro cerrado
+  const coverTex = coverTexture(), pageTex = pageTexture();
+  const blue = new MeshLambertMaterial({ color: 0x0035ad });
+  const inside = new MeshLambertMaterial({ color: 0xdce4ff });
+  const edge = new MeshLambertMaterial({ color: 0xefe9da });
+  const page = new MeshLambertMaterial({ map: pageTex });
+  const coverMats = [blue, blue, blue, blue, new MeshLambertMaterial({ map: coverTex }), inside];
+  const blockMats = [edge, edge, edge, edge, page, page];
+
+  const book = new Group();
+  book.position.set(0, -1.75, 0.35);
+  book.rotation.x = -1.02; // tumbado, visto desde delante y un poco arriba
+  rig.add(book);
+  const bookInner = new Group(); // centra el libro abierto
+  book.add(bookInner);
+
+  const backCover = new Mesh(new BoxGeometry(W + 0.06, H + 0.08, CT), coverMats);
+  backCover.position.set(W / 2, 0, CT / 2);
+  const pagesR = new Mesh(new BoxGeometry(W, H, BT), blockMats);
+  const hinge = new Group(); // la tapa gira sobre el lomo
+  hinge.position.z = ZC;
+  const frontCover = new Mesh(new BoxGeometry(W + 0.06, H + 0.08, CT), coverMats);
+  frontCover.position.set(W / 2, 0, CT + BT + CT / 2 - ZC);
+  const pagesL = new Mesh(new BoxGeometry(W, H, BT), blockMats);
+  hinge.add(frontCover, pagesL);
+  bookInner.add(backCover, pagesR, hinge);
+
+  // Hoja que pasa, algo curvada.
+  const leafGeo = new PlaneGeometry(W * 0.98, H * 0.98, 12, 1);
+  const leafBase = Float32Array.from(leafGeo.attributes.position.array);
+  const leaf = new Mesh(leafGeo, new MeshLambertMaterial({ map: pageTex, side: DoubleSide }));
+  const leafHinge = new Group();
+  leafHinge.add(leaf);
+  leaf.position.x = (W * 0.98) / 2;
+  leafHinge.visible = false;
+  bookInner.add(leafHinge);
+  book.traverse((o) => { if (o.isMesh) o.renderOrder = 25; });
+
+  /** p: 0 cerrado → 1 abierto. */
+  function setBook(p) {
+    const sL = Math.max(0.001, 0.5 * p), sR = 1 - 0.5 * p;
+    pagesR.scale.z = sR;
+    pagesR.position.set(W / 2, 0, CT + (BT * sR) / 2);
+    pagesL.scale.z = sL;
+    pagesL.position.set(W / 2, 0, CT + BT - (BT * sL) / 2 - ZC);
+    pagesL.visible = p > 0.02;
+    hinge.rotation.y = -Math.PI * 0.985 * p;
+    bookInner.position.x = -W / 2 + (W / 2) * p; // cerrado centrado; abierto, el lomo al centro
+    leafHinge.position.z = CT + BT * sR + 0.004;
+  }
+
+  /** u: 0..1 de una hoja pasando de derecha a izquierda. */
+  function setLeaf(u) {
+    leafHinge.visible = u > 0 && u < 1;
+    if (!leafHinge.visible) return;
+    leafHinge.rotation.y = -Math.PI * smooth(u);
+    const arr = leafGeo.attributes.position.array;
+    const curl = Math.sin(Math.PI * u) * 0.28;
+    for (let i = 0; i < arr.length; i += 3) {
+      const x = leafBase[i] / (W * 0.98) + 0.5; // 0 en el lomo, 1 en el borde
+      arr[i + 2] = curl * Math.sin(Math.PI * x * 0.9) * x;
+    }
+    leafGeo.attributes.position.needsUpdate = true;
+  }
+  setBook(0);
+  let turnAt = -10;
 
   // ---- letras, números y figuras de los libros
   const GLYPHS = ["A", "b", "ñ", "7", "½", "+", "=", "△", "○", "3×4", "¿?", "9", "%", "2"];
@@ -369,13 +516,14 @@ async function start(stage) {
     pointer.last = performance.now() / 1000;
   }
   window.addEventListener("pointermove", onPointer, { passive: true });
-  stage.addEventListener("pointerdown", (e) => { onPointer(e); celebrate(); }, { passive: true });
+  stage.addEventListener("pointerdown", (e) => { onPointer(e); if (clock() > 2.2) celebrate(); }, { passive: true });
 
   let happyAt = -10;
-  function celebrate() {
+  function celebrate(from) {
     happyAt = clock();
+    if (clock() > 3.2 && clock() - turnAt > 1.6) turnAt = clock();
     const head = new Vector3();
-    parts.head.getWorldPosition(head);
+    if (from) head.copy(from); else parts.head.getWorldPosition(head);
     burst.forEach((b, i) => {
       const a = (i / burst.length) * TAU + Math.random() * 0.4;
       b.s.position.set(head.x + 0.2, head.y + 0.6, head.z + 0.3);
@@ -406,11 +554,33 @@ async function start(stage) {
   const clock = () => (performance.now() - t0) / 1000;
   const eyeWorld = new Vector3();
   let prev = 0;
+  let introBurst = false;
 
   function frame() {
     const t = clock();
     const dt = Math.min(0.05, t - prev);
     prev = t;
+
+    // Entrada: aparece el libro, se abre y Toco sale volando de él.
+    const pop = easeOutBack(clamp01(t / 0.55));
+    book.scale.setScalar(0.82 * Math.max(0.001, pop));
+    setBook(smooth(clamp01((t - 0.45) / 0.8)));
+    const rise = clamp01((t - 1.0) / 1.1);
+    toco.position.y = -1.55 + (TOCO_Y + 1.55) * easeOutBack(rise);
+    toco.scale.setScalar(TOCO_S * (0.15 + 0.85 * smooth(rise)));
+    const tocoAlpha = clamp01((t - 1.0) / 0.3);
+    tocoMats.forEach((m) => { m.opacity = tocoAlpha; });
+    if (!introBurst && t > 1.15) {
+      introBurst = true;
+      const from = new Vector3();
+      book.getWorldPosition(from);
+      celebrate(from.add(new Vector3(0, 0.15, 0.3)));
+      happyAt = -10; // las estrellas sí, el salto no (aún está saliendo)
+    }
+    book.position.y = -1.75 + 0.04 * wave(t, 5);
+    // Luego, de vez en cuando, pasa una página.
+    if (t > 3.2 && t - turnAt > 7) turnAt = t;
+    setLeaf((t - turnAt) / 1.3);
 
     // Pose de reposo de la app, algo más viva para que se note en la web.
     const b = wave(t, 3);
@@ -465,8 +635,8 @@ async function start(stage) {
     const k = 1 - Math.pow(0.02, dt);
     view.x += (tx - view.x) * k;
     view.y += (ty - view.y) * k;
-    toco.rotation.y = view.x * 0.32;
-    toco.rotation.x = -view.y * 0.12;
+    rig.rotation.y = view.x * 0.32;
+    rig.rotation.x = -view.y * 0.12;
     camera.position.x = view.x * 0.7;
     camera.position.y = view.y * 0.4;
     camera.lookAt(0, 0, 0);
@@ -475,7 +645,7 @@ async function start(stage) {
       const u = t / g.sp + g.ph;
       g.s.position.set(g.base.x * spreadX + 0.12 * Math.sin(TAU * u * 0.7), g.base.y + 0.22 * Math.sin(TAU * u), g.base.z);
       g.s.material.rotation = 0.25 * Math.sin(TAU * (u * 0.5 + 0.3));
-      g.s.material.opacity = night ? 0.75 : 0.55;
+      g.s.material.opacity = (night ? 0.75 : 0.55) * clamp01((t - 1.4) / 0.8);
     });
 
     sky[0].material.opacity = night ? 0.55 + 0.35 * Math.sin(t * 1.3) : 0.16;

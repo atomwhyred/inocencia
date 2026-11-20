@@ -170,12 +170,13 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
   `.github/workflows/pages.yml` que la publica en GitHub Pages.
 - Portada con Toco en 3D (three.js 0.170 empaquetado en la propia web, `landing-src/` + `tools/landing_build.sh`):
   las capas y la animación de reposo de la app, mira al dedo, salta con estrellas al tocarlo; letras y números de los
-  libros alrededor y estrellas de noche. Probado en el Redmi (Chrome y Firefox) y en Chrome de escritorio. Pesa
-  483 KB (126 KB comprimido) y solo se descarga si se va a ver.
+  libros alrededor y estrellas de noche. Al entrar, un libro se abre y Toco sale volando de él; después el libro pasa
+  páginas. Las capturas se ven como teléfonos girados. Probado en el Redmi (Chrome y Firefox) y en Chrome de
+  escritorio. Pesa 491 KB (unos 128 KB comprimido) y solo se descarga si se va a ver.
 - Enlaces reales: `github.com/atomwhyred/inocencia` y `t.me/elrincondeatomwhyred`.
 - [ ] **Publicar la web.** Crear el repositorio `atomwhyred/inocencia`, subir el código a `main` (el trabajo está en
   `master`, y el workflow publica desde `main`), crear la primera release con los APK y activar
-  *Settings › Pages › Source: GitHub Actions*. Hasta entonces los enlaces de descarga dan 404.
+  *Settings › Pages › Source: GitHub Actions*. Hasta entonces los enlaces de descarga dan 404. Pasos en [publicar.md](publicar.md).
 - [ ] Probar en un Xiaomi con HyperOS de fábrica (el Redmi de pruebas lleva otra ROM) y en Android 10-12.
 
 - [x] Juego en red: código de sala de 4 cifras, aviso sin el nombre del niño, entradas limitadas (líneas, nombres,

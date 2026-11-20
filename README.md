@@ -256,6 +256,8 @@ Notas:
 
 ### Publicar una versión y la web
 
+Guía completa, paso a paso (crear el repositorio, activar Pages, primera versión): [docs/publicar.md](docs/publicar.md).
+
 1. Sube los APK y `SHA256SUMS` de `build/inocencIA/` a una release de GitHub:
    `gh release create v1.0.1 build/inocencIA/inocencIA-*.apk build/inocencIA/SHA256SUMS`.
    Los modelos (menos de 2 GB cada uno) y `knowledge.db` pueden ir como adjuntos de la misma release.
@@ -386,6 +388,7 @@ La lista viva de lo pendiente está en [docs/pendiente.md](docs/pendiente.md).
 
 - [docs/guia-padres.md](docs/guia-padres.md): guía para padres (instalar, copiar modelo y libros, perfiles, problemas).
 - [docs/pendiente.md](docs/pendiente.md): estado actual y lo que falta.
+- [docs/publicar.md](docs/publicar.md): subir el proyecto a GitHub, publicar los APK y la web en GitHub Pages.
 - [docs/models.md](docs/models.md): modelos probados y mediciones en un Pixel 6.
 - [docs/libros.md](docs/libros.md): cómo dar los libros a la app y lector de PDF.
 - [docs/mascota.md](docs/mascota.md): Toco, sus capas y su estado de ánimo.
