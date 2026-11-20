@@ -221,9 +221,8 @@ section > header p { color: var(--muted); }
 .shots figure { margin: 0; display: grid; gap: 10px; }
 /* Cada captura como un teléfono, los de los lados girados hacia el centro. */
 .shots img { width: 100%; aspect-ratio: 320 / 659; object-fit: cover; object-position: top; border-radius: 30px; border: 8px solid var(--bezel); box-shadow: 0 18px 40px -18px rgba(16, 19, 58, .45); transition: transform 400ms var(--ease); }
-.shots figure:nth-child(1) img { transform: rotateY(16deg) scale(.94); }
-.shots figure:nth-child(2) img { transform: translateY(-8px); }
-.shots figure:nth-child(3) img { transform: rotateY(-16deg) scale(.94); }
+.shots figure:nth-child(1) img { transform: rotateY(16deg); }
+.shots figure:nth-child(3) img { transform: rotateY(-16deg); }
 .shots figure:hover img { transform: none; }
 /* Aparición suave al bajar (solo con JS y sin "reducir movimiento"). */
 .reveal [data-reveal] { opacity: 0; transform: translateY(18px); transition: opacity 600ms var(--ease), transform 600ms var(--ease); }
@@ -300,8 +299,8 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
   .stage > img { width: 30%; }
   .shots { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
   .shots img { border-width: 4px; border-radius: 16px; }
-  .shots figure:nth-child(1) img { transform: rotateY(10deg) scale(.95); }
-  .shots figure:nth-child(3) img { transform: rotateY(-10deg) scale(.95); }
+  .shots figure:nth-child(1) img { transform: rotateY(10deg); }
+  .shots figure:nth-child(3) img { transform: rotateY(-10deg); }
   .btn { width: 100%; }
 }
 </style>
