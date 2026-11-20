@@ -9,7 +9,7 @@ contenido de sus propios libros de texto, y lo guía paso a paso en lugar de dar
 - **100 % local**: no envía nada a ningún servidor. Declara el permiso de red solo porque Android lo exige para el
   juego entre teléfonos del mismo Wi-Fi; la app nunca se conecta a internet.
 
-> **Estado:** versión de pruebas (1.0). Probada en un Pixel 6 (8 GB) y en una Xiaomi Pad 5. La versión de 32 bits
+> **Estado:** versión de pruebas (1.0.1). Probada en un Pixel 6 (8 GB), un Redmi Note 9 y una Xiaomi Pad 5. La versión de 32 bits
 > compila pero no se ha probado en un teléfono real. Lo que falta está en [docs/pendiente.md](docs/pendiente.md).
 
 ---
@@ -71,12 +71,15 @@ Decisiones de diseño:
 
 - **Perfiles**: crear, editar y borrar niños.
 - **Archivos**: vincular el modelo de IA, la base de libros y la carpeta de PDF; recomendación de modelo según la
-  RAM; **compartir o copiar** esos archivos a otro dispositivo sin internet.
-- **Apariencia**: tema claro/oscuro, mascota, Pomodoro, lectura en voz alta y modo batería.
+  RAM; **compartir o copiar** esos archivos a otro dispositivo sin internet; indica si el modelo y la base son los
+  oficiales o un archivo no reconocido.
+- **Apariencia**: tema claro/oscuro, mascota, Pomodoro, lectura en voz alta, modo batería y si en el juego en red se
+  envía la foto del niño (apagado por defecto).
 - **Avisos**: recordatorios de estudio (varios, cada uno con su interruptor).
 - **Diagnóstico del tutor** (Zona de padres → Archivos): modelo, hilos, CPU y velocidad de la última respuesta, con
   botón para copiarlo (sin datos personales); útil cuando el tutor va lento.
-- Entrada protegida con PIN de 4 o 6 dígitos y bloqueo tras varios intentos fallidos.
+- Entrada protegida con PIN de 4 o 6 dígitos (se rechazan los obvios: 0000, 1234, 1212…) y bloqueo tras varios
+  intentos fallidos. La zona de padres se cierra sola al salir de la app y tras 10 minutos sin tocarla.
 
 Guía paso a paso para familias: [docs/guia-padres.md](docs/guia-padres.md). Guías cortas para compartir (canal de
 Telegram): [docs/guias/](docs/guias/README.md).
@@ -119,7 +122,7 @@ Piezas importantes:
   tests los reemplazan, de modo que `pumpAndSettle` funciona.
 
 Tecnologías: Flutter 3.x / Dart 3.13, Riverpod 3, go_router, Drift (SQLite), `llama_cpp_dart`, `pdfrx` (PDFium),
-`flutter_tts`, `battery_plus`, `flutter_local_notifications`, `flutter_secure_storage`.
+`flutter_tts`, `battery_plus`, `flutter_local_notifications`.
 
 ## Qué NO incluye este repositorio
 
@@ -288,8 +291,9 @@ lib/
 ├─ core/
 │  ├─ di/                       proveedores compartidos (inyección de dependencias)
 │  ├─ router/                   rutas go_router y redirecciones por sesión
-│  ├─ storage/                  base de datos Drift (perfiles, historial, medallas…)
-│  ├─ security/                 hash del PIN (PBKDF2) y bloqueo por intentos
+│  ├─ storage/                  base de datos Drift (perfiles, historial, medallas…), apertura segura de
+│  │                            la knowledge.db (openUntrustedDb) y servicio en primer plano (background_work)
+│  ├─ security/                 hash del PIN (PBKDF2), bloqueo por intentos y PIN obvios
 │  ├─ theme/, responsive/       tema normal y de ahorro; adaptación móvil/tablet
 │  └─ widgets/                  splash, teclado de PIN, badge sin internet
 └─ features/
@@ -302,18 +306,23 @@ lib/
    ├─ mascot/                   Toco
    ├─ pomodoro/                 estudio y descanso
    ├─ speech/                   lectura en voz alta
-   ├─ quiz/, achievements/      quiz y medallas
+   ├─ quiz/, flashcards/        quiz y tarjetas de memoria
+   ├─ achievements/             medallas
+   ├─ game/                     juego «Carrera de tocororos» (en un teléfono o en red con código de sala)
    ├─ power/                    modo batería / apagón
    ├─ appearance/, notifications/ ajustes y recordatorios
-   └─ external_data/            vincular, compartir y copiar modelo, base y libros
+   └─ external_data/            vincular, compartir y copiar modelo, base y libros; archivos oficiales
+android/.../TutorWorkService.kt servicio en primer plano mientras el modelo trabaja
+assets/official/                lista de archivos oficiales (tamaño y SHA-256)
+landing/                        web de presentación (HTML estático)
 native/llama/                   script para compilar llama.cpp para Android
-tools/                          knowledge_builder (libros → base) y mascot (iconos)
+tools/                          build_apks, crear_keystore, official_files, knowledge_builder, question_bank, mascot
 docs/                           documentación detallada
 test/                           pruebas
 ```
 
-Estado con **Riverpod**; navegación con **go_router**; persistencia con **Drift** (esquema v3 con migraciones);
-preferencias con `shared_preferences`; el PIN y secretos con `flutter_secure_storage`.
+Estado con **Riverpod**; navegación con **go_router**; persistencia con **Drift** (esquema v4 con migraciones);
+preferencias con `shared_preferences`; el hash del PIN va en la base local (no hay secretos que guardar).
 
 ## Pruebas
 
@@ -344,7 +353,8 @@ prueban en un dispositivo físico.
   el texto de los libros no puede colar órdenes al modelo (los marcadores de turno se neutralizan). Zona de padres
   → Archivos indica si el modelo y la base son los publicados (`assets/official/official_files.json`, generado con
   `tools/official_files.py`; hay que regenerarlo al publicar una base nueva).
-- **Permisos usados:** notificaciones y alarmas exactas (recordatorios), arranque del sistema (reprogramarlos) y
+- **Permisos usados:** notificaciones y alarmas exactas (recordatorios), arranque del sistema (reprogramarlos),
+  servicio en primer plano y `WAKE_LOCK` (para que el tutor siga respondiendo con la app fuera de la pantalla) y
   acceso a todos los archivos solo para el explorador de carpetas opcional de Android 11+, porque el modelo y los
   libros pesan gigas.
 - **Compartir** (modelo, base, libros) usa el selector del sistema: el usuario elige el destino.
@@ -355,11 +365,16 @@ prueban en un dispositivo físico.
   varias preguntas seguidas (los núcleos bajan de frecuencia). El 1.5B es más rápido pero se equivoca más.
 - **La calidad del quiz con el 3B es floja**: puede generar preguntas ambiguas. Se filtran, pero conviene que un
   adulto las revise. Mejoraría con el modelo de 7B o con preguntas hechas por plantillas.
+- **Segundo plano.** Mientras el modelo carga o responde (tutor, tarjetas, quiz) la app muestra el aviso «Toco está
+  pensando…» y se puede salir de ella o apagar la pantalla; al terminar fuera de la app avisa «¡Toco ya terminó!».
+  **Cerrarla desde Recientes detiene la respuesta**: el modelo vive dentro de la pantalla de la app. En algunos
+  Xiaomi/Redmi hay que poner el ahorro de batería de inocencIA en «Sin restricciones».
 - Un modelo de IA pequeño **puede equivocarse**; por eso el tutor cita siempre la página del libro.
 - La lectura en voz alta necesita datos de voz en español instalados en el dispositivo.
 - La versión de **32 bits** (armeabi-v7a) está sin probar en un teléfono real; un proceso de 32 bits tiene unos
   3 GB de memoria, así que el modelo realista allí es el de 1.5B.
-- El APK de release se firma con la clave de depuración.
+- La release se firma con la clave propia (ver «Compilar la release»); solo las pruebas en teléfonos de desarrollo
+  usan la de depuración.
 
 La lista viva de lo pendiente está en [docs/pendiente.md](docs/pendiente.md).
 

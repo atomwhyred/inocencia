@@ -14,7 +14,7 @@ aceptación y las necesidades de los usuarios en Android antes de ampliar.
 
 ## Qué habría que hacer
 1. `flutter config --enable-linux-desktop --enable-windows-desktop` y `flutter create --platforms=linux,windows .`
-2. **Paquetes**: soportan escritorio `llama_cpp_dart`, `pdfrx`, `flutter_tts`, `flutter_secure_storage`, `sqlite3`,
+2. **Paquetes**: soportan escritorio `llama_cpp_dart`, `pdfrx`, `flutter_tts`, `sqlite3`,
    `path_provider`. Sin soporte o limitado: `android_alarm_manager_plus` (solo Android), `battery_plus`,
    `flutter_local_notifications`, `image_picker`. Envolverlos con `Platform.isAndroid` o dar versión de escritorio.
 3. **Motor del tutor (lo más grande)**: compilar llama.cpp para Linux x86_64 y Windows x64 (CMake,
@@ -24,7 +24,8 @@ aceptación y las necesidades de los usuarios en Android antes de ampliar.
 4. **Rutas de datos**: hoy `knowledge.db`, modelos y libros van a `/sdcard/Android/data/...`. En escritorio usar
    `path_provider` y dejar elegir la carpeta de modelos y libros (`external_files_repository_impl.dart`).
 5. **Juego en red**: TCP/UDP ya es Dart puro; `LanPlatform` debe ser un no-op en escritorio. Abrir el
-   cortafuegos (puertos 47320 UDP y 47321 TCP; Windows Defender pedirá permiso).
+   cortafuegos (puertos 47320 UDP y 47321 TCP; Windows Defender pedirá permiso). El juego usa el protocolo v2: sala con
+   código de 4 cifras y aviso sin el nombre del niño (ver [juego.md](juego.md)).
 6. **Interfaz**: está pensada para móvil vertical; revisar ventana, ratón/teclado y la voz (Linux necesita `speech-dispatcher`).
 7. **Empaquetado**: Windows con Inno Setup (.exe) o MSIX (sin firma de código, SmartScreen avisa de editor
    desconocido); .deb con `dpkg-deb` o `fpm`; .rpm con `.spec` + `rpmbuild` o `fpm`. Un `tools/build_desktop.sh`

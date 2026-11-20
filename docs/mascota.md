@@ -44,7 +44,8 @@ incluyendo ~8 s del prefijo en el turno 1):
 | 3 | 30,9 s | 30,5 s |
 
 Diferencia dentro del ruido (< 3 %): dibujar a ~30 fps no alarga la espera. Un solo `Ticker`, sin `setState`
-por fotograma, y se detiene si la app pasa a segundo plano o Android tiene quitadas las animaciones. Los
+por fotograma, y se detiene si la app pasa a segundo plano (el modelo sigue pensando gracias al servicio en primer plano, pero
+Toco no se anima) o Android tiene quitadas las animaciones. Los
 fotogramas perdidos no se midieron (`dumpsys gfxinfo` no ve el render de Flutter).
 
 ## Cómo está hecho

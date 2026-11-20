@@ -25,7 +25,8 @@ Además:
 
 Mientras el tutor responde **puedes salir de la app o apagar la pantalla**: arriba aparece el aviso *"Toco está
 pensando…"* y la respuesta sigue a buen ritmo. Cuando termina, otro aviso dice *"¡Toco ya terminó!"*; tócalo para
-volver. **No cierres la app desde Recientes** (deslizándola hacia fuera): eso sí detiene la respuesta.
+volver. **No cierres la app desde Recientes** (deslizándola hacia fuera): eso sí detiene la respuesta. En Android 13
+o superior, permite las **notificaciones** de inocencIA para ver estos avisos; la respuesta funciona igual sin ellos.
 
 Cuánto tarda: con el modelo recomendado, unos 20-40 segundos en empezar a escribir, según el teléfono. Es normal:
 todo se calcula dentro del teléfono, sin internet.

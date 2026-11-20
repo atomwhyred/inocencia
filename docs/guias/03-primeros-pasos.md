@@ -4,7 +4,8 @@ Esto se hace una sola vez, después de [instalar la app y copiar los archivos](0
 
 ## 1. Tu nombre y tu PIN
 
-La primera vez que abres la app te pide **tu nombre** y un **PIN de 4 o 6 números**.
+La primera vez que abres la app te pide **tu nombre** y un **PIN de 4 o 6 números**. La app no acepta los PIN
+obvios (0000, 1234, 1212…): elige uno que un niño no adivine.
 
 Con ese PIN entras en la **Zona de padres**: es el **candado** de arriba a la derecha en la pantalla donde se
 elige el perfil. **Apúntalo en un sitio seguro**: si lo olvidas, no se puede recuperar (habría que borrar los datos
@@ -27,7 +28,9 @@ Después verás la pantalla donde se elige el perfil. El **candado** de arriba a
 
 <p align="center"><img src="img/04-archivos-modelo.png" alt="Pestaña Archivos: modelo recomendado y modelo vinculado, con el aviso Listo" width="240"> <img src="img/05-archivos-libros.png" alt="Pestaña Archivos: Libros para leer (PDF), 49 de 49 libros en el teléfono" width="240"></p>
 
-Cuando todo está bien, el modelo y la base muestran **Listo** en verde, y en **Libros para leer** aparece
+Cuando todo está bien, el modelo y la base muestran **Listo** en verde y, debajo, **Archivo oficial de inocencIA** si
+coinciden con los publicados (si dice **Archivo no reconocido**, puede ser una versión nueva u otro modelo; si no sabes
+de dónde salió, vuelve a copiarlo desde el canal). En **Libros para leer** aparece
 "*X de X libros están en este teléfono*" y el grado de cada niño con una marca verde.
 
 ## 3. Crear el perfil de cada niño
@@ -45,8 +48,9 @@ Cuando todo está bien, el modelo y la base muestran **Listo** en verde, y en **
 
 En **Zona de padres**:
 
-- **Apariencia**: tema claro u oscuro, tamaño de Toco, **Pomodoro** (descansos), **lectura en voz alta** y
-  **modo batería**.
+- **Apariencia**: tema claro u oscuro, tamaño de Toco, **Pomodoro** (descansos), **lectura en voz alta**,
+  **modo batería** y **Enviar la foto en el juego en red** (apagado: en las partidas con otros teléfonos el niño sale
+  con un emoji y su foto no sale del teléfono).
 - **Avisos**: recordatorios para estudiar (puedes poner varios, cada uno con su interruptor).
 
 ## 5. Si el tutor va lento: la prueba de velocidad

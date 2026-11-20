@@ -15,6 +15,9 @@ sola vez.
 ## 2. Crear tu PIN
 Al abrir la app por primera vez te pide tu nombre y un **PIN de 4 o 6 dígitos**. Con él entras a la
 **Zona de padres** (el candado de arriba a la derecha). Apúntalo: si lo olvidas, no hay forma de recuperarlo.
+La app no acepta PIN obvios (0000, 1234, 1212, 2580…): elige uno que un niño no adivine. Si alguien falla varias
+veces, la entrada se bloquea un rato, y cambiar la hora del teléfono no lo evita. La zona de padres se cierra sola
+cuando sales de la app y tras 10 minutos sin tocarla.
 
 ## 3. Copiar el modelo y los libros
 Necesitas tres archivos:
@@ -47,9 +50,13 @@ al perfil de un niño mayor.
 
 ## 6. Ajustes de la Zona de padres
 - **Apariencia**: tema claro/oscuro, tamaño de Toco, **Pomodoro** (15+5 min de 1.º a 3.º, 20+5 min de 4.º a 6.º),
-  **lectura en voz alta** y **modo batería**.
-- **Avisos**: recordatorios de estudio (cada uno con su interruptor).
-- **Archivos**: copiar o **Compartir** el modelo, la base y los libros a otro dispositivo, sin internet.
+  **lectura en voz alta**, **modo batería** y **Enviar la foto en el juego en red** (apagado: en las partidas con
+  otros teléfonos el niño sale con un emoji y su foto no sale del teléfono; encendido: los demás ven una miniatura).
+- **Avisos**: recordatorios de estudio (cada uno con su interruptor). En la pantalla de bloqueo solo se ve que hay un
+  aviso de inocencIA; el nombre del niño aparece con el teléfono desbloqueado.
+- **Archivos**: copiar o **Compartir** el modelo, la base y los libros a otro dispositivo, sin internet. Cada
+  archivo dice si es **oficial** (coincide con el publicado) o **no reconocido**: si un archivo llegó por Bluetooth o
+  ShareIt y no lo reconoce, vuelve a copiarlo desde el canal oficial, porque pudo cambiar por el camino.
 
 ## Lo que ve el niño
 - **Mi tutor**: pregunta lo que no entienda; el tutor da un paso y pregunta, no resuelve los ejercicios. Cada
@@ -59,8 +66,9 @@ al perfil de un niño mayor.
 - **Mis medallas**: logros y estrellas (se abren desde la tarjeta roja del inicio).
 - **Jugar**: "Carrera de tocororos" (gana quien llegue antes) o "Entre todos" (cooperativo). Cada niño responde
   preguntas de **su** grado, así pueden jugar hermanos o amigos de grados distintos. Se juega **en un teléfono**
-  (2-4 niños se lo pasan por turnos) o **con otros teléfonos**: uno crea la sala y los demás se unen, conectados al
-  mismo Wi-Fi o al **punto de acceso** del que crea la sala (no hace falta tener datos ni internet).
+  (2-4 niños se lo pasan por turnos) o **con otros teléfonos**: uno crea la sala y los demás se unen con el **código de
+  4 cifras** que sale en su pantalla, conectados al mismo Wi-Fi o al **punto de acceso** del que crea la sala (no hace
+  falta tener datos ni internet). Todos los teléfonos deben tener la misma versión de inocencIA.
   Las preguntas salen del banco del juego que viene en la base de libros y de las tarjetas de cada niño.
 - **Pomodoro**: tras estudiar, Toco avisa del descanso y el chat se bloquea hasta que acabe.
 - **Icono de batería**: activa el modo apagón (pantalla negra, tutor más ligero). Con menos del 20 % Toco lo
@@ -72,8 +80,13 @@ dentro de casa o del aula. inocencIA **no se conecta nunca a internet**: solo ha
 red Wi-Fi o del mismo punto de acceso, y solo mientras hay una partida abierta.
 
 ## Si algo falla
-- **En "Con otros teléfonos" no aparece la sala**: comprobad que todos están en el mismo Wi-Fi o punto de acceso.
-  Algunas redes no dejan anunciar salas: escribid la dirección que muestra el teléfono que creó la sala.
+- **En "Con otros teléfonos" no aparece la sala**: comprobad que todos están en el mismo Wi-Fi o punto de acceso y que
+  todos tienen la misma versión de la app. Algunas redes no dejan anunciar salas: escribid la dirección que muestra el
+  teléfono que creó la sala y, al entrar, el código.
+- **"El código de la sala no es ese"**: mira bien las 4 cifras en el teléfono que creó la sala. Tras 5 códigos
+  equivocados desde un mismo teléfono ya no se le deja entrar mientras esa sala siga abierta; cierra la sala y crea otra.
+- **La sala aparece y desaparece de la lista**: la lista se borra sola cuando el anfitrión deja de anunciarla (por
+  ejemplo, al empezar la partida).
 - **"No se pudo abrir la sala"** o no se puede entrar: puede que el teléfono tenga apagado el acceso a la red para
   inocencIA (*Ajustes › Aplicaciones › inocencIA › Datos móviles y Wi-Fi*). Actívalo para jugar entre teléfonos; la
   app sigue sin conectarse a internet.
@@ -99,4 +112,6 @@ red Wi-Fi o del mismo punto de acceso, y solo mientras hay una partida abierta.
   automático** la deshace). Si sigue lento, activa **CPU en modo compatible**, cierra la app del todo, vuelve a abrirla
   y repite la prueba. Pulsa **Copiar** y envía ese texto a quien mantiene la app. No lleva nombres ni preguntas.
 - **Desinstalar la app borra los datos** (perfiles, historial, medallas). Para actualizarla, instala el APK nuevo
-  encima, sin desinstalar.
+  encima, sin desinstalar. Cada actualización lleva un número de versión nuevo (1.0.1, 1.0.2…).
+  **Excepción:** la primera versión firmada con la clave propia no se puede instalar encima de las anteriores (Android
+  lo rechaza porque cambia la firma): hay que desinstalar una vez, así que antes copia lo que quieras conservar.

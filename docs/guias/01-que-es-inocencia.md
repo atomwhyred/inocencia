@@ -32,7 +32,8 @@ ir a verlo.
 ## Privacidad
 
 inocencIA **no envía nada a ningún sitio**. Las preguntas, los nombres y el historial se quedan en el teléfono.
-No tiene anuncios ni cuentas.
+No tiene anuncios ni cuentas. Solo en el juego con otros teléfonos hablan entre sí los móviles de la misma casa o
+aula, y solo con el código de la sala; la foto del niño no se envía salvo que su padre o madre lo active.
 
 ## Qué teléfono hace falta
 

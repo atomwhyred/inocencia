@@ -39,7 +39,15 @@ le conviene a ese teléfono.
 3. Pulsa **Instalar**.
 
 Para **actualizar** la app, instala el `.apk` nuevo **encima**, sin desinstalar la anterior. **Desinstalar borra
-los perfiles, el historial y las medallas.**
+los perfiles, el historial y las medallas.** Cada actualización lleva un número de versión nuevo en el nombre del
+archivo (`inocencIA-1.0.1-…`, `inocencIA-1.0.2-…`): coge siempre el más alto.
+
+**Una sola vez** hará falta desinstalar: la primera versión firmada con la clave propia de inocencIA no se puede poner
+encima de las anteriores, porque Android no deja cambiar la firma de una app. Antes, anota tus perfiles (se
+vuelven a crear en un minuto). Después ya se actualiza siempre encima.
+
+¿Quieres comprobar que el archivo es el original? En el canal va junto a cada versión el archivo `SHA256SUMS`, con la
+huella de cada `.apk`; debe coincidir con la que calcula tu gestor de archivos.
 
 ## Dónde copiar los archivos
 

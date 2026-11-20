@@ -1,7 +1,9 @@
 # Contrato de la base de conocimiento (`.db`)
 
 inocencIA no incluye los libros de texto: se transfieren al teléfono como un archivo SQLite
-y el padre/madre lo vincula desde **Zona de padres → Archivos**. La app lo abre en **solo lectura**.
+y el padre/madre lo vincula desde **Zona de padres → Archivos**. La app lo abre en **solo lectura** y sin confiar en
+su esquema (`openUntrustedDb`: `trusted_schema=OFF`, `query_only` y `cell_size_check`), porque este archivo se pasa de
+teléfono en teléfono y podría venir manipulado.
 
 Versión del esquema soportada: **`1`**.
 
@@ -75,7 +77,8 @@ CREATE INDEX game_questions_grade ON game_questions(grade);
 ## Validación en la app
 
 Al vincular y en cada arranque se comprueba: existe y se puede leer, es SQLite, tiene `meta`,
-`chunks` y `chunks_fts`, y `schema_version` es `1`. Además se muestran el número de
+`chunks` y `chunks_fts` (**tablas reales, no vistas**), y `schema_version` es `1`; un tipo inesperado en las columnas
+también la marca como no válida, sin romper la app. Además se muestran el número de
 fragmentos, los grados y las asignaturas que contiene.
 
 Referencia de pruebas: `test/external_file_validator_test.dart`.

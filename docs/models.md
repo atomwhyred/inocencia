@@ -1,7 +1,10 @@
 # Modelos de IA para inocencIA
 
 La app no trae el modelo: se descarga una vez (con internet), se copia al teléfono y se
-vincula en **Zona de padres → Archivos**. La pestaña muestra el modelo recomendado según la RAM.
+vincula en **Zona de padres → Archivos**. La pestaña muestra el modelo recomendado según la RAM y si el archivo es
+**oficial** o **no reconocido**: la app compara su tamaño y su SHA-256 con `assets/official/official_files.json`. Al
+publicar un modelo o una base nuevos hay que añadir su huella con `python3 tools/official_files.py <archivos>` y
+recompilar la app.
 
 ## Modelos probados (formato GGUF, cuantización Q4_K_M)
 

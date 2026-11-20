@@ -14,7 +14,10 @@ Código: `lib/features/game/` (reglas puras en `domain/game_rules.dart`).
 
 ## Modos
 - **En este teléfono**: 2-4 perfiles del teléfono se lo pasan por turnos ("Le toca a Ana").
-- **Con otros teléfonos** (hasta 6): uno crea la sala; los demás la ven en "Unirme" o escriben su IP.
+- **Con otros teléfonos** (hasta 6): uno crea la sala; los demás la ven en "Unirme" (o escriben su IP) y escriben el
+  **código de 4 cifras** que muestra el anfitrión. Todos los teléfonos necesitan la misma versión de la app: el
+  protocolo v2 no habla con el v1. Una sala que deja de anunciarse (cerró o empezó la partida) desaparece de la lista
+  a los 5 s.
   - Red: Wi-Fi común o el **punto de acceso** del anfitrión (sin datos). TCP 47321 para la partida y avisos UDP de
     difusión en 47320 (`domain/lan_protocol.dart`, JSON por líneas con versión).
   - Seguridad (protocolo v2): el anfitrión muestra un **código de 4 cifras** que hay que escribir para entrar;

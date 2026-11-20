@@ -1,6 +1,6 @@
 # Lo que falta para terminar inocencIA
 
-Estado a 29-oct-2026 (actualizado el 9-nov). Hecho: base, perfiles, PIN y zona de padres; tutor local con RAG; recordatorios (varios,
+Estado a 29-oct-2026 (actualizado el 20-nov, versión 1.0.1). Hecho: base, perfiles, PIN y zona de padres; tutor local con RAG; recordatorios (varios,
 cada uno con su interruptor); chat con historial por niño; libros PDF con página guardada y carpeta que busca
 el padre; mascota Toco; exportar/compartir offline el modelo, la base y los libros; splash con Toco y una frase
 al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que queda:
@@ -40,9 +40,10 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 - [ ] **Probar el modelo de 7B en un móvil de 12 GB.** Está descargado (`models/qwen2.5-7b-instruct-q4_k_m.gguf`)
   y en el catálogo, pero **sin medir**: no cabe con margen en el Pixel 6 de 8 GB. Se espera ~2,3× la latencia
   del 3B ([models.md](models.md)).
-- [ ] **APK de producción firmado.** Hoy el release se firma con la clave de depuración
-  (`android/app/build.gradle.kts`). Hay que crear el keystore y compilar por ABI
-  (`flutter build apk --release --split-per-abi`).
+- [ ] **APK de producción firmado.** La firma ya está configurada (`android/key.properties`,
+  `tools/crear_keystore.sh`; `build_apks.sh` no compila sin la clave). Falta **crear el keystore** (con copia de
+  seguridad fuera del ordenador) y desinstalar una vez en los teléfonos de prueba antes de instalar la primera
+  versión firmada.
 - [x] ~~Guías para compartir en Telegram~~ (9-nov): [guias/](guias/README.md), 6 guías cortas.
 - [x] ~~Manual corto para padres~~ (29-oct): [guia-padres.md](guia-padres.md). Falta revisarlo con un padre real
   (feedback de los amigos) y añadir cómo borrar conversaciones.
@@ -60,7 +61,9 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 - [x] ~~Probar la partida en red con dos teléfonos de verdad~~ (9-nov, Pixel 6 + Redmi Note 9, Wi-Fi de casa): el
   descubrimiento por UDP funciona en los dos sentidos (sala visible sin escribir la IP), se unen, cada uno recibe
   preguntas de su grado (4.º y 2.º) y la ronda avanza a la vez en ambos. Sin probar aún: punto de acceso del
-  teléfono, 3+ jugadores, y terminar una partida entera.
+  teléfono, 3+ jugadores, y terminar una partida entera. El 20-nov se probó el protocolo v2 (código de sala) entre el
+  Redmi (anfitrión) y el Pixel 6 (invitado), con una partida completa, un código erróneo rechazado y un envío de 4 MB
+  sin salto de línea cortado.
   - Si en un móvil falla hasta *crear* la sala (`Failed to create server socket ... errno = 111`), Android le está
     bloqueando la red a la app (`dumpsys netpolicy`: `REJECT_ALL` / `Restricted networking mode: true`). Pasaba en el
     Pixel 6 con `settings global restricted_networking_mode=1`; no es un fallo de la app.
@@ -139,7 +142,7 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
 - [ ] Medir Q4_0 en la Pad 5 y el 17T Pro.
 - Los hilos ahora salen de los núcleos rápidos (`lib/features/tutor/domain/cpu_threads.dart`), no de «núcleos/2».
 
-## Seguridad (revisión del 29-oct, pendiente de aplicar antes de publicar)
+## Seguridad (revisión del 29-oct; lo aplicado hasta el 20-nov está marcado)
 - [x] ~~Desactivar la copia de seguridad de Android~~ (29-oct, `allowBackup="false"`). Antes: añadir `android:allowBackup="false"` en `<application>` de
   `AndroidManifest.xml`. Hoy `adb backup` o la copia en la nube pueden sacar la base con nombres, historial y los
   hashes de PIN (un PIN de 4 dígitos se averigua con 10.000 intentos). Exige recompilar la release.
@@ -160,6 +163,13 @@ al azar. Probado en una **Xiaomi Pad 5** (tablet real): "va muy bien". Lo que qu
     (7,3 piezas/s), igual que en pantalla.
   - Pixel 6 (Android 16), pantalla apagada: 36 s, wake lock tomado y liberado, aviso "¡Toco ya terminó!".
   - Cerrar desde Recientes a mitad: servicio, aviso y wake lock fuera; la respuesta se pierde (esperado).
+- Versión **1.0.1+5** (`pubspec.yaml`): cada actualización lleva un número de versión nuevo (1.0.2+6…); ver el README.
+- La release va **ofuscada** (`--obfuscate`); los símbolos quedan en `build/simbolos/<versión>/`: guárdalos para leer
+  un fallo.
+- Web de presentación en `landing/` (HTML estático, sin scripts de terceros, botón de tema claro/oscuro) y el workflow
+  `.github/workflows/pages.yml` que la publica en GitHub Pages.
+- [ ] **Publicar la web.** Reemplazar `TU_USUARIO/inocencia` y `TU_CANAL` en `landing/index.html` (descargas, código
+  fuente y Telegram) y activar en GitHub *Settings › Pages › Source: GitHub Actions*.
 - [ ] Probar en un Xiaomi con HyperOS de fábrica (el Redmi de pruebas lleva otra ROM) y en Android 10-12.
 
 - [x] Juego en red: código de sala de 4 cifras, aviso sin el nombre del niño, entradas limitadas (líneas, nombres,

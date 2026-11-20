@@ -4,8 +4,9 @@ Busca tu problema en la lista. Si nada funciona, mira el final: **cómo pedir ay
 
 ## La app no se instala
 
-- **"App no instalada"** al poner una versión nueva: puede que la anterior se instalara desde otro archivo
-  distinto. Pregunta en el canal antes de desinstalar: **desinstalar borra perfiles, historial y medallas**.
+- **"App no instalada"** al poner una versión nueva: puede que la anterior estuviera firmada con otra clave. Pasa una
+  sola vez, con la primera versión firmada con la clave propia de inocencIA (o si la anterior se instaló desde otro
+  archivo distinto). Pregunta en el canal antes de desinstalar: **desinstalar borra perfiles, historial y medallas**.
 - **No deja instalar**: permite instalar apps de **origen desconocido** para Telegram o tu gestor de archivos
   (Android lo pregunta al abrir el `.apk`).
 - Necesita **Android 10 o superior**.
