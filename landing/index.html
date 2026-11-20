@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>inocencIA</title>
+<meta name="description" content="Tutor con inteligencia artificial que funciona sin internet para niños cubanos de 1.º a 6.º grado. Responde con sus propios libros de texto y lo guía paso a paso. Gratis, sin cuentas y sin anuncios.">
+<meta name="theme-color" content="#272757">
+<meta property="og:type" content="website">
+<meta property="og:title" content="inocencIA: un tutor que funciona sin internet">
+<meta property="og:description" content="Para niños de 1.º a 6.º grado. Responde con sus libros de texto, cita la página y lo guía paso a paso. Gratis, sin cuentas y sin anuncios.">
+<meta property="og:image" content="img/compartir.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="es_ES">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="apple-touch-icon" href="img/icono-180.png">
+<!--
+  Enlaces que hay que cambiar al publicar (buscar y reemplazar):
+    TU_USUARIO/inocencia  → usuario y repositorio de GitHub
+    TU_CANAL              → nombre del canal de Telegram
+  Sin fuentes, scripts ni analíticas de terceros: la página no avisa a nadie de quién la visita
+  (como la app) y carga rápido con conexiones lentas.
+-->
+<style>
+/* Concepto: una columna estrecha como la pantalla de un teléfono; la conversación real con
+   Toco es la pieza central. Colores de la app: azul y rojo de la bandera sobre azul noche. */
+:root {
+  --bg: #f7f8fc;
+  --surface: #ffffff;
+  --surface-2: #eceff8;
+  --fg: #1b1b2e;
+  --muted: #4c5068;
+  --line: #d7dbea;
+  --blue: #0035ad;
+  --blue-soft: #dce4ff;
+  --red: #dc241f;
+  --on-accent: #ffffff;
+  --bubble-kid: #0035ad;
+  --bubble-toco: #e6eaf6;
+  --font-display: ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round", system-ui, sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --font-data: ui-monospace, "SF Mono", "Roboto Mono", "Noto Sans Mono", monospace;
+  --radius: 18px;
+  --step--1: 0.875rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.3rem;
+  --step-2: 1.75rem;
+  --step-3: clamp(2.1rem, 6vw, 3.4rem);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1d1d44; --surface: #272757; --surface-2: #31316a; --fg: #eef0ff; --muted: #b8bddc;
+    --line: #3d3d78; --blue: #b6c4ff; --blue-soft: #31316a; --red: #ff6b5f; --on-accent: #10133a;
+    --bubble-kid: #0035ad; --bubble-toco: #3a3a72; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1d1d44; --surface: #272757; --surface-2: #31316a; --fg: #eef0ff; --muted: #b8bddc;
+  --line: #3d3d78; --blue: #b6c4ff; --blue-soft: #31316a; --red: #ff6b5f; --on-accent: #10133a;
+  --bubble-kid: #0035ad; --bubble-toco: #3a3a72; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 var(--step-0)/1.6 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: env(safe-area-inset-top, 0px) env(safe-area-inset-bottom, 0px);
+}
+img { max-width: 100%; height: auto; display: block; }
+a { color: var(--blue); text-underline-offset: 3px; }
+a:focus-visible, summary:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; border-radius: 6px; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.15; text-wrap: balance; margin: 0; }
+h2 { font-size: var(--step-2); font-weight: 800; }
+h3 { font-size: var(--step-1); font-weight: 700; }
+p { margin: 0; }
+.wrap { max-width: 1040px; margin: 0 auto; }
+.narrow { max-width: 68ch; }
+.eyebrow { font: 700 var(--step--1)/1 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--red); }
+section { padding-block: clamp(48px, 9vw, 96px); display: grid; gap: 28px; }
+section > header { display: grid; gap: 10px; }
+section > header p { color: var(--muted); }
+
+/* Barra superior */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; font: 800 1.35rem/1 var(--font-display); color: var(--fg); text-decoration: none; }
+.brand img { width: 34px; height: 34px; border-radius: 10px; }
+.brand b { color: var(--red); }
+
+/* Botones */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 52px; padding: 12px 22px; border-radius: 999px;
+  font: 700 var(--step-0)/1.2 var(--font-body); text-decoration: none; text-align: center;
+}
+.btn-primary { background: var(--blue); color: var(--on-accent); }
+.btn-primary:hover { filter: brightness(1.12); }
+.btn-ghost { background: transparent; color: var(--fg); border: 2px solid var(--line); }
+.btn-ghost:hover { border-color: var(--blue); }
+.btn svg { width: 20px; height: 20px; flex: none; }
+.small { font-size: var(--step--1); color: var(--muted); }
+
+/* Portada */
+.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(24px, 5vw, 64px); align-items: center; padding-block: clamp(24px, 6vw, 72px) clamp(40px, 7vw, 80px); }
+.hero h1 { font-size: var(--step-3); font-weight: 900; letter-spacing: -0.01em; }
+.hero h1 span { color: var(--red); }
+.hero-copy { display: grid; gap: 22px; min-width: 0; }
+.lead { font-size: var(--step-1); color: var(--muted); max-width: 34ch; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 0; margin: 0; list-style: none; font-weight: 600; }
+.facts li { display: flex; align-items: center; gap: 8px; }
+.facts li::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+
+/* La conversación (pieza central) */
+.chat {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 28px;
+  padding: 18px; display: grid; gap: 12px; min-width: 0;
+  box-shadow: 0 18px 40px -24px rgba(16, 19, 58, .45);
+}
+.chat-bar { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.chat-bar img { width: 40px; height: auto; }
+.chat-bar strong { font-family: var(--font-display); }
+.chat-bar .offline { margin-left: auto; font-size: var(--step--1); font-weight: 700; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+.msg { max-width: 88%; padding: 12px 16px; border-radius: 20px; }
+.msg-kid { justify-self: end; background: var(--bubble-kid); color: #fff; border-bottom-right-radius: 6px; }
+.msg-toco { background: var(--bubble-toco); border-bottom-left-radius: 6px; display: grid; gap: 10px; }
+.cite { display: flex; gap: 8px; align-items: baseline; font: 500 0.82rem/1.4 var(--font-data); color: var(--muted); }
+.cite::before { content: "📖"; font-family: var(--font-body); }
+.tap { justify-self: start; background: #c81f1a; color: #fff; font-weight: 700; padding: 10px 16px; border-radius: 16px; }
+.chat-note { color: var(--muted); font-size: var(--step--1); }
+
+/* Qué hace */
+.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.feature { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; display: grid; gap: 8px; align-content: start; }
+.feature p { color: var(--muted); }
+.feature .tag { font: 700 var(--step--1)/1 var(--font-body); color: var(--blue); }
+
+/* Capturas */
+.shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(12px, 3vw, 32px); align-items: start; }
+.shots figure { margin: 0; display: grid; gap: 10px; }
+.shots img { border-radius: 22px; border: 6px solid var(--surface-2); width: 100%; }
+.shots figcaption { font-size: var(--step--1); color: var(--muted); text-align: center; }
+
+/* Privacidad */
+.privacy { background: var(--surface); border: 1px solid var(--line); border-radius: 28px; padding: clamp(22px, 5vw, 48px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; }
+.checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.checks li { display: grid; grid-template-columns: 26px 1fr; gap: 10px; }
+.checks li::before { content: "✓"; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--blue-soft); color: var(--blue); font-weight: 900; }
+.checks strong { display: block; }
+.checks span { color: var(--muted); }
+
+/* Instalar */
+.steps { list-style: none; counter-reset: paso; padding: 0; margin: 0; display: grid; gap: 14px; }
+.steps li { counter-increment: paso; display: grid; grid-template-columns: 44px 1fr; gap: 14px; align-items: start; }
+.steps li::before { content: counter(paso); display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--red); color: #fff; font: 800 1.2rem/1 var(--font-display); }
+.steps li > div { display: grid; gap: 4px; padding-top: 8px; min-width: 0; }
+.steps p { color: var(--muted); }
+code { font-family: var(--font-data); font-size: .88em; background: var(--surface-2); padding: 2px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { width: 100%; border-collapse: collapse; min-width: 520px; }
+th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font-size: var(--step--1); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+td.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pill { display: inline-block; font: 700 .78rem/1 var(--font-body); padding: 5px 9px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); }
+.pill.warn { background: transparent; border: 1px solid var(--red); color: var(--red); }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+
+/* Preguntas */
+.faq { display: grid; gap: 10px; }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 20px; }
+summary { cursor: pointer; font-weight: 700; padding-block: 14px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; color: var(--red); font: 800 1.4rem/1 var(--font-display); }
+details[open] summary::after { content: "–"; }
+details > p { padding-bottom: 16px; color: var(--muted); }
+
+/* Llamada final y pie */
+.cta { text-align: center; justify-items: center; }
+.cta img { width: 120px; }
+footer { border-top: 1px solid var(--line); padding-block: 28px 40px; display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; color: var(--muted); font-size: var(--step--1); }
+footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.flag { height: 6px; background: linear-gradient(90deg, var(--blue) 0 50%, var(--red) 50% 100%); border-radius: 3px; width: 72px; }
+
+@media (max-width: 760px) {
+  .hero, .privacy, .two { grid-template-columns: 1fr; }
+  .shots { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .shots img { border-width: 3px; border-radius: 14px; }
+  .btn { width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#"><img src="img/icono-180.png" alt="" width="34" height="34"><span>inocenc<b>IA</b></span></a>
+    <a class="small" href="#instalar">Cómo instalarla</a>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Para niños de 1.º a 6.º grado</p>
+        <h1>Un tutor que vive dentro del teléfono y <span>funciona sin internet</span></h1>
+        <p class="lead">El niño pregunta lo que no entiende de su libro. Toco le explica con las palabras del libro cubano de su grado, le dice en qué página está y le hace pensar el siguiente paso.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="https://github.com/TU_USUARIO/inocencia/releases/latest">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+            Descargar para Android
+          </a>
+          <a class="btn btn-ghost" href="#instalar">Ver cómo se instala</a>
+        </div>
+        <ul class="facts" aria-label="En pocas palabras">
+          <li>Gratis</li><li>Sin cuentas</li><li>Sin anuncios</li><li>Android 10 o superior</li>
+        </ul>
+      </div>
+
+      <div class="chat" aria-label="Ejemplo de conversación con el tutor">
+        <div class="chat-bar">
+          <img src="img/toco.webp" alt="" width="40" height="66">
+          <strong>Toco</strong>
+          <span class="offline">Sin internet</span>
+        </div>
+        <p class="msg msg-kid">Que es un triangulo</p>
+        <div class="msg msg-toco">
+          <p>Un triángulo es un polígono con tres lados y tres vértices. ¿Qué otros elementos tiene un triángulo?</p>
+          <p class="cite">Matemática · 2.º grado · pág. 193</p>
+        </div>
+        <p class="tap">👆 ¿Qué otros elementos tiene un triángulo?</p>
+        <p class="chat-note">Respuesta real de la app en un teléfono sin conexión. Toco no da la solución hecha: explica un paso y pregunta. El niño contesta con un toque.</p>
+      </div>
+    </div>
+
+    <section id="que-hace" aria-labelledby="que-hace-t">
+      <header class="narrow">
+        <p class="eyebrow">Qué hace</p>
+        <h2 id="que-hace-t">Todo lo que necesita para estudiar, en un solo lugar</h2>
+      </header>
+      <div class="features">
+        <article class="feature"><span class="tag">Mi tutor</span><h3>Pregunta y aprende paso a paso</h3><p>Busca primero en los libros del grado del niño y responde en dos o tres frases. Si el libro no lo explica, lo dice y sugiere preguntar al maestro.</p></article>
+        <article class="feature"><span class="tag">Libros</span><h3>Sus libros de texto, siempre a mano</h3><p>Los libros en PDF de su grado. Cada uno se abre en la página donde se quedó, y desde una respuesta se salta a la página citada.</p></article>
+        <article class="feature"><span class="tag">Tarjetas y quiz</span><h3>Repasar sin aburrirse</h3><p>Tarjetas de memoria creadas a partir de lo que preguntó y quizzes de tres preguntas que dan estrellas y medallas.</p></article>
+        <article class="feature"><span class="tag">Jugar</span><h3>Carrera de tocororos</h3><p>Hasta 6 niños, cada uno en su teléfono, conectados por el punto de acceso Wi-Fi de uno de ellos. Cada uno responde preguntas de su propio grado.</p></article>
+        <article class="feature"><span class="tag">Varios niños</span><h3>Un perfil para cada hermano</h3><p>Nombre, avatar y grado, que sube solo con los años. El historial, las medallas y la página de lectura son de cada uno.</p></article>
+        <article class="feature"><span class="tag">Zona de padres</span><h3>Los adultos deciden</h3><p>Con un PIN: perfiles, archivos, avisos diarios para estudiar, voz, Pomodoro y modo batería para los apagones.</p></article>
+      </div>
+    </section>
+
+    <section aria-labelledby="capturas-t">
+      <header class="narrow">
+        <p class="eyebrow">Así se ve</p>
+        <h2 id="capturas-t">Pensada para manos pequeñas</h2>
+      </header>
+      <div class="shots">
+        <figure><img src="img/08-inicio.webp" alt="Pantalla de inicio con Toco, las medallas y las tarjetas del niño" width="320" height="659" loading="lazy"><figcaption>Inicio</figcaption></figure>
+        <figure><img src="img/09-tutor-respuesta.webp" alt="El tutor responde citando el libro y la página" width="320" height="659" loading="lazy"><figcaption>Tutor</figcaption></figure>
+        <figure><img src="img/15-carrera.webp" alt="Carrera de tocororos con una pregunta de opción múltiple" width="320" height="674" loading="lazy"><figcaption>Juego</figcaption></figure>
+      </div>
+    </section>
+
+    <section aria-labelledby="privacidad-t">
+      <div class="privacy">
+        <header style="display:grid;gap:12px;align-content:start">
+          <p class="eyebrow">Privacidad</p>
+          <h2 id="privacidad-t">Lo que pasa en el teléfono, se queda en el teléfono</h2>
+          <p class="small">La inteligencia artificial está dentro de la app. No hay servidor al que mandar las preguntas del niño.</p>
+        </header>
+        <ul class="checks">
+          <li><div><strong>Nunca se conecta a internet</strong><span>Solo usa la red para jugar con los teléfonos de la misma casa o aula, y solo con el código de la sala.</span></div></li>
+          <li><div><strong>Sin cuentas ni anuncios</strong><span>No pide correo, ni número, ni registro. No muestra publicidad.</span></div></li>
+          <li><div><strong>Fiel a sus libros</strong><span>Responde con el contenido de los libros de texto cubanos de su grado y cita la página.</span></div></li>
+          <li><div><strong>Los datos del niño no salen</strong><span>Perfiles, historial y medallas quedan en el teléfono, protegidos por el PIN de la zona de padres.</span></div></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="instalar" aria-labelledby="instalar-t">
+      <header class="narrow">
+        <p class="eyebrow">Instalar</p>
+        <h2 id="instalar-t">Se descarga una vez. Después, nunca más hace falta internet.</h2>
+        <p>Hacen falta cuatro archivos: la app, el modelo de IA, la base de libros y los libros en PDF del grado de tus niños.</p>
+      </header>
+      <div class="two">
+        <ol class="steps">
+          <li><div><h3>Descarga la app</h3><p>El archivo <code>inocencIA-…-arm64-v8a.apk</code> sirve para casi todos los teléfonos. El de <code>armeabi-v7a</code> es para teléfonos viejos de 32 bits.</p></div></li>
+          <li><div><h3>Instálala</h3><p>Android preguntará si permites instalar apps de origen desconocido. Acéptalo para el navegador, Telegram o el gestor de archivos.</p></div></li>
+          <li><div><h3>Copia el modelo y los libros</h3><p>Ábrela una vez y copia el modelo <code>.gguf</code> y <code>knowledge.db</code> a <code>Android/data/com.inocencia.app/files/</code>.</p></div></li>
+          <li><div><h3>Crea los perfiles</h3><p>Pon tu PIN de padre o madre, crea un perfil para cada niño y listo.</p></div></li>
+        </ol>
+        <div style="display:grid;gap:12px;min-width:0">
+          <h3>Qué modelo elegir</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>RAM del teléfono</th><th>Modelo</th><th>Tamaño</th></tr></thead>
+              <tbody>
+                <tr><td>8 GB o más</td><td><code>qwen2.5-3b-instruct-q4_0</code> <span class="pill">Recomendado</span></td><td class="num">≈ 2,0 GB</td></tr>
+                <tr><td>Menos de 8 GB</td><td><code>qwen2.5-1.5b-instruct-q4_k_m</code><br><span class="small">Más rápido, se equivoca más</span></td><td class="num">≈ 1,1 GB</td></tr>
+                <tr><td>Cualquiera</td><td><code>qwen2.5-7b-instruct-q4_k_m</code> <span class="pill warn">No recomendado</span><br><span class="small">Tarda más de un minuto en empezar</span></td><td class="num">≈ 4,7 GB</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="small">¿No sabes cuánta RAM tiene? Instala la app y entra en <strong>Zona de padres → Archivos</strong>: te dice qué modelo le conviene a ese teléfono y si el archivo es el oficial.</p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="pasarla-t">
+      <header class="narrow">
+        <p class="eyebrow">Sin datos</p>
+        <h2 id="pasarla-t">Pásala a otros teléfonos sin gastar internet</h2>
+        <p>Desde <strong>Zona de padres → Archivos</strong> se comparten la app, el modelo y los libros por ShareIt, Zapya o Bluetooth, o se copian a una memoria SD. Así basta con que una persona del barrio la descargue.</p>
+      </header>
+    </section>
+
+    <section aria-labelledby="faq-t">
+      <header class="narrow">
+        <p class="eyebrow">Preguntas</p>
+        <h2 id="faq-t">Preguntas frecuentes</h2>
+      </header>
+      <div class="faq narrow">
+        <details><summary>¿Cuánto tarda en responder?</summary><p>Con el modelo recomendado, unos 20 a 40 segundos en empezar a escribir, según el teléfono. Todo se calcula dentro del teléfono. Mientras piensa se puede salir de la app o apagar la pantalla; un aviso dice cuándo terminó.</p></details>
+        <details><summary>¿Cuesta algo?</summary><p>No. Es gratis, sin anuncios ni compras dentro de la app. El código es abierto (licencia Apache 2.0).</p></details>
+        <details><summary>¿Le hace los deberes al niño?</summary><p>No. Ante un ejercicio no da la solución: pide el primer paso, valora lo que el niño contesta y corrige con suavidad.</p></details>
+        <details><summary>¿Qué teléfonos sirven?</summary><p>Android 10 o superior. Con 8 GB de RAM va el modelo recomendado; con menos, el modelo pequeño. Funciona también en tablets.</p></details>
+        <details><summary>¿Cómo sé que el archivo es el original?</summary><p>Junto a cada versión se publica la suma SHA-256 de los APK. Además, la app avisa en Zona de padres → Archivos si el modelo o la base de libros no coinciden con los publicados.</p></details>
+        <details><summary>¿Se puede actualizar sin perder nada?</summary><p>Sí: instala el APK nuevo encima del anterior, sin desinstalar. Desinstalar borra los perfiles, el historial y las medallas.</p></details>
+      </div>
+    </section>
+
+    <section class="cta" aria-labelledby="cta-t">
+      <img src="img/toco.webp" alt="Toco, el tocororo de inocencIA" width="120" height="198" loading="lazy">
+      <h2 id="cta-t">¿Qué aprendemos hoy?</h2>
+      <div class="actions" style="justify-content:center">
+        <a class="btn btn-primary" href="https://github.com/TU_USUARIO/inocencia/releases/latest">Descargar para Android</a>
+        <a class="btn btn-ghost" href="https://t.me/TU_CANAL">Canal de Telegram</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div style="display:grid;gap:10px">
+      <div class="flag" aria-hidden="true"></div>
+      <span>inocencIA · Hecho para las familias cubanas · Licencia Apache 2.0</span>
+    </div>
+    <nav aria-label="Enlaces">
+      <a href="https://github.com/TU_USUARIO/inocencia">Código fuente</a>
+      <a href="https://github.com/TU_USUARIO/inocencia/releases">Todas las versiones</a>
+      <a href="https://t.me/TU_CANAL">Telegram</a>
+    </nav>
+  </footer>
+</div>
+</body>
+</html>
